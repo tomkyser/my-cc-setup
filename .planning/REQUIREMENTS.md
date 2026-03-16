@@ -72,30 +72,30 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DOCS-01 | TBD | Pending |
-| DOCS-02 | TBD | Pending |
-| DEVT-01 | TBD | Pending |
-| DEVT-02 | TBD | Pending |
-| DEVT-03 | TBD | Pending |
-| WRIT-01 | TBD | Pending |
-| WRIT-02 | TBD | Pending |
-| GMGR-01 | TBD | Pending |
-| GMGR-02 | TBD | Pending |
-| MEMO-01 | TBD | Pending |
-| MEMO-02 | TBD | Pending |
-| MEMO-03 | TBD | Pending |
-| INFR-01 | TBD | Pending |
-| INFR-02 | TBD | Pending |
-| INFR-03 | TBD | Pending |
-| DLVR-01 | TBD | Pending |
-| DLVR-02 | TBD | Pending |
-| DLVR-03 | TBD | Pending |
+| INFR-01 | Phase 1 | Pending |
+| INFR-02 | Phase 1 | Pending |
+| DOCS-01 | Phase 2 | Pending |
+| DOCS-02 | Phase 2 | Pending |
+| DEVT-01 | Phase 2 | Pending |
+| DEVT-02 | Phase 2 | Pending |
+| DEVT-03 | Phase 2 | Pending |
+| WRIT-01 | Phase 2 | Pending |
+| WRIT-02 | Phase 2 | Pending |
+| GMGR-01 | Phase 2 | Pending |
+| GMGR-02 | Phase 2 | Pending |
+| MEMO-01 | Phase 2 | Pending |
+| MEMO-02 | Phase 2 | Pending |
+| MEMO-03 | Phase 2 | Pending |
+| INFR-03 | Phase 3 | Pending |
+| DLVR-01 | Phase 3 | Pending |
+| DLVR-02 | Phase 3 | Pending |
+| DLVR-03 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2025-03-16*
-*Last updated: 2025-03-16 after initial definition*
+*Last updated: 2026-03-16 after roadmap creation — traceability complete*
