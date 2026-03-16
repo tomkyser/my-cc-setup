@@ -12,7 +12,7 @@ This research project moves in three phases: establish the vetting methodology b
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Methodology** - Establish vetting criteria and anti-features list before evaluating any tool
+- [x] **Phase 1: Methodology** - Establish vetting criteria and anti-features list before evaluating any tool
 - [ ] **Phase 2: Research** - Produce individual assessments of all candidate tools and document existing setup
 - [ ] **Phase 3: Synthesis** - Compile findings into ranked report with full self-management lifecycle documentation
 
@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md — Write vetting protocol (decision-tree gates, scorecard template, tier criteria) and anti-features list (named exclusions, category rules)
+- [x] 01-01-PLAN.md — Write vetting protocol (decision-tree gates, scorecard template, tier criteria) and anti-features list (named exclusions, category rules)
 
 ### Phase 2: Research
 **Goal**: Individual assessments of all candidate tools exist, plus documentation of the existing setup (GSD, Graphiti, memory system)
@@ -60,6 +60,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Methodology | 0/1 | Planning complete | - |
+| 1. Methodology | 1/1 | Complete | 2026-03-16 |
 | 2. Research | 0/TBD | Not started | - |
 | 3. Synthesis | 0/TBD | Not started | - |

@@ -34,8 +34,8 @@
 
 ### Infrastructure
 
-- [ ] **INFR-01**: Document vetting protocol — programmatic criteria (GitHub stars, commit recency <30 days, security, self-management capability)
-- [ ] **INFR-02**: Document anti-features list with reasoning (tools to explicitly avoid and why)
+- [x] **INFR-01**: Document vetting protocol — programmatic criteria (GitHub stars, commit recency <30 days, security, self-management capability)
+- [x] **INFR-02**: Document anti-features list with reasoning (tools to explicitly avoid and why)
 - [ ] **INFR-03**: Document self-management lifecycle for each recommended tool (install, configure, update, troubleshoot commands)
 
 ### Deliverable
@@ -72,8 +72,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFR-01 | Phase 1 | Pending |
-| INFR-02 | Phase 1 | Pending |
+| INFR-01 | Phase 1 | Complete |
+| INFR-02 | Phase 1 | Complete |
 | DOCS-01 | Phase 2 | Pending |
 | DOCS-02 | Phase 2 | Pending |
 | DEVT-01 | Phase 2 | Pending |
