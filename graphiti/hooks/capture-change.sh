@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 # capture-change.sh — Store file change episodes in Graphiti (async, non-blocking)
 
+set -uo pipefail
+
 HELPER="$HOME/.claude/graphiti/.venv/bin/python3 $HOME/.claude/graphiti/graphiti-helper.py"
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.filePath // "unknown"')
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // "unknown"')
+
+# Only process file-editing tools
+case "$TOOL_NAME" in
+  Write|Edit|MultiEdit) ;;
+  *) exit 0 ;;
+esac
+
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.filePath // "unknown"')
 CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
 
 # Skip if server down
