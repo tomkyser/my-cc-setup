@@ -40,7 +40,15 @@ Plans:
   2. Writing tools research exists — at least one vetted candidate in each category (creative writing, technical writing) or a documented finding that no viable candidates exist
   3. GSD framework self-management lifecycle is documented (install, update, troubleshoot steps Claude Code can execute without user touching config files)
   4. All three memory system topics are addressed: a browsing interface approach, a session management visibility approach, and identified Graphiti hook gaps
-**Plans**: TBD
+**Plans:** 6 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Assess Context7 MCP, WPCS Skill, and GitHub MCP (named assessments batch A)
+- [ ] 02-02-PLAN.md — Assess Playwright MCP and Sequential Thinking MCP (named assessments batch B)
+- [ ] 02-03-PLAN.md — Discover and assess creative and technical writing tools
+- [ ] 02-04-PLAN.md — Research memory browsing, session visibility, and hook gap analysis
+- [ ] 02-05-PLAN.md — Document GSD lifecycle runbook and global scope coexistence strategy
+- [ ] 02-06-PLAN.md — Cross-cutting review of all deliverables for Phase 3 readiness
 
 ### Phase 3: Synthesis
 **Goal**: A single ranked report exists that gives the user everything needed to make an informed install decision for each candidate
@@ -61,5 +69,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Methodology | 1/1 | Complete | 2026-03-16 |
-| 2. Research | 0/TBD | Not started | - |
+| 2. Research | 0/6 | Not started | - |
 | 3. Synthesis | 0/TBD | Not started | - |
