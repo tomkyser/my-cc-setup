@@ -1,669 +1,738 @@
 # Architecture Research
 
-**Domain:** Claude Code global MCP/tool ecosystem configuration
-**Researched:** 2026-03-16
-**Confidence:** HIGH (sourced directly from official Claude Code docs and live configuration)
-
-## Standard Architecture
-
-### System Overview
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Claude Code Process                          │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌──────────┐  │
-│  │  Plugins   │  │   Hooks    │  │  MCP Tools │  │  CLAUDE  │  │
-│  │ (skills,   │  │ (lifecycle │  │ (mcp__x__y)│  │  .md     │  │
-│  │  agents,   │  │  scripts)  │  │  tools     │  │ context  │  │
-│  │  hooks,    │  └─────┬──────┘  └─────┬──────┘  └──────────┘  │
-│  │  MCP srvc) │        │               │                         │
-│  └─────┬──────┘        │               │                         │
-├────────┼───────────────┼───────────────┼─────────────────────────┤
-│        │       Settings Resolution Layer                          │
-│        │  managed > user > project > local  (precedence)         │
-├────────┼───────────────┼───────────────┼─────────────────────────┤
-│        ↓               ↓               ↓                         │
-│  ┌───────────┐  ┌────────────┐  ┌──────────────────────────┐    │
-│  │ ~/.claude/│  │~/.claude/  │  │     MCP Server Processes  │    │
-│  │ plugins/  │  │settings.   │  │  stdio: child process     │    │
-│  │ cache/    │  │json        │  │  http:  remote endpoint   │    │
-│  └───────────┘  └────────────┘  └──────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-
-External Processes (outside Claude Code):
-┌─────────────────────────────────────────────────────────────────┐
-│  ┌─────────────────┐  ┌───────────────┐  ┌───────────────────┐  │
-│  │  MCP stdio srv  │  │  MCP HTTP srv │  │  CLI tools        │  │
-│  │  (npx / node /  │  │  (Docker,     │  │  (brew, npm -g,   │  │
-│  │   python proc)  │  │   remote API) │  │   pip, cargo)     │  │
-│  └─────────────────┘  └───────────────┘  └───────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Component Responsibilities
-
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| `~/.claude.json` | MCP server registry (user + local scopes), project-specific overrides | JSON, managed by `claude mcp add` CLI |
-| `~/.claude/settings.json` | Global preferences: permissions, hooks, env vars, model, plugins, statusLine | JSON, edited directly or via `/config` |
-| `.claude/settings.json` | Project-level settings shared via git | JSON, project repo |
-| `.claude/settings.local.json` | Per-machine project overrides, not committed | JSON, gitignored |
-| `.mcp.json` (project root) | Project-scoped MCP servers shared via git | JSON, managed by `claude mcp add --scope project` |
-| `~/.claude/plugins/cache/` | Installed plugin files copied from marketplaces | Auto-managed by Claude Code |
-| `~/.claude/hooks/` | User-scope hook scripts (shell, Node.js, Python) | Scripts invoked by hooks config in settings.json |
-| MCP stdio server | External tool as child process, communicates via stdin/stdout JSON-RPC | npx package, node script, python script |
-| MCP HTTP server | External tool as remote HTTP endpoint (streamable-http protocol) | Cloud service, Docker container |
-
----
-
-## Config File Relationships
-
-### File Precedence (settings merge order, lowest to highest)
-
-```
-managed-settings.json         (system-wide, admin-deployed, read-only)
-       ↓
-~/.claude/settings.json       (user scope — your global defaults)
-       ↓
-.claude/settings.json         (project scope — shared with team via git)
-       ↓
-.claude/settings.local.json   (local scope — per-machine, gitignored)
-```
-
-For conflicts: local overrides project overrides user. Managed cannot be overridden.
-For permissions: deny rules are absolute — a lower scope cannot un-deny something.
-
-### MCP Server Registry (separate from settings)
-
-MCP servers are stored in **`~/.claude.json`**, not `settings.json`. This is a critical architectural split:
-
-```
-~/.claude.json
-├── mcpServers                      ← user-scope MCP servers (available all projects)
-│   └── graphiti: { type: "http", url: "..." }
-└── projects
-    └── /path/to/project
-        └── mcpServers              ← local-scope MCP servers (this project, private)
-            └── my-server: { ... }
-```
-
-Project-scope MCP servers go in `.mcp.json` at the project root (committed to git).
-
-### Complete Config Map
-
-```
-~/.claude.json                  ← MCP server registry (user + local scopes)
-~/.claude/settings.json         ← Global settings (hooks, permissions, env, plugins)
-~/.claude/CLAUDE.md             ← Global instructions injected into every session
-~/.claude/hooks/                ← Hook scripts referenced from settings.json
-~/.claude/plugins/cache/        ← Installed plugin files (auto-managed)
-~/.claude/commands/             ← Global custom slash commands (standalone)
-~/.claude/agents/               ← Global custom agents (standalone)
-
-<project>/
-├── .mcp.json                   ← Project-scope MCP servers (shared via git)
-├── .claude/settings.json       ← Project settings (shared via git)
-├── .claude/settings.local.json ← Local overrides (gitignored)
-└── .claude/CLAUDE.md           ← Project instructions
-```
-
----
-
-## MCP Transport Types
-
-Three transports exist, with different tradeoffs for the global setup use case:
-
-### HTTP (streamable-http) — Recommended for Remote/Long-Running
-
-```json
-{
-  "graphiti": {
-    "type": "http",
-    "url": "http://localhost:8100/mcp"
-  }
-}
-```
-
-**How it works:** Claude Code sends HTTP POST requests to a persistent server. The server manages its own lifecycle (stays running between sessions).
-
-**Best for global setup when:**
-- Server runs as a Docker container or daemon (e.g., Graphiti)
-- Server needs to maintain state between Claude sessions
-- Server is a remote cloud API (Notion, GitHub, Sentry)
-
-**Tradeoffs:**
-- Server must be started separately (not launched by Claude Code)
-- Requires health-check pattern to verify availability before use
-- OAuth 2.0 supported for authenticated remote services
-- SSE variant exists but is deprecated — use HTTP instead
-
-### stdio — Recommended for On-Demand Local Tools
-
-```json
-{
-  "my-tool": {
-    "command": "npx",
-    "args": ["-y", "@some/mcp-server"],
-    "env": { "API_KEY": "..." }
-  }
-}
-```
-
-**How it works:** Claude Code spawns a child process per session. Process communicates via stdin/stdout JSON-RPC. Process dies when session ends.
-
-**Best for global setup when:**
-- Tool is stateless (docs lookup, linting, formatting)
-- Tool is distributed as an npm package (use `npx -y`)
-- Tool needs filesystem or system access
-
-**Tradeoffs:**
-- Cold start latency each session (~1-3s for npx first run)
-- PATH issues: Claude Code launches with a different shell environment than your terminal. nvm/pyenv shims may not resolve. Use absolute paths or ensure PATH is set in `settings.json` `env` block.
-- On macOS with native Claude install: `~/.local/bin/claude` — Node.js/npm must be independently available
-
-**PATH fix pattern:**
-```json
-{
-  "env": {
-    "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
-  }
-}
-```
-
-### SSE — Deprecated
-
-The SSE (Server-Sent Events) transport is officially deprecated per Claude Code docs (March 2026). Use HTTP instead where available. SSE still works but should not be used for new configurations.
-
----
-
-## MCP Server Lifecycle
-
-### HTTP Server Lifecycle
-
-```
-User starts daemon (Docker, systemd, launchd, shell script)
-       ↓
-Claude Code session starts
-       ↓
-Claude Code connects to HTTP endpoint (URL from ~/.claude.json)
-       ↓
-Session uses tools
-       ↓
-Claude Code session ends (HTTP connection drops, server persists)
-       ↓
-User stops daemon manually (or it persists indefinitely)
-```
-
-**Self-management implication:** A SessionStart hook can run a health check and report if the server is offline (as Graphiti does). Claude Code itself cannot start/stop HTTP servers — an external script or launchd/Docker handles lifecycle.
-
-### stdio Server Lifecycle
-
-```
-Claude Code session starts
-       ↓
-Claude Code spawns child process (command + args from config)
-       ↓
-Child process initializes, advertises tools via JSON-RPC
-       ↓
-Session uses tools
-       ↓
-Claude Code session ends → child process receives SIGTERM → exits
-```
-
-**Self-management implication:** Claude Code fully manages stdio server lifecycle. No external daemon needed. The only dependency is that the command is installed and in PATH.
-
----
-
-## Self-Management Patterns
-
-### Pattern 1: Install via `claude mcp add` CLI
-
-Claude Code can run `claude mcp add` as a Bash command to register MCPs programmatically — without the user ever touching a config file.
-
-```bash
-# Install an HTTP MCP (user scope, all projects)
-claude mcp add --transport http --scope user graphiti http://localhost:8100/mcp
-
-# Install a stdio MCP (user scope, all projects)
-claude mcp add --transport stdio --scope user --env API_KEY=abc123 context7 \
-  -- npx -y @upstash/context7-mcp
-
-# Install via JSON (useful for complex configs)
-claude mcp add-json --scope user my-server \
-  '{"type":"http","url":"https://api.example.com/mcp","headers":{"Authorization":"Bearer TOKEN"}}'
-
-# Verify installation
-claude mcp list
-claude mcp get context7
-```
-
-**Confidence:** HIGH — official CLI documented in claude code docs.
-
-### Pattern 2: CLI Tool Check + Install via Bash
-
-CC can check whether a CLI tool is installed, install it if missing, and verify the result:
-
-```bash
-# Check if tool is installed
-which context7 || npm install -g @upstash/context7-mcp
-
-# Homebrew pattern
-brew list some-tool 2>/dev/null || brew install some-tool
-
-# Version check
-node -e "require('@upstash/context7-mcp')" 2>/dev/null || npm install -g @upstash/context7-mcp
-
-# npm global update
-npm update -g @upstash/context7-mcp
-```
-
-**Path to executable:** For npm global packages on macOS with Homebrew Node:
-`/opt/homebrew/lib/node_modules/.bin/` or use `npm config get prefix` + `/bin/`
-
-### Pattern 3: Health Check Hook (SessionStart)
-
-A SessionStart hook can verify MCP server availability and inject context or warnings:
-
-```bash
-#!/usr/bin/env bash
-# Check if HTTP MCP server is available
-if ! curl -s --max-time 3 http://localhost:8100/health > /dev/null; then
-  echo "[Warning: my-server MCP is offline. Start it with: ~/.claude/my-server/start.sh]"
-fi
-exit 0
-```
-
-Hook output (stdout) is injected as Claude context at session start.
-
-### Pattern 4: Update Check Hook (SessionStart)
-
-The GSD framework demonstrates this pattern — a Node.js hook runs in the background at SessionStart, compares installed vs. latest version, and surfaces update notifications. CC can run `npm info @pkg/name version` to check latest versions without installing.
-
-### Pattern 5: Direct JSON Edit via Bash
-
-For bulk changes or initial setup, CC can directly edit `~/.claude.json` and `~/.claude/settings.json` using `jq`:
-
-```bash
-# Add MCP server to user scope
-jq '.mcpServers["new-tool"] = {"type":"http","url":"https://..."}' \
-  ~/.claude.json > /tmp/claude-tmp.json && mv /tmp/claude-tmp.json ~/.claude.json
-
-# Add permission to settings.json
-jq '.permissions.allow += ["mcp__new-tool__*"]' \
-  ~/.claude/settings.json > /tmp/settings-tmp.json && mv /tmp/settings-tmp.json ~/.claude/settings.json
-```
-
-**Note:** Changes to `~/.claude.json` take effect on next Claude Code restart. Changes to `settings.json` permissions/hooks require restart. Model/env changes may take effect sooner.
-
-### Pattern 6: Plugin Install via CLI
-
-```bash
-# Install plugin to user scope
-claude plugin install typescript-lsp@claude-plugins-official
-
-# Install plugin to project scope
-claude plugin install formatter@my-marketplace --scope project
-
-# Update a plugin
-claude plugin update typescript-lsp@claude-plugins-official
-
-# Check installed plugins (within session)
-/plugin
-```
-
-Plugins are installed to `~/.claude/plugins/cache/` and registered in `~/.claude/settings.json` under `enabledPlugins`.
-
----
-
-## CLI Tool Integration
-
-### How CLI Tools Relate to Claude Code
-
-CLI tools (installed via Homebrew, npm global, pip, cargo) are not directly managed by Claude Code's MCP/plugin system. They integrate in one of two ways:
-
-**1. As MCP server backends (stdio transport)**
-A CLI tool is wrapped in an MCP server package that exposes it via JSON-RPC. CC launches the MCP server which calls the CLI tool internally. Example: `@modelcontextprotocol/server-filesystem` wraps filesystem operations.
-
-**2. As direct Bash tools**
-CC invokes CLI tools directly via `Bash(tool-name *)` permissions. CC checks if the tool is available (`which tool`), calls it, and parses output. No MCP layer needed for simple tools.
-
-### Package Manager Comparison for Global Tools
-
-| Package Manager | Install Command | Global Path | Update Command | Self-manageable by CC |
-|----------------|-----------------|-------------|----------------|-----------------------|
-| Homebrew | `brew install <pkg>` | `/opt/homebrew/bin/` | `brew upgrade <pkg>` | YES — `brew` in permissions |
-| npm global | `npm install -g <pkg>` | `$(npm config get prefix)/bin/` | `npm update -g <pkg>` | YES — `npm` in permissions |
-| pip/pip3 | `pip install <pkg>` | `/opt/homebrew/bin/` (with brew Python) | `pip install -U <pkg>` | YES — `pip3` in permissions |
-| npx (one-shot) | `npx -y <pkg>` | Cached in `~/.npm/_npx/` | Auto-fetches latest with `-y` | YES — no install needed |
-| cargo | `cargo install <pkg>` | `~/.cargo/bin/` | `cargo install <pkg>` (reinstalls) | YES — `cargo` in permissions |
-
-**Recommendation for MCP stdio servers:** prefer `npx -y` for on-demand use. It auto-updates on each run (fetches latest matching version) and requires no explicit install step. Use explicit global install only if startup latency matters.
-
-### PATH Configuration for stdio MCP Servers
-
-Claude Code (native install at `~/.local/bin/claude`) launches MCP stdio servers with a sanitized PATH. Shell profile files (`.zshrc`, `.bashrc`) are **not sourced**. This means:
-- nvm-managed Node.js may not be found
-- pyenv-managed Python may not be found
-- Homebrew tools may not be found (if not in `/opt/homebrew/bin`)
-
-**Fix:** Set the full PATH in `settings.json` env block (already done in this setup):
-
-```json
-{
-  "env": {
-    "PATH": "/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-  }
-}
-```
-
-Or use absolute paths in MCP server `command` fields.
-
----
-
-## Recommended Project Structure
-
-This is the structure for a global Claude Code setup managed as a repository:
+**Domain:** Claude Code enhancement platform — CJS module architecture for Ledger + Switchboard systems
+**Researched:** 2026-03-17
+**Confidence:** HIGH
+
+## System Overview
 
 ```
 ~/.claude/
-├── CLAUDE.md                  # Global instructions (injected every session)
-├── settings.json              # Global settings (hooks, permissions, env, plugins)
-│
-├── hooks/                     # Hook scripts (JS, shell — fast, no subprocess)
-│   ├── session-start.sh       # SessionStart: context injection, health checks
-│   ├── check-updates.js       # SessionStart: background version check
-│   └── context-monitor.js     # PostToolUse: context window monitoring
-│
-├── graphiti/                  # Graphiti MCP: self-contained service directory
-│   ├── docker-compose.yml
-│   ├── start-graphiti.sh
-│   ├── stop-graphiti.sh
-│   └── hooks/                 # Graphiti-specific hook scripts
-│       ├── session-start.sh
-│       ├── prompt-augment.sh
-│       ├── capture-change.sh
-│       └── session-summary.sh
-│
-├── commands/                  # Global slash commands (standalone, not plugins)
-│   └── gsd/                   # GSD framework commands
-│
-├── get-shit-done/             # GSD framework (standalone configuration)
-│   └── VERSION
-│
-└── plugins/
-    └── cache/                 # Auto-managed plugin installations
-        └── <plugin-name>/     # Copied plugin files (do not edit directly)
+├─────────────────────────────────────────────────────────────────────┐
+│  settings.json (hook registration, permissions, statusLine)        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  hooks/                        dynamo/                              │
+│  ├── dynamo-hooks.cjs          ├── bin/                             │
+│  │   (single entry point       │   └── dynamo.cjs  (CLI router)    │
+│  │    for ALL hook events)     ├── lib/                             │
+│  │                             │   ├── core.cjs    (shared substrate│
+│  │                             │   ├── ledger/     (memory system)  │
+│  │                             │   └── switchboard/(management)     │
+│  ├── gsd-context-monitor.js    ├── config.yaml                     │
+│  ├── gsd-statusline.js         ├── curation/                       │
+│  └── gsd-check-update.js       │   └── prompts.yaml                │
+│                                └── docker-compose.yml               │
+│                                                                     │
+│  graphiti/ (legacy — deprecated after migration)                    │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│  get-shit-done/  (GSD framework — read-only dependency)            │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-~/.claude.json                 # MCP registry (user + local scopes)
+### How the Pieces Connect
+
+Claude Code fires hook events (SessionStart, PostToolUse, Stop, etc.) as defined in `settings.json`. Today, those hooks call Bash scripts that shell out to Python (`graphiti-helper.py`). The v1.2 architecture replaces this chain with a single CJS entry point (`dynamo-hooks.cjs`) that directly calls into the Dynamo module tree, eliminating the Bash-to-Python bridge entirely.
+
+## Component Responsibilities
+
+| Component | Responsibility | Current Implementation | v1.2 CJS Implementation |
+|-----------|---------------|----------------------|--------------------------|
+| Hook dispatcher | Route Claude Code events to handlers | 6 separate `.sh` scripts in `graphiti/hooks/` | Single `dynamo-hooks.cjs` with event router |
+| MCP client | Communicate with Graphiti MCP server | Python `MCPClient` class in `graphiti-helper.py` | `lib/ledger/mcp-client.cjs` |
+| Health check | Verify Graphiti server is reachable | `health-check.py` (360 LOC) | `lib/core.cjs` -- `healthCheck()` function |
+| Memory search | Query knowledge graph for context | Python `cmd_search()` + curation | `lib/ledger/search.cjs` |
+| Memory write | Store episodes in knowledge graph | Python `cmd_add_episode()` | `lib/ledger/episodes.cjs` |
+| Context curation | Filter search results via Haiku | Python `curate_results()` via OpenRouter | `lib/ledger/curation.cjs` |
+| Session naming | Generate session names via Haiku | Python `generate_session_name()` via OpenRouter | `lib/ledger/sessions.cjs` |
+| Session index | Local JSON session tracking | Python `sessions.json` CRUD | `lib/ledger/sessions.cjs` |
+| Session summary | Summarize and store session on Stop | Python `cmd_summarize_session()` | `lib/ledger/sessions.cjs` |
+| Project detection | Detect project name from cwd | Python `cmd_detect_project()` | `lib/core.cjs` -- `detectProject()` |
+| Config loading | Load `.env`, `config.yaml`, etc. | Python scattered across helper | `lib/core.cjs` -- `loadConfig()` |
+| Hook registration | Manage `settings.json` hook entries | Manual / `install.sh` | `lib/switchboard/hooks.cjs` |
+| Verification | End-to-end memory pipeline test | Python `cmd_verify_memory()` | `lib/switchboard/verify.cjs` |
+| Diagnostics | Root cause analysis | `diagnose.py` (23K LOC) | `lib/switchboard/diagnostics.cjs` |
+
+## Recommended Directory Structure
+
+```
+~/.claude/dynamo/
+├── bin/
+│   └── dynamo.cjs              # CLI router (like gsd-tools.cjs)
+├── lib/
+│   ├── core.cjs                # Shared substrate
+│   ├── ledger/                 # Memory system
+│   │   ├── index.cjs           # Ledger public API
+│   │   ├── mcp-client.cjs      # MCP/JSON-RPC client for Graphiti
+│   │   ├── search.cjs          # Memory search + curation
+│   │   ├── episodes.cjs        # Episode write (add-episode)
+│   │   ├── curation.cjs        # Haiku-powered result filtering
+│   │   └── sessions.cjs        # Session index, naming, summary, view
+│   └── switchboard/            # Management system
+│       ├── index.cjs           # Switchboard public API
+│       ├── hooks.cjs           # Hook registration/deregistration
+│       ├── verify.cjs          # verify-memory pipeline test
+│       ├── diagnostics.cjs     # diagnose command
+│       ├── docker.cjs          # start/stop/health for Docker stack
+│       └── installer.cjs       # settings.json + config management
+├── hooks/
+│   └── dynamo-hooks.cjs        # Single hook entry point for ALL events
+├── config.yaml                 # Graphiti server configuration
+├── curation/
+│   └── prompts.yaml            # Haiku curation prompts
+├── docker-compose.yml          # Neo4j + Graphiti containers
+├── .env                        # API keys (not committed)
+└── VERSION                     # Dynamo version for self-management
 ```
 
 ### Structure Rationale
 
-- **`hooks/` at root:** Fast-executing scripts invoked on every event. Keep these lean — they block session startup/progress until completion.
-- **Service directories (e.g., `graphiti/`):** Self-contained subdirectory per long-running MCP service. Contains its own lifecycle scripts, hooks, and configuration. Makes the service portable and self-documenting.
-- **`plugins/cache/` is auto-managed:** Do not add files here manually — Claude Code manages this directory. Install plugins via `claude plugin install`, not by dropping files in.
-- **`settings.json` owns hooks config:** Hook scripts live in `hooks/` but the `settings.json` `hooks` block wires them to lifecycle events. The script is the implementation; settings.json is the registration.
-- **`~/.claude.json` owns MCP registration:** Never edit this manually for MCP servers — use `claude mcp add` so Claude Code manages the format correctly.
+- **`bin/dynamo.cjs`:** Single CLI entry point mirroring the GSD pattern (`gsd-tools.cjs`). Provides `dynamo <command> [args]` interface for both human use and hook invocation. All commands route through here.
 
----
+- **`lib/core.cjs`:** The shared substrate. Contains utilities both Ledger and Switchboard need: config loading, environment/env-file parsing, project detection, health checking, output formatting, error handling. This is the dependency both systems share but neither owns.
+
+- **`lib/ledger/`:** Everything about what Claude knows. The MCP client, search, episode storage, curation, and session management. Ledger has no knowledge of hooks or settings.json -- it only knows about the Graphiti knowledge graph.
+
+- **`lib/switchboard/`:** Everything about how Claude behaves. Hook registration, verification, diagnostics, Docker management, and installer logic. Switchboard has no knowledge of MCP or the knowledge graph -- it only knows about Claude Code's settings and infrastructure.
+
+- **`hooks/dynamo-hooks.cjs`:** The bridge. This single file is what Claude Code actually calls for every hook event. It reads stdin JSON, determines the event type, and delegates to the appropriate Ledger or Switchboard function. One file, one registration pattern in settings.json, all events.
+
+- **Separation from `graphiti/`:** The new `dynamo/` directory coexists with the legacy `graphiti/` during migration. Both can be active simultaneously (hooks registered for either). The migration plan removes `graphiti/` hooks from settings.json once `dynamo/` hooks pass verification.
 
 ## Architectural Patterns
 
-### Pattern 1: Service-Per-Directory
+### Pattern 1: Single Entry Point Hook Dispatcher
 
-**What:** Each MCP server that requires infrastructure (Docker, daemon) gets its own subdirectory in `~/.claude/` with lifecycle scripts and hooks.
+**What:** Instead of N separate hook scripts (current: 6 Bash files), register a single CJS file (`dynamo-hooks.cjs`) for every hook event. The script reads the event from `hook_event_name` in the stdin JSON and routes internally.
 
-**When to use:** Long-running services like databases, knowledge graphs, or local API servers.
-
-**Trade-offs:**
-- Pro: Self-documenting, portable, easy to version-control
-- Pro: Service's hooks live alongside service scripts — cohesive unit
-- Con: More directories in `~/.claude/` — manageable for 1-5 services
-
-**Example:** The Graphiti setup (`~/.claude/graphiti/`) contains `docker-compose.yml`, start/stop scripts, and a `hooks/` subdirectory. The main `settings.json` references `$HOME/.claude/graphiti/hooks/*.sh`.
-
-### Pattern 2: Hook-Driven Lifecycle Management
-
-**What:** Use SessionStart hooks to verify preconditions (is service running? is tool installed?) and PostToolUse hooks to react to changes.
-
-**When to use:** Any service that needs availability checking or any tool that needs post-processing.
+**When to use:** Always. This is the core pattern.
 
 **Trade-offs:**
-- Pro: Zero user intervention — CC surfaces problems automatically
-- Pro: Can auto-remediate (run install commands, start services)
-- Con: Hooks run synchronously (except when spawned as background processes) — keep health checks fast (< 3 seconds)
-
-**Exit code conventions for hooks:**
-- `exit 0` — success, stdout injected as CC context
-- `exit 2` — blocking failure, stderr shown to Claude (for PreToolUse: blocks tool execution)
-- Other non-zero — non-blocking error, logged but execution continues
-
-### Pattern 3: npx for Stateless MCP Servers
-
-**What:** Use `npx -y @package/mcp-server` as the MCP server command for stateless tools (docs lookup, linting, formatting).
-
-**When to use:** Any MCP server distributed as an npm package that does not need to persist state between Claude sessions.
-
-**Trade-offs:**
-- Pro: Zero install step — npx fetches and caches automatically
-- Pro: Always uses latest version (when `-y` flag is used)
-- Pro: No global package pollution
-- Con: Cold start: first run downloads package (~1-5 seconds)
-- Con: Requires npm and Node.js installed on machine
+- Pro: One file to maintain, one registration pattern, unified error handling
+- Pro: No Bash-to-Python bridge overhead -- direct Node.js execution
+- Pro: Shared state (health check cache, MCP session reuse) within a single process
+- Con: Slightly larger single file (mitigated by delegation to lib modules)
 
 **Example:**
-```json
-{
-  "context7": {
-    "command": "npx",
-    "args": ["-y", "@upstash/context7-mcp@latest"],
-    "env": {}
+```javascript
+#!/usr/bin/env node
+// dynamo-hooks.cjs -- Single entry point for all Claude Code hook events
+
+const { handleSessionStart, handlePostToolUse,
+        handleUserPrompt, handlePreCompact,
+        handleStop } = require('../lib/ledger/index.cjs');
+
+let input = '';
+const stdinTimeout = setTimeout(() => process.exit(0), 5000);
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('end', async () => {
+  clearTimeout(stdinTimeout);
+  try {
+    const data = JSON.parse(input);
+    const event = data.hook_event_name;
+
+    switch (event) {
+      case 'SessionStart':
+        await handleSessionStart(data);
+        break;
+      case 'UserPromptSubmit':
+        await handleUserPrompt(data);
+        break;
+      case 'PostToolUse':
+        await handlePostToolUse(data);
+        break;
+      case 'PreCompact':
+        await handlePreCompact(data);
+        break;
+      case 'Stop':
+        await handleStop(data);
+        break;
+      default:
+        process.exit(0); // Unknown event, exit silently
+    }
+  } catch (e) {
+    process.exit(0); // Never block Claude Code
+  }
+});
+```
+
+### Pattern 2: GSD-Style Module Organization
+
+**What:** Follow GSD's proven CJS pattern: single CLI entry point (`bin/`), modular library (`lib/`), pure-function exports, `require()`-based dependency injection. Every module exports named functions. The CLI router maps commands to function calls.
+
+**When to use:** For the entire module tree.
+
+**Trade-offs:**
+- Pro: Proven pattern in the same user environment (GSD already works this way)
+- Pro: CJS means no build step, no transpilation, runs directly with Node.js
+- Pro: Testable -- every export is a pure function or class with explicit dependencies
+- Con: No ES module features (top-level await, import.meta) -- mitigated by wrapping async in main()
+
+**Key GSD patterns to adopt:**
+1. **`output(result, raw, rawValue)`** -- Dual-mode output: JSON for programmatic use, raw string for human/pipe use
+2. **`error(message)`** -- Unified error handling with stderr + exit(1)
+3. **`safeReadFile(path)`** -- Graceful file reading (returns null on failure)
+4. **`loadConfig(cwd)`** -- Config with defaults + override cascade
+5. **CLI router with switch/case** -- Simple, explicit command routing
+
+```javascript
+// lib/core.cjs -- Shared substrate (follows GSD core.cjs patterns)
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+function output(result, raw, rawValue) {
+  if (raw && rawValue !== undefined) {
+    process.stdout.write(String(rawValue));
+  } else {
+    process.stdout.write(JSON.stringify(result, null, 2));
+  }
+  process.exit(0);
+}
+
+function error(message) {
+  process.stderr.write('Error: ' + message + '\n');
+  process.exit(1);
+}
+
+module.exports = { output, error, /* ... */ };
+```
+
+### Pattern 3: Boundary Enforcement via Index Exports
+
+**What:** Each system (Ledger, Switchboard) exposes a single `index.cjs` that is the public API. Internal modules are never imported directly from outside the system boundary. The hook dispatcher and CLI router only import from `index.cjs`.
+
+**When to use:** For all cross-boundary imports.
+
+**Trade-offs:**
+- Pro: Clear contract between Ledger and Switchboard
+- Pro: Internal refactoring does not break consumers
+- Pro: Easy to audit what each system exposes
+- Con: Minor boilerplate (index re-exports)
+
+```javascript
+// lib/ledger/index.cjs -- Public API for the memory system
+const { searchMemory, searchWithCuration } = require('./search.cjs');
+const { addEpisode } = require('./episodes.cjs');
+const { summarizeSession, generateSessionName,
+        indexSession, listSessions, viewSession } = require('./sessions.cjs');
+
+// Hook handlers (called by dynamo-hooks.cjs)
+async function handleSessionStart(data) { /* ... */ }
+async function handleUserPrompt(data) { /* ... */ }
+async function handlePostToolUse(data) { /* ... */ }
+async function handlePreCompact(data) { /* ... */ }
+async function handleStop(data) { /* ... */ }
+
+module.exports = {
+  // Hook handlers
+  handleSessionStart,
+  handleUserPrompt,
+  handlePostToolUse,
+  handlePreCompact,
+  handleStop,
+  // Direct API (for CLI commands)
+  searchMemory,
+  addEpisode,
+  summarizeSession,
+  generateSessionName,
+  indexSession,
+  listSessions,
+  viewSession,
+};
+```
+
+### Pattern 4: Cached Health Check with Per-Session Flag
+
+**What:** The current Bash hooks use a `/tmp/graphiti-health-warned-${PPID}` flag file to avoid repeated health check warnings. The CJS version should do the same but can be cleaner: check health once per hook invocation with a cached result file that has a TTL.
+
+**When to use:** Every hook that talks to Graphiti.
+
+**Trade-offs:**
+- Pro: Avoids 3s health check timeout on every hook invocation
+- Pro: Single warning per session, not per event
+- Con: Slightly stale health status (mitigated by short TTL of 30s)
+
+```javascript
+// lib/core.cjs -- Health check with caching
+const HEALTH_CACHE_TTL_MS = 30000; // 30 seconds
+
+function getHealthCachePath(sessionId) {
+  return path.join(os.tmpdir(), `dynamo-health-${sessionId || 'default'}.json`);
+}
+
+async function isHealthy(sessionId) {
+  const cachePath = getHealthCachePath(sessionId);
+  // Check cache first
+  try {
+    const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    if (Date.now() - cached.timestamp < HEALTH_CACHE_TTL_MS) {
+      return cached.healthy;
+    }
+  } catch {}
+
+  // Fresh check
+  try {
+    const resp = await fetch(HEALTH_URL, { signal: AbortSignal.timeout(3000) });
+    const healthy = resp.ok;
+    fs.writeFileSync(cachePath, JSON.stringify({ healthy, timestamp: Date.now() }));
+    return healthy;
+  } catch {
+    fs.writeFileSync(cachePath, JSON.stringify({ healthy: false, timestamp: Date.now() }));
+    return false;
   }
 }
 ```
 
-### Pattern 4: Permissions-as-Allowlist
+### Pattern 5: Native `fetch()` Instead of Python `httpx`
 
-**What:** Pre-authorize all MCP tool calls for trusted, globally-installed MCPs in `settings.json` `permissions.allow`. This avoids per-call permission prompts.
+**What:** Node.js 18+ (which Claude Code requires) includes native `fetch()`. Use it for all HTTP calls: Graphiti health checks, MCP JSON-RPC, OpenRouter API (curation/summarization). No npm dependencies needed.
 
-**When to use:** Any MCP tool that CC uses frequently and that has been vetted.
+**When to use:** All HTTP communication.
 
 **Trade-offs:**
-- Pro: Smooth uninterrupted workflow
-- Con: Must explicitly add each `mcp__servername__toolname` pattern
+- Pro: Zero external dependencies for HTTP
+- Pro: Consistent with GSD (which also uses zero npm deps)
+- Pro: `AbortSignal.timeout()` provides clean timeout support
+- Con: Slightly more verbose than `httpx` for SSE parsing
 
-**Example (from live settings.json):**
+```javascript
+// lib/ledger/mcp-client.cjs -- MCP client using native fetch
+class MCPClient {
+  constructor(baseUrl, timeout = 5000) {
+    this.baseUrl = baseUrl.replace(/\/$/, '');
+    this.timeout = timeout;
+    this.sessionId = null;
+  }
+
+  async callTool(toolName, args) {
+    if (!this.sessionId) await this._initialize();
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+    };
+    if (this.sessionId) headers['mcp-session-id'] = this.sessionId;
+
+    const resp = await fetch(this.baseUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: { name: toolName, arguments: args },
+        id: crypto.randomUUID(),
+      }),
+      signal: AbortSignal.timeout(this.timeout),
+    });
+
+    const contentType = resp.headers.get('content-type') || '';
+    if (contentType.includes('text/event-stream')) {
+      return this._parseSSE(await resp.text());
+    }
+    return resp.json();
+  }
+}
+```
+
+## Data Flow
+
+### Hook Event Flow (v1.2)
+
+```
+Claude Code fires hook event
+    |
+    v
+settings.json routes to dynamo-hooks.cjs
+    |
+    v
+dynamo-hooks.cjs reads stdin JSON
+    |
+    +-- hook_event_name: "SessionStart"
+    |       |
+    |       v
+    |   ledger/index.cjs::handleSessionStart()
+    |       |
+    |       +-- core.cjs::isHealthy()  -->  Graphiti /health
+    |       +-- core.cjs::detectProject()
+    |       +-- ledger/search.cjs::searchMemory()  -->  Graphiti MCP
+    |       +-- ledger/curation.cjs::curateResults()  -->  OpenRouter (Haiku)
+    |       |
+    |       v
+    |   stdout: "[GRAPHITI MEMORY CONTEXT]\n..."
+    |   (Claude Code injects as additionalContext)
+    |
+    +-- hook_event_name: "PostToolUse"
+    |       |
+    |       v
+    |   Check tool_name: only Write|Edit|MultiEdit
+    |       |
+    |       v
+    |   ledger/index.cjs::handlePostToolUse()
+    |       +-- ledger/episodes.cjs::addEpisode()  -->  Graphiti MCP (add_memory)
+    |
+    +-- hook_event_name: "UserPromptSubmit"
+    |       |
+    |       v
+    |   ledger/index.cjs::handleUserPrompt()
+    |       +-- Skip if prompt < 15 chars
+    |       +-- ledger/search.cjs::searchMemory()  -->  Graphiti MCP
+    |       +-- ledger/curation.cjs::curateResults()  -->  OpenRouter (Haiku)
+    |       +-- ledger/sessions.cjs::earlyNameSession()  -->  OpenRouter (Haiku)
+    |       |
+    |       v
+    |   stdout: "[RELEVANT MEMORY]\n..."
+    |
+    +-- hook_event_name: "PreCompact"
+    |       |
+    |       v
+    |   ledger/index.cjs::handlePreCompact()
+    |       +-- ledger/curation.cjs::extractKnowledge()  -->  OpenRouter (Haiku)
+    |       +-- ledger/episodes.cjs::addEpisode()  -->  Graphiti MCP
+    |       |
+    |       v
+    |   stdout: "[PRESERVED CONTEXT]\n..."
+    |
+    +-- hook_event_name: "Stop"
+            |
+            v
+        Guard: skip if stop_hook_active === true
+            |
+            v
+        ledger/index.cjs::handleStop()
+            +-- ledger/sessions.cjs::summarizeSession()  -->  OpenRouter (Haiku)
+            +-- ledger/episodes.cjs::addEpisode()  -->  Graphiti MCP (project scope)
+            +-- ledger/episodes.cjs::addEpisode()  -->  Graphiti MCP (session scope)
+            +-- ledger/sessions.cjs::generateSessionName()  -->  OpenRouter (Haiku)
+            +-- ledger/sessions.cjs::indexSession()  -->  local sessions.json
+```
+
+### CLI Command Flow (v1.2)
+
+```
+User or Claude Code runs: node dynamo.cjs <command> [args]
+    |
+    v
+bin/dynamo.cjs (CLI router)
+    |
+    +-- "health-check"    -->  core.cjs::healthCheck()
+    +-- "search"          -->  ledger/search.cjs::searchMemory()
+    +-- "add-episode"     -->  ledger/episodes.cjs::addEpisode()
+    +-- "summarize"       -->  ledger/sessions.cjs::summarizeSession()
+    +-- "list-sessions"   -->  ledger/sessions.cjs::listSessions()
+    +-- "view-session"    -->  ledger/sessions.cjs::viewSession()
+    +-- "label-session"   -->  ledger/sessions.cjs::labelSession()
+    +-- "backfill"        -->  ledger/sessions.cjs::backfillSessions()
+    +-- "verify-memory"   -->  switchboard/verify.cjs::verifyMemory()
+    +-- "diagnose"        -->  switchboard/diagnostics.cjs::diagnose()
+    +-- "install"         -->  switchboard/installer.cjs::install()
+    +-- "register-hooks"  -->  switchboard/hooks.cjs::registerHooks()
+    +-- "docker-start"    -->  switchboard/docker.cjs::start()
+    +-- "docker-stop"     -->  switchboard/docker.cjs::stop()
+    +-- "detect-project"  -->  core.cjs::detectProject()
+```
+
+## settings.json Hook Registration (v1.2)
+
+The current settings.json has 6 separate hook entries with Bash commands pointing to `$HOME/.claude/graphiti/hooks/`. The v1.2 registration replaces all of them with a single CJS entry per event type.
+
 ```json
 {
-  "permissions": {
-    "allow": [
-      "mcp__graphiti__add_memory",
-      "mcp__graphiti__search_nodes",
-      "mcp__graphiti__search_memory_facts"
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/hooks/gsd-check-update.js\""
+          }
+        ]
+      }
     ],
-    "ask": [
-      "mcp__graphiti__clear_graph",
-      "mcp__graphiti__delete_entity_edge"
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/hooks/gsd-context-monitor.js\""
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   }
 }
 ```
 
----
+GSD hooks (`gsd-check-update.js`, `gsd-context-monitor.js`, `gsd-statusline.js`) remain untouched. They are GSD's responsibility. Dynamo hooks coexist alongside them.
 
-## Data Flow
+## Ledger / Switchboard Boundary
 
-### MCP Tool Call Flow (HTTP transport)
+This is the critical architectural boundary. Here is the definitive rule:
 
-```
-Claude decides to call mcp__graphiti__search_memory_facts
-       ↓
-Claude Code checks permissions.allow list
-       ↓
-Claude Code sends HTTP POST to http://localhost:8100/mcp
-  → Request body: JSON-RPC {"method":"tools/call","params":{"name":"search_memory_facts",...}}
-       ↓
-MCP HTTP server processes request
-       ↓
-HTTP response: JSON-RPC result
-       ↓
-Claude Code passes result back to Claude as tool result
-       ↓
-MAX_MCP_OUTPUT_TOKENS check (default 25k, warn at 10k)
-```
+**Ledger** owns anything that touches the knowledge graph or involves what Claude remembers:
+- MCP client (JSON-RPC to Graphiti)
+- Memory search (facts, nodes, curation)
+- Episode storage (file changes, session summaries, knowledge preservation)
+- Session management (index, naming, summary, view, label, backfill)
+- Context curation (Haiku calls for relevance filtering)
+- All hook event handlers that produce `additionalContext` for Claude
 
-### MCP Tool Call Flow (stdio transport)
+**Switchboard** owns anything that manages Claude Code's infrastructure or behavior:
+- Hook registration/deregistration in `settings.json`
+- Memory pipeline verification (`verify-memory`)
+- Diagnostics and troubleshooting (`diagnose`)
+- Docker stack management (start, stop, health)
+- Installation and self-management
+- Configuration management (`.env`, `config.yaml`)
+- Future: skill registration, agent management, permission management
 
-```
-Claude decides to call mcp__context7__resolve-library-id
-       ↓
-Claude Code checks if stdio process is already running (reuses within session)
-If not: spawns process → inherits env from settings.json "env" block
-       ↓
-Claude Code writes JSON-RPC to process stdin
-       ↓
-Process reads stdin, executes, writes JSON-RPC result to stdout
-       ↓
-Claude Code reads stdout → passes result back to Claude
-```
+**Shared Substrate** (`core.cjs`) owns cross-cutting utilities both systems need:
+- Output formatting (`output()`, `error()`)
+- Config loading (`.env` parsing, YAML config, environment variables)
+- Project detection (`detectProject()`)
+- Health check (cached, with session awareness)
+- File I/O utilities (`safeReadFile()`)
 
-### Hook Execution Flow (SessionStart)
-
-```
-Claude Code session begins
-       ↓
-Claude Code reads hooks config from settings.json
-       ↓
-For each SessionStart hook matching current trigger:
-  → Spawns hook command as subprocess
-  → Pipes session JSON context to subprocess stdin
-  → Waits up to `timeout` seconds
-  → Collects stdout (injected as Claude context)
-  → Collects stderr (surfaced as warning if exit 2)
-       ↓
-Claude session starts with injected context available
-```
-
-### Self-Management: MCP Install Flow
-
-```
-User asks CC to install a new MCP tool
-       ↓
-CC researches tool (WebSearch/WebFetch)
-       ↓
-CC runs: claude mcp add --scope user --transport stdio <name> -- npx -y @pkg/mcp
-       ↓
-claude CLI writes entry to ~/.claude.json mcpServers
-       ↓
-CC adds permission entry to ~/.claude/settings.json (via jq or direct edit)
-       ↓
-CC verifies: claude mcp list | grep <name>
-       ↓
-Informs user: "Restart Claude Code to activate <name>"
-```
-
----
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Manual Config File Editing
-
-**What people do:** Directly edit `~/.claude.json` or `~/.claude/settings.json` to add MCP servers.
-
-**Why it's wrong:** `~/.claude.json` has a complex nested structure with project-specific overrides alongside global mcpServers. Manual edits risk malforming the JSON or placing entries in the wrong scope. Claude Code also caches config — a bad edit causes silent failures.
-
-**Do this instead:** Use `claude mcp add --scope user` for MCP servers. Use `jq` with temp file pattern for settings.json edits if CLI is insufficient. Always validate with `python3 -c "import json; json.load(open('~/.claude.json'))"` after edits.
-
-### Anti-Pattern 2: Putting Server Lifecycle Logic in MCP Config
-
-**What people do:** Try to start the Graphiti Docker container inside the MCP server command field.
-
-**Why it's wrong:** HTTP servers need to be running before Claude Code connects. stdio servers launched by Claude Code cannot start Docker reliably (daemon not available, PATH issues, etc.).
-
-**Do this instead:** Use a SessionStart hook that checks if the service is running and injects a warning if not. Manage service lifecycle separately (Docker, launchd, or a start script the user runs explicitly).
-
-### Anti-Pattern 3: Conflating ~/.claude.json with ~/.claude/settings.json
-
-**What people do:** Look in `settings.json` for MCP server definitions or in `~/.claude.json` for hook configurations.
-
-**Why it's wrong:** These files control different things with completely different schemas. MCP servers → `~/.claude.json` (mcpServers key). Hooks, permissions, env vars, plugins → `~/.claude/settings.json`. Mixing them up causes silent ignored configuration.
-
-**Do this instead:** Remember the split: **JSON = MCP registrations, settings = behavior configuration**.
-
-### Anti-Pattern 4: Over-Permissioning via Wildcards
-
-**What people do:** Add `"mcp__*"` or `"Bash(*)"` to `permissions.allow` for convenience.
-
-**Why it's wrong:** Defeats the safety model. `Bash(*)` effectively disables all Bash restrictions. `mcp__*` allows any current or future MCP server to run without confirmation.
-
-**Do this instead:** Use specific tool patterns: `"mcp__graphiti__*"` for a fully-trusted server, individual tool names for partial trust. For Bash, the existing pattern in this setup (explicit per-command allows with a denylist for destructive operations) is the correct approach.
-
-### Anti-Pattern 5: Slow Synchronous Hooks
-
-**What people do:** Write SessionStart hooks that do expensive operations (large file reads, slow API calls, complex Python startup) synchronously, blocking session start.
-
-**Why it's wrong:** Every hook runs synchronously and blocks Claude Code until it completes or times out. A 10-second SessionStart hook means 10 seconds of dead time before every session.
-
-**Do this instead:** Use background spawning for expensive checks (the GSD update checker does this — spawns a child process and returns immediately). Keep synchronous hooks under 3 seconds. Use the `timeout` field as a safety net (30 seconds max).
-
----
-
-## Build Order Implications
-
-For the roadmap, the architecture implies this dependency order:
-
-1. **Config files must be understood before tools are selected** — choosing a tool requires knowing whether it supports user-scope HTTP, stdio with npx, or a plugin. Different tools require different registration approaches.
-
-2. **settings.json permissions must be updated alongside MCP registration** — adding an MCP server without adding permissions causes every tool call to prompt for confirmation. These two changes ship together.
-
-3. **stdio PATH must be confirmed before stdio MCPs are added** — if PATH is not set in settings.json env block, stdio MCP servers using npx/node will fail. Validate PATH first.
-
-4. **HTTP MCPs require lifecycle strategy before registration** — Graphiti demonstrates: Docker + start script + health check hook. Any HTTP MCP needs this pattern designed before installation.
-
-5. **Plugin installation order matters** — LSP plugins require the language server binary to exist. Install binary first (`brew install gopls`), then install plugin (`claude plugin install gopls-lsp`).
-
-6. **Hook scripts must be executable before hooks config references them** — `chmod +x` is required. Hooks fail silently if the script is not executable.
-
----
+**The boundary test:** Can Ledger function if Switchboard is completely removed? Yes -- it only needs `core.cjs`. Can Switchboard function if Ledger is removed? Yes -- it only needs `core.cjs`. They never import from each other.
 
 ## Integration Points
 
-### External Services
+### Claude Code Hook System
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Graphiti (Neo4j + Python) | HTTP MCP via Docker on localhost:8100 | Needs Docker daemon running; health check hook |
-| npm MCP packages | stdio via `npx -y @pkg/mcp-server` | PATH must include npm/node; cold start latency |
-| Claude.ai cloud MCPs | Automatic via Claude.ai account login | No config needed; appears in `/mcp` list |
-| Homebrew CLI tools | Direct Bash invocation via permissions | Must add `Bash(tool-name *)` to permissions.allow |
-| Remote HTTP APIs (GitHub, Notion, etc.) | HTTP MCP with OAuth or Bearer token | Use `claude mcp add --transport http --header "Authorization: Bearer $TOKEN"` |
-| Plugin marketplaces | `claude plugin install <name>@<marketplace>` | Plugins cached in `~/.claude/plugins/cache/` |
+| Hook Event | Dynamo Handler | System | What It Does |
+|------------|---------------|--------|-------------|
+| SessionStart (startup/resume) | `handleSessionStart()` | Ledger | Injects global prefs + project context + recent sessions |
+| SessionStart (compact) | `handleSessionStart()` | Ledger | Same as startup (re-injects context after compaction) |
+| UserPromptSubmit | `handleUserPrompt()` | Ledger | Searches memory for relevant context, names session |
+| PostToolUse (Write/Edit/MultiEdit) | `handlePostToolUse()` | Ledger | Stores file change episode in knowledge graph |
+| PreCompact | `handlePreCompact()` | Ledger | Extracts and preserves key knowledge before compaction |
+| Stop | `handleStop()` | Ledger | Summarizes session, stores summary, generates name |
 
-### Internal Boundaries
+### Graphiti MCP Server
+
+| Integration | Protocol | Endpoint |
+|-------------|----------|----------|
+| Health check | HTTP GET | `http://localhost:8100/health` |
+| Tool calls (search, add, get) | JSON-RPC over HTTP + SSE | `http://localhost:8100/mcp` |
+
+MCP tools used: `add_memory`, `search_memory_facts`, `search_nodes`, `get_episodes`.
+
+### OpenRouter API (Haiku)
+
+| Integration | Purpose | Model |
+|-------------|---------|-------|
+| Context curation | Filter search results for relevance | `anthropic/claude-haiku-4.5` |
+| Session summarization | Compress session into 3-5 bullets | `anthropic/claude-haiku-4.5` |
+| Session naming | Generate 3-5 word session name | `anthropic/claude-haiku-4.5` |
+| Knowledge preservation | Extract key facts before compaction | `anthropic/claude-haiku-4.5` |
+
+### Docker Infrastructure
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| Neo4j | 7475 (HTTP), 7688 (Bolt) | Knowledge graph database |
+| Graphiti MCP | 8100 | MCP server for memory operations |
+
+### GSD Framework (Read-Only)
+
+Dynamo does not depend on GSD at runtime. The relationship is pattern-based: Dynamo follows GSD's CJS conventions so the codebase is consistent for Claude Code to work with. GSD hooks and Dynamo hooks coexist in `settings.json` without conflict.
+
+### Repository (my-cc-setup)
+
+The `my-cc-setup` repo contains the source of truth. `install.sh` (or future `dynamo install`) copies files from the repo to `~/.claude/dynamo/` and updates `settings.json`.
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| settings.json ↔ hooks | settings.json `hooks` block references hook script paths | Hook scripts are external files, not embedded |
-| settings.json ↔ plugins | settings.json `enabledPlugins` key maps plugin@marketplace to boolean | Plugin install writes this; do not edit manually |
-| ~/.claude.json ↔ MCP servers | `mcpServers` key maps server name to connection config | Managed by `claude mcp add` CLI |
-| Claude Code ↔ stdio MCP | stdin/stdout JSON-RPC per session | Process spawned by CC, inherits settings.json env |
-| Claude Code ↔ HTTP MCP | HTTP POST JSON-RPC | Server must be independently running |
-| Hook script ↔ Claude context | stdout from hook is injected as system context | stderr at exit 2 is shown as error to Claude |
-| Plugin ↔ Claude Code | Plugin files copied to cache; hooks/MCP/commands registered | Use `${CLAUDE_PLUGIN_ROOT}` for paths in plugin scripts |
+| dynamo-hooks.cjs to Ledger | Direct `require()` | Same process, synchronous import |
+| dynamo-hooks.cjs to core | Direct `require()` | Same process, synchronous import |
+| Ledger to Graphiti MCP | HTTP (JSON-RPC) | Async `fetch()`, 5s timeout |
+| Ledger to OpenRouter | HTTP (REST) | Async `fetch()`, 10-15s timeout |
+| Switchboard to settings.json | File I/O | JSON read/write |
+| Switchboard to Docker | `child_process.execSync` | `docker compose up/down` |
+| install.sh to ~/.claude/ | File copy | One-way sync from repo to runtime |
 
----
+## Build Order (Dependency-Driven)
+
+The dependency graph dictates build order:
+
+```
+Phase 1: core.cjs (shared substrate)
+    No dependencies. Everything else depends on this.
+    Includes: output/error, config loading, .env parsing,
+    project detection, health check, safeReadFile.
+
+Phase 2: lib/ledger/mcp-client.cjs
+    Depends on: core.cjs (config, health check)
+    The MCP client is the foundation of all memory operations.
+
+Phase 3: lib/ledger/ (remaining modules)
+    Depends on: core.cjs, mcp-client.cjs
+    episodes.cjs, search.cjs, curation.cjs, sessions.cjs
+    Can be built in parallel since they share mcp-client but
+    do not depend on each other.
+
+Phase 4: lib/ledger/index.cjs (hook handlers)
+    Depends on: all ledger modules
+    Composes individual modules into hook event handlers.
+
+Phase 5: hooks/dynamo-hooks.cjs
+    Depends on: ledger/index.cjs, core.cjs
+    The single entry point. Routes events to handlers.
+
+Phase 6: lib/switchboard/ (all modules)
+    Depends on: core.cjs only
+    hooks.cjs, verify.cjs, diagnostics.cjs, docker.cjs, installer.cjs
+    Can be built in parallel with phases 2-5 if desired.
+
+Phase 7: bin/dynamo.cjs (CLI router)
+    Depends on: everything
+    Routes CLI commands to Ledger and Switchboard functions.
+```
+
+## Scaling Considerations
+
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| Current (1 user, 5-10 hooks/session) | Single-file hooks, synchronous MCP calls, file-based session index |
+| Future (many sessions, large knowledge graph) | Session index could move to SQLite if JSON grows large (>1MB). MCP client could pool connections. Not needed for v1.2. |
+| Future (multiple projects, concurrent sessions) | Session-scoped health cache already handles this. Group_id scoping in Graphiti handles project isolation. |
+
+### Scaling Priorities
+
+1. **First bottleneck:** Haiku API latency (~200-500ms per call, 3-5 calls per session lifecycle). Mitigate with parallel requests where possible (e.g., search global + project simultaneously).
+2. **Second bottleneck:** sessions.json file size. Currently ~5KB for ~20 sessions. At 1000+ sessions, switch to append-only log with periodic compaction, or SQLite.
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Multiple Hook Entry Points
+
+**What people do:** Register separate scripts for each hook event (current state: 6 Bash files).
+**Why it is wrong:** Each invocation pays the full startup cost (Python interpreter + virtual env + module imports is approximately 500ms). Makes error handling inconsistent. Hook registration in settings.json becomes a complex manual task.
+**Do this instead:** Single CJS entry point with internal routing. Node.js cold start is approximately 50ms. One file to register, one error handling strategy.
+
+### Anti-Pattern 2: Bash-as-Glue Language
+
+**What people do:** Write Bash scripts that parse JSON with `jq`, shell out to Python, and handle errors with cascading `if/then/fi`.
+**Why it is wrong:** Brittle JSON parsing, hard to test, inconsistent error handling between Bash and Python layers, difficult to share state between hook invocations.
+**Do this instead:** CJS handles JSON natively, has try/catch, and shares modules via `require()`.
+
+### Anti-Pattern 3: Cross-Boundary Imports
+
+**What people do:** Import Ledger internals from Switchboard or vice versa (e.g., Switchboard calling `mcp-client.cjs` directly).
+**Why it is wrong:** Couples the two systems, prevents independent evolution, makes it unclear which system owns what.
+**Do this instead:** Each system exports through `index.cjs`. If Switchboard needs memory data for verification, it calls Ledger's public API. If Ledger needs hook state, it asks core.cjs.
+
+### Anti-Pattern 4: Blocking Hook Execution
+
+**What people do:** Let a hook time out or throw an unhandled error, which blocks Claude Code.
+**Why it is wrong:** A memory hook should never impair Claude Code's core functionality. The existing system correctly catches errors and exits 0.
+**Do this instead:** Wrap every hook handler in try/catch. On any error, log to `hook-errors.log` and exit 0. Never exit 2 (blocking) from a memory hook. The stdin timeout guard pattern from GSD hooks (3-5s timeout on stdin read) must be preserved.
+
+### Anti-Pattern 5: npm Dependencies
+
+**What people do:** Install npm packages for HTTP, YAML parsing, etc.
+**Why it is wrong:** Creates a `node_modules` directory in `~/.claude/dynamo/`, requires `npm install` during setup, version conflicts possible, increases attack surface.
+**Do this instead:** Zero external dependencies. Use native `fetch()` for HTTP, simple YAML parser for config (or convert config to JSON), `fs`/`path`/`crypto` from Node.js stdlib. GSD proves this works at scale with 14 CJS files and zero npm deps.
+
+## Migration Strategy
+
+The migration from `graphiti/` (Python/Bash) to `dynamo/` (CJS) should be gradual:
+
+1. **Build `dynamo/` alongside `graphiti/`** -- they coexist in `~/.claude/`
+2. **Feature parity first** -- each CJS module must match the Python equivalent's behavior
+3. **Per-event migration** -- switch one hook event at a time in `settings.json`
+4. **Verify each switch** -- run `dynamo verify-memory` after each event migration
+5. **Remove `graphiti/` hooks last** -- only after all events verified on CJS
+
+This avoids any downtime in the memory system during migration.
+
+## YAML Config Consideration
+
+The current `config.yaml` is read by Python's `yaml.safe_load()`. CJS without npm deps cannot parse YAML natively. Two options:
+
+**Option A (recommended):** Convert `config.yaml` to `config.json` during the v1.2 migration. JSON is natively parseable in Node.js. The YAML format provides no advantage for this use case (no multi-line strings, no anchors/aliases used).
+
+**Option B:** Write a minimal YAML subset parser (~50 LOC) that handles the flat key-value and simple nested structure used in `config.yaml`. This preserves format continuity but adds maintenance burden for no real benefit.
+
+Recommendation: Option A. Convert to JSON. The Docker Compose file stays YAML (Docker reads it, not Dynamo). The curation prompts file (`prompts.yaml`) should also convert to `prompts.json` with escaped newlines in prompt strings, or be loaded as raw text files (one per prompt).
 
 ## Sources
 
-- [Claude Code MCP Documentation](https://code.claude.com/docs/en/mcp) — transport types, scopes, `claude mcp add` syntax — HIGH confidence
-- [Claude Code Settings Documentation](https://code.claude.com/docs/en/settings) — config file locations, scope hierarchy, merging behavior — HIGH confidence
-- [Claude Code Hooks Documentation](https://code.claude.com/docs/en/hooks) — lifecycle events, hook types, input/output schema — HIGH confidence
-- [Claude Code Plugins Reference](https://code.claude.com/docs/en/plugins-reference) — plugin structure, install scopes, CLI commands — HIGH confidence
-- [Claude Code Discover Plugins](https://code.claude.com/docs/en/discover-plugins) — marketplace system, install lifecycle, official plugins — HIGH confidence
-- Live `~/.claude.json`, `~/.claude/settings.json` from this machine — confirmed actual config patterns — HIGH confidence
-- Live hook scripts in `~/.claude/hooks/` and `~/.claude/graphiti/hooks/` — confirmed real-world patterns — HIGH confidence
+- GSD CJS architecture: `/Users/tom.kyser/.claude/get-shit-done/bin/gsd-tools.cjs` and `lib/*.cjs` (14 modules, zero deps) -- **HIGH confidence** (direct code inspection)
+- Claude Code hooks specification: [Hooks reference - Claude Code Docs](https://code.claude.com/docs/en/hooks) -- **HIGH confidence** (official documentation, 23 hook events documented)
+- Current graphiti system: `/Users/tom.kyser/.claude/graphiti/` (6 Bash hooks, 3 Python modules) -- **HIGH confidence** (direct code inspection)
+- Current settings.json hook registration: `/Users/tom.kyser/.claude/settings.json` -- **HIGH confidence** (direct inspection)
+- Claude Code hook plugin development: [anthropics/claude-code plugin-dev skill](https://github.com/anthropics/claude-code/blob/main/plugins/plugin-dev/skills/hook-development/SKILL.md) -- **MEDIUM confidence** (GitHub, may be version-specific)
+- [Claude Code power user customization: How to configure hooks](https://claude.com/blog/how-to-configure-hooks) -- **MEDIUM confidence** (official blog)
 
 ---
-
-*Architecture research for: Claude Code global MCP/tool ecosystem*
-*Researched: 2026-03-16*
+*Architecture research for: Dynamo v1.2 -- Ledger + Switchboard CJS Architecture*
+*Researched: 2026-03-17*

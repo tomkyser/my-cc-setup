@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** Claude Code Global Setup Enhancers
-**Domain:** MCP server ecosystem, CLI tooling, and Skills configuration for a full-stack WordPress/PHP developer using Claude Code
-**Researched:** 2026-03-16
+**Project:** Dynamo v1.2 — CJS Architectural Rewrite
+**Domain:** Claude Code enhancement platform (memory system + management layer)
+**Researched:** 2026-03-17
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This project builds a global Claude Code setup that expands capability through carefully selected MCP servers and Skills. The ecosystem is well-documented and rapidly mature: an official MCP Registry exists with 6,400+ servers, three stable transport types are defined (HTTP preferred, stdio for local tools, SSE deprecated), and the configuration model is authoritative and CLI-managed. The right strategy for a solo developer is a lean, high-signal stack — 5-8 globally-scoped MCPs installed at `--scope user`, plus file-based Skills — rather than a sprawling collection. Claude Code's own 20 built-in tools already cover file ops, web fetch, search, and shell execution, so the only MCPs worth adding are those filling genuine capability gaps.
+Dynamo is a Claude Code memory and lifecycle management platform currently implemented in Python (~1,500 LOC) and Bash (~350 LOC). The v1.2 milestone is a full rewrite into CommonJS Node.js — not an enhancement, but a runtime migration that eliminates the Python venv dependency while preserving exact feature parity. The architecture is well-understood because the target runtime (Node.js 24.x) is already installed, the pattern to follow (GSD's CJS framework) is already proven in the same environment, and the codebase being replaced has been fully audited. This is an unusually high-confidence rewrite: 14 production `.cjs` files in GSD demonstrate exactly how to structure the code, and every feature in the Python/Bash system has been inventoried, classified, and mapped to a CJS target module.
 
-The recommended tool set is clear from research: Context7 (version-accurate library docs), GitHub MCP (PR/issue management), Playwright (browser automation for local WP testing), Sequential Thinking (complex reasoning scaffold), and a WPCS Skill (WordPress Coding Standards as a zero-cost file-based instruction). All five pass the maintenance threshold (commits within 30 days), have strong community adoption, are self-manageable by Claude Code, and collectively expose far fewer than 50 tools. Two candidates — Brave Search MCP and Firecrawl MCP — should be added after validating whether CC's native WebSearch is insufficient. The WordPress MCP Adapter is genuinely valuable but is technically project-scoped (requires per-site plugin install) and should await WP 7.0 core integration in April 2026.
+The recommended approach follows three fixed constraints: CJS only (not ESM), zero npm dependencies beyond `js-yaml`, and exact behavioral parity with the Python/Bash system before adding any new capabilities. The two-system architecture — Ledger (what Claude knows) and Switchboard (how Claude behaves) — cleanly separates concerns and maps directly to existing module boundaries. The single hook dispatcher pattern (`dynamo-hooks.cjs`) collapses the current 3-layer chain (Bash script → Python → httpx) to a single Node.js process, eliminating an estimated 300-500ms of startup overhead per hook invocation while also eliminating the Python venv (~500MB) entirely.
 
-The primary risks in this domain are security (tool poisoning, supply chain attacks via untrusted npm packages), configuration instability (CC auto-updates have silently wiped MCP configs in documented incidents), and context window bloat (a single over-tooled MCP can consume 58K tokens). All three risks are manageable: security is addressed by vetting-before-install and running `mcp-scan`; config corruption is addressed by backup-before-update discipline and the `autoUpdates` flag; context bloat is prevented by the 5-8 MCP hard cap and preferring narrow-tool servers over sprawling ones.
+The primary risk is regression: the v1.1 cycle produced 12 hard-won fixes — scope separator format, GRAPHITI_GROUP_ID override, silent fire-and-forget failures, infinite loop guard, and others — that must be codified as automated regression tests in the CJS version before any hook code is considered complete. Three of these regressions are "invisible": the system appears to work but silently stores data in the wrong scope or drops it entirely. The mitigation is equally clear: build the shared infrastructure modules (config loading, scope constants, HTTP utilities, stdin reader) in Phase 1 before writing any hook code, and attach regression tests to each critical behavior before that phase closes.
 
 ---
 
@@ -19,127 +19,166 @@ The primary risks in this domain are security (tool poisoning, supply chain atta
 
 ### Recommended Stack
 
-Claude Code provides three complementary extension mechanisms: MCP servers (external tool connectivity via JSON-RPC), Skills (procedural knowledge files at ~30-50 tokens each), and Plugins (distributable bundles — not relevant for a personal setup). For global configuration, all MCP servers are registered in `~/.claude.json` via `claude mcp add --scope user`. Two transports apply: HTTP for remote or long-running services, stdio via `npx -y` for stateless on-demand tools. SSE is officially deprecated and must not be used.
+The stack decision is settled: Node.js 24.x with CJS (`.cjs` files, `require()`, `module.exports`), one external dependency (`js-yaml ^4.1.1`), and built-in Node.js modules for everything else. This follows GSD's proven pattern — the same environment has 14 production CJS files with zero npm dependencies running successfully today. The `~/.claude/package.json` is already set to `"type": "commonjs"`, and three existing JS hooks already use `require()` and `module.exports`.
 
 **Core technologies:**
-- `claude mcp add --scope user` (HTTP/stdio): Primary install and management command — the only safe way to register MCPs (direct `~/.claude.json` editing is fragile and breaks self-management)
-- `npx -y @package/mcp-server`: stdio execution pattern for stateless tools — auto-fetches latest, zero install step, no global pollution
-- `gh CLI`: Vetting tool for evaluating MCP server trustworthiness via programmatic star/commit/issue checks
-- `~/.claude/skills/`: File-based instruction system at trivial token cost — CC can write and update these autonomously
-- `~/.claude/settings.json` `permissions.allow`: Pre-authorization list — must be updated alongside every MCP registration to avoid per-call confirmation prompts
+- **Node.js v24.x (LTS, installed):** Built-in `fetch`, `node:test`, `node:assert`, `crypto.randomUUID()` eliminate all HTTP, testing, and UUID dependencies
+- **CJS (`require`/`module.exports`):** Native to GSD framework; synchronous require is critical for hook execution paths with 5-15s timeouts; ~20ms faster cold start than ESM
+- **`js-yaml ^4.1.1`:** The single external dependency — needed to parse `curation/prompts.yaml`; de facto standard (24,681 dependents), pure CJS, no native bindings
+- **`globalThis.fetch` (built-in):** Replaces Python `httpx` for all HTTP to Graphiti MCP and OpenRouter; requires explicit `AbortSignal.timeout()` (no default timeout)
+- **`node:test` + `node:assert` (built-in):** Zero-dependency test runner; stable and production-ready in Node 24; covers all Dynamo test needs
 
-**Critical version/naming requirements:**
-- Always use `--scope user` (not `--scope global` — old name, may break)
-- PATH must be explicitly set in `settings.json` `env` block or stdio MCPs using npx will fail (shell profile not sourced)
-- `~/.claude.json` owns MCP registrations; `~/.claude/settings.json` owns hooks, permissions, env vars — these are separate files with different schemas
+What is NOT being installed: Express, axios, commander, TypeScript, dotenv, chalk, uuid, Jest — all replaced by Node.js built-ins or GSD patterns from the existing codebase.
 
 ### Expected Features
 
-Research identified a clear MVP and two post-MVP tiers. CC's built-in tools must not be duplicated.
+The feature set is entirely defined by the existing Python/Bash system. Every capability has been inventoried from a full source code audit. Features are classified as Ledger (memory) or Switchboard (management).
 
-**Must have (table stakes — v1 launch set):**
-- **Context7 MCP** — Version-specific library docs injected into prompts; prevents hallucinated APIs for PHP 8.x and WP 6.x; 49K stars, official Upstash server
-- **GitHub MCP** — PR/issue/code-search management without leaving session; 27K stars, official GitHub server, HTTP transport
-- **Playwright MCP** — Browser automation for local DDEV WP site testing, form testing, visual regression; 29K stars, official Microsoft server
-- **Sequential Thinking MCP** — 54% improvement on complex reasoning benchmarks; official Anthropic reference server, no API key
-- **WPCS Skill** — WordPress Coding Standards encoded as a Skills file; zero external dependencies, CC self-manageable, HIGH WP/PHP value
+**Must have — Ledger (table stakes, these ARE the product):**
+- MCP Client (JSON-RPC + SSE over HTTP to Graphiti) — foundation for all memory operations; handles session init handshake and SSE response parsing
+- 5 hook scripts (capture-change, session-summary, preserve-knowledge, session-start, prompt-augment) — the actual product; hooks not ported = regression, not rewrite
+- Haiku curation pipeline (OpenRouter) — prevents context bloat; raw Graphiti results are noisy without curation
+- Project detection + scope resolution — ensures memories land in the right project scope; uses dash separator (`project-{name}`)
+- Session management (list, view, label, backfill, index) — user-facing session navigation against sessions.json flat file
 
-**Should have (competitive — v1.x after validation):**
-- **Brave Search MCP** — Add if CC's built-in WebSearch is insufficient for PHP/WP ecosystem research; official Brave server, API key required
-- **Firecrawl MCP** — Add if full-page content extraction is needed beyond search snippets; evaluate overlap with Playwright first
+**Must have — Switchboard (table stakes, operations):**
+- Health check (6 stages: Docker, Neo4j, API, MCP session, env vars, canary round-trip)
+- Verify memory (end-to-end pipeline test: write to project scope, read back, confirm group_id is not 'global')
+- Installer rewritten for CJS (eliminates Python venv setup entirely)
+- Settings generator (hook registrations pointing to `.cjs` files)
+- Error logging + rotation (1MB threshold, ISO timestamps, hook-errors.log)
+- Once-per-session health guard (prevents repeated warnings using `process.ppid`)
 
-**Defer (v2+):**
-- **WordPress MCP Adapter** — High per-project value, but requires per-site WP plugin install; revisit when WP 7.0 ships in April 2026 with native Abilities API in core
+**Should have (differentiators enabled by CJS architecture):**
+- Single entry point CLI (`node dynamo.cjs <command>`) replacing 6 separate scripts + 2 Python files
+- Modular injection pattern — hooks as thin wrappers, business logic in `lib/`, shared by CLI and hooks
+- Testability via `node --test` — Bash/Python had zero automated tests
 
-**Explicit anti-features (never install):**
-- Filesystem MCP, Fetch MCP, Desktop Commander — duplicate CC built-ins, waste context tokens
-- Memory MCP — Graphiti already handles this; two memory systems create conflicts
-- Jira/Notion/Atlassian MCPs — ~17K tokens each, out of scope
-- PHPocalypse MCP — archived, 3 stars, dead project
-- Any community fork when an official service-provider server exists
+**Defer to v1.2.x patch:**
+- Deep diagnostics (13-stage `diagnose.py` — 588 lines, HIGH complexity; the 6-stage health check covers 90% of diagnostic needs)
+- Sync CJS rewrite (`sync-graphiti.sh` still works; no urgency to replace 177-line Bash script)
+- Stack start/stop CJS wrappers (20-line Bash wrappers around `docker compose`; functional, no urgency)
+
+**Defer to v1.3+:**
+- Decision engine, preload engine, memory quality scoring, UI/dashboard, hook auto-discovery
 
 ### Architecture Approach
 
-The architecture separates concerns across two config files, two transport types, and three scope levels. MCP server registrations live in `~/.claude.json` (managed exclusively via `claude mcp add`). Behavioral configuration — hooks, permissions, env vars, plugins — lives in `~/.claude/settings.json`. These two files have different schemas and must never be conflated. Scopes (user > project > local) allow global defaults to be overridden at project level, but silent-override bugs exist when scope names conflict — use namespaced server names to avoid this.
+The architecture is a two-system modular CJS tree under `~/.claude/dynamo/`, following the GSD `gsd-tools.cjs` pattern exactly. A single hook dispatcher (`hooks/dynamo-hooks.cjs`) is registered once for all Claude Code hook events and routes internally by `hook_event_name`. The Ledger system (`lib/ledger/`) owns all knowledge graph interaction; the Switchboard system (`lib/switchboard/`) owns all infrastructure management; `lib/core.cjs` provides the shared substrate (config, project detection, health check, output formatting) that both systems need but neither owns. The two systems never import from each other — only from `core.cjs` and their own public `index.cjs`.
 
 **Major components:**
-1. `~/.claude.json` (MCP registry) — registers server name → transport config (URL or command+args+env); managed by `claude mcp add` CLI only
-2. `~/.claude/settings.json` (behavior config) — hooks, permissions.allow, env vars, plugins; governs when tools require confirmation and what lifecycle scripts run
-3. MCP stdio processes (child processes spawned per session) — stateless tools like Context7, Playwright, Sequential Thinking; lifecycle fully managed by CC
-4. MCP HTTP servers (external daemons) — stateful services like Graphiti; lifecycle managed externally (Docker, launchd); health check via SessionStart hook
-5. `~/.claude/skills/` (instruction files) — WPCS Skill and others; trivial token cost; CC reads and writes these files directly
-6. `~/.claude/hooks/` (lifecycle scripts) — SessionStart for health checks and context injection, PostToolUse for state capture; must be fast (<3s synchronous) or spawned as background processes
+1. **`hooks/dynamo-hooks.cjs`** — Single Claude Code hook entry point; routes all 5 hook events to Ledger handlers via switch/case; wraps all execution in try/catch (never blocks Claude Code)
+2. **`lib/core.cjs`** — Shared substrate: config loading, .env parsing, project detection, health check caching, output/error formatting, safeReadFile
+3. **`lib/ledger/`** — Memory system: MCP client (with SSE parsing), search, episodes, curation, sessions (index + naming + summary); exposes public API via `index.cjs`
+4. **`lib/switchboard/`** — Management system: health check, verify, hooks registration, installer, Docker stack; exposes public API via `index.cjs`
+5. **`bin/dynamo.cjs`** — CLI router: maps `dynamo <command>` to Ledger/Switchboard functions; mirrors `gsd-tools.cjs` pattern exactly
+
+The build order is dependency-driven: `core.cjs` first (no dependencies), then `lib/ledger/mcp-client.cjs`, then remaining ledger modules (can be built in parallel), then `lib/ledger/index.cjs` (hook handlers composing individual modules), then `hooks/dynamo-hooks.cjs`, then switchboard modules (depend only on core), then `bin/dynamo.cjs` last.
 
 ### Critical Pitfalls
 
-1. **Abandoned/unmaintained MCPs** — Apply three gates before every install: last commit within 30 days, meaningful stars (>500 for general tools), active issue responses. Prefer vendor-official servers. Re-verify at 30-day intervals.
+Research identified 10 pitfalls. Five address regression risks (bugs already fixed in v1.1 that must not be reintroduced); five address new migration risks inherent in moving from Python to Node.js.
 
-2. **Tool poisoning and rug pull attacks** — Tool descriptions are trusted input in Claude Code; malicious payloads hidden there execute without code-level detection. Run `mcp-scan` (Invariant Labs) after initial install and after every CC update. Only install source-available servers where you have read the code. Never use `enableAllProjectMcpServers: true`.
+**Top regression risks (invisible failures, already burned once):**
 
-3. **Context window collapse from MCP accumulation** — Hard cap at 5-8 total MCPs. Each server adds token overhead; reported cases show 82% context consumed before first prompt with 10 uncapped servers. Prefer narrow servers (5-10 tools) over sprawling ones. Tool Search (active on Sonnet 4.6) reduces but does not eliminate this cost.
+1. **GRAPHITI_GROUP_ID override (DIAG-02)** — If `GRAPHITI_GROUP_ID=global` appears anywhere in `docker-compose.yml` or `.env`, all project-scoped writes silently land in global scope. The server acknowledges the write with the correct scope name, making the regression invisible at write time. Prevention: assert the variable is absent from all config files in Phase 1; add a regression test that writes to project scope and verifies the stored `group_id` is not `'global'`.
 
-4. **Silent config corruption from CC auto-updates** — Documented incidents: update 2.1.45 wiped all `mcpServers` entries; update 2.1.69 broke all MCP tool calls. Mitigations: back up `~/.claude.json` before any update; set `autoUpdates: false` + `autoUpdatesProtectedForNative: false`; verify `claude mcp list` after every update.
+2. **Colon-in-group-id rejection** — Graphiti MCP v1.21.0 rejects any `group_id` with characters outside `[a-zA-Z0-9_-]`. Scope must use dash: `project-{name}`, never `project:{name}`. Prevention: define scope format as locked constants in `lib/ledger/scope.cjs` with a validation function that rejects colons at the module boundary.
 
-5. **Global/project config namespace conflicts** — Identically named global and project MCPs silently shadow each other; multiple `mcpServers` keys in `~/.claude.json` silently override (Issue #4938). Use descriptive namespaced names (e.g., `context7-docs`, not `docs`). Verify single `mcpServers` key exists. Test from a blank project after setup.
+3. **Silent fire-and-forget regression** — JavaScript's async model makes bare `.catch(() => {})` the path of least resistance, recreating the `2>/dev/null &` pattern that caused silent data loss in v1.0. Prevention: every HTTP call to Graphiti must either throw on failure (caught by a logging handler) or return a result the caller checks; bare catch blocks that do not call the error logger are forbidden.
+
+**Top new migration risks:**
+
+4. **Node.js `fetch` has no default timeout** — Python `httpx` defaulted to 5-second timeouts. Native Node.js `fetch` hangs indefinitely without an explicit `AbortSignal.timeout()`. A hook that hangs blocks Claude Code until the configured hook timeout kills the process. Prevention: build a shared `fetchWithTimeout()` utility in Phase 1 that wraps all HTTP calls with explicit per-operation timeouts (health: 3s, MCP: 5s, curation: 10s, summarization: 15s).
+
+5. **SessionEnd/Stop global timeout cap** — Claude Code imposes a 1.5-second global cap on SessionEnd hooks by default. The session summary hook requires 2-5 seconds (Haiku summarization + Graphiti write + session naming). Prevention: set `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS=10000` in the install script; verify empirically with timing probes during Phase 2.
 
 ---
 
 ## Implications for Roadmap
 
-Based on combined research, the architecture and pitfalls research define a clear dependency order. Configuration infrastructure must precede tool installation. Security vetting must precede any third-party tool recommendation. Context budget must be a hard constraint from the start, not an afterthought.
+The dependency graph and pitfall phase-mappings from PITFALLS.md point to a clear 4-phase structure. The ordering is dictated by two constraints: (1) shared infrastructure must exist before any hook can be safely written, and (2) regression tests for the three invisible failure modes must be automated before any Graphiti interaction code is declared complete.
 
-### Phase 1: Configuration Foundation and Safety Infrastructure
+### Phase 1: Foundation and Shared Substrate
 
-**Rationale:** PATH configuration, backup strategy, and config file validation must exist before any MCP is installed. Config corruption (Pitfall 4) and namespace conflicts (Pitfall 5) are setup-time problems. If PATH is wrong, every stdio MCP will fail silently. If backup procedure isn't established, one CC auto-update can wipe everything.
-**Delivers:** Verified PATH in `settings.json` env block; `~/.claude.json` backup script or procedure; `autoUpdates` configuration; single `mcpServers` key confirmed; `mcp-scan` installed and runnable; permissions.allow pattern established
-**Addresses:** Architecture anti-patterns 1 and 3 (conflating config files, manual editing); PITFALLS Pitfall 4 (auto-update corruption) and Pitfall 5 (namespace conflicts)
-**Avoids:** Silent MCP failures from PATH issues; config wipes with no recovery path
+**Rationale:** Eight of the 10 pitfalls are best addressed here — not because Phase 1 is a catch-all, but because these pitfalls are infrastructure-level bugs that corrupt data silently if not eliminated at the module boundary. Building these modules first means all subsequent phases build on correct ground. No hook code should be written until the shared substrate has passing regression tests.
 
-### Phase 2: Core Capability — P1 MCP Servers and WPCS Skill
+**Delivers:**
+- `lib/core.cjs` — config loading, .env parsing, project detection, output/error formatting, health check caching
+- `lib/ledger/mcp-client.cjs` — MCP JSON-RPC client with SSE parsing, session initialization handshake, mandatory timeouts
+- `lib/ledger/scope.cjs` — scope format constants (dash-separated), validation function rejecting colons
+- `lib/shared/config.cjs` — .env loader with "don't override existing env vars" behavior (port Python's 12-line implementation)
+- `lib/shared/logger.cjs` — error logger with 1MB rotation, ISO timestamps, hook name prefix
+- `lib/shared/health-guard.cjs` — once-per-session flag using `process.ppid` (not `process.pid`)
+- `tests/` — regression tests for DIAG-02 (group_id override), scope format validation, HTTP timeout behavior, stdin reading
 
-**Rationale:** Once foundation is safe, install the five P1 tools. These have the strongest vetting scores, lowest security risk, and highest daily-use value. Context7 and GitHub MCP are the highest-ROI tools per research. Sequential Thinking and Playwright are lightweight (npx, no API keys). WPCS Skill costs zero tokens and has no dependencies.
-**Delivers:** Context7 MCP (stdio, npx), GitHub MCP (HTTP, PAT token), Playwright MCP (stdio, npx), Sequential Thinking MCP (stdio, npx), WPCS Skill (~/.claude/skills/)
-**Uses:** `claude mcp add --scope user` for all four MCPs; `--transport http` for GitHub, `--transport stdio` for the rest; PAT token scoped to repo read + issues
-**Implements:** permissions.allow entries for all tools; `mcp-scan` run on all four after install; tool count verified <50 total
-**Avoids:** Pitfall 3 (context bloat — all four are narrow-tool servers); Pitfall 2 (security — all four are official org-owned repos with source code reviewed); Pitfall 6 (self-management — all four support full CC-managed lifecycle)
+**Addresses from FEATURES.md:** Shared infrastructure (config, logger, health-guard), MCP client (L1), project detection (L7), scope resolution (L8) — all P1 features
+**Pitfalls addressed:** P1 (GRAPHITI_GROUP_ID), P2 (colon scope), P4 (cold start / lazy require), P5 (stdin reading), P6 (HTTP timeout), P7 (SSE parsing), P8 (module complexity budget), P9 (.env loading)
 
-### Phase 3: Validation and Anti-Feature Audit
+### Phase 2: Hook Migration (The Product)
 
-**Rationale:** After P1 tools are live, validate that each tool works as expected before adding more. This phase exists because "MCP connected" does not mean "tools usable" (Pitfall checklist item 1). Also confirm that no anti-features have been installed — Filesystem MCP, Fetch MCP, Desktop Commander. Research found users frequently install these by mistake from ecosystem lists.
-**Delivers:** Each P1 tool tested with real queries; tool output sizes verified within token limits; anti-feature audit confirms none present; Context7 coverage validated for PHP/WP libraries; GitHub PAT scope verified with actual PR operation; `mcp-scan` clean report documented
-**Avoids:** "Looks Done But Isn't" failure modes from PITFALLS.md
+**Rationale:** With the foundation in place, the 5 hooks are the core deliverable. Each hook is a thin wrapper (20-30 lines) calling Phase 1 modules — the actual logic lives in `lib/`. The hooks are the product; without them, nothing flows into Graphiti. Each hook must be individually verified against the v1.1 regression checklist before being declared migrated. The Stop hook's timing must be measured empirically in this phase.
 
-### Phase 4: P2 Augmentation — Brave Search and Firecrawl (Conditional)
+**Delivers:**
+- `hooks/dynamo-hooks.cjs` — single entry point router for all 5 hook events
+- Hook handlers: `handleSessionStart`, `handleUserPrompt`, `handlePostToolUse`, `handlePreCompact`, `handleStop`
+- `lib/ledger/episodes.cjs` — `add_memory` tool calls
+- `lib/ledger/search.cjs` — `search_memory_facts` + `search_nodes`
+- `lib/ledger/curation.cjs` — Haiku curation, summarization, session naming via OpenRouter
+- `lib/ledger/sessions.cjs` — session index CRUD, session naming, summary storage, sessions.json compatibility
+- `lib/ledger/index.cjs` — public Ledger API composing all modules
+- `settings-hooks.json` updated with CJS paths
+- Regression tests: each hook tested with Graphiti server DOWN (verifies exit codes and error log writes)
+- Timing verification: Stop hook measured empirically; `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` set in installer
 
-**Rationale:** These tools earn their spot only if P1 tools expose gaps. Brave Search MCP adds only if CC's built-in WebSearch proves insufficient for WP/PHP ecosystem research. Firecrawl adds only if full-page extraction is needed beyond what Playwright already covers. Research explicitly flags these as "add after validation" to avoid premature context budget consumption.
-**Delivers:** Brave Search MCP (if WebSearch gap confirmed); Firecrawl MCP (if Playwright + Brave Search don't cover full-page extraction need); total MCP count remains at or below 7
-**Uses:** API keys for both (free tiers available); env var injection via `claude mcp add --env`
-**Avoids:** Pitfall 3 (context bloat — only add if the gap is real, not speculative)
+**Addresses from FEATURES.md:** All 5 hooks (L9-L13), curation pipeline (L4-L6), session index (S3), session management (S4-S7 baseline)
+**Pitfalls addressed:** P3 (fire-and-forget), P10 (SessionEnd timeout), infinite loop guard (`stop_hook_active` check), sessions.json format compatibility, once-per-session flag using `process.ppid`
 
-### Phase 5: Operations Hardening and Maintenance Cadence
+### Phase 3: Operations and Verification
 
-**Rationale:** Architecture research identifies ongoing maintenance as a first-class concern, not an afterthought. CC auto-updates are frequent and have caused silent config corruption multiple times. A 30-day maintenance cadence must be established as part of the setup, not bolted on later.
-**Delivers:** Backup script for `~/.claude.json`; update testing procedure; 30-day maintenance checklist (re-verify commit dates, re-run `mcp-scan`, check `claude mcp list` count); `/mcp disable` pattern documented for infrequently-used tools; WordPress MCP Adapter evaluation scheduled for April 2026 (post WP 7.0)
-**Addresses:** Pitfall 1 (maintenance drift), Pitfall 4 (auto-update corruption), Pitfall 6 (self-management long-term)
+**Rationale:** The hooks need operational support — health checking and memory verification — to confirm the system is actually working before the Python version is retired. The 6-stage health check and verify-memory pipeline test are the "is it working?" answer. Session management CLI commands are also needed for user-facing operations. This phase builds the CLI router that exposes all functionality as `dynamo <command>`.
+
+**Delivers:**
+- `lib/switchboard/health.cjs` — 6-stage health check (Docker, Neo4j, Graphiti API, MCP session, env vars, canary round-trip including project-scope write-then-read)
+- `lib/ledger/verify.cjs` — verify-memory pipeline test (6 checks; GRAPHITI_GROUP_ID absence confirmed automatically)
+- `lib/switchboard/sessions.cjs` — list, view, label, backfill session commands
+- `bin/dynamo.cjs` — CLI router for all commands (`dynamo health-check`, `dynamo search`, `dynamo list-sessions`, `dynamo verify-memory`, etc.)
+- `lib/switchboard/index.cjs` — public Switchboard API
+
+**Addresses from FEATURES.md:** Health check (S1), verify memory (L14), session management commands (S4-S7), CLI dispatcher
+**Pitfalls addressed:** Ensures the Phase 2 hooks are actually storing data correctly (via scope round-trip test) before cutover from Python
+
+### Phase 4: Installation and Cutover
+
+**Rationale:** The CJS system must be deployable and the Python/Bash system must be retired. The installer is the mechanism for both. This phase is last because it can't be written until the system it deploys is complete and verified. The cutover sequence is per-event (one hook at a time) with `verify-memory` run after each switch.
+
+**Delivers:**
+- `lib/switchboard/install.cjs` — copies CJS files to `~/.claude/dynamo/`, registers MCP server in `~/.claude.json`, generates `settings-hooks.json`, sets `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS`, eliminates Python venv setup entirely
+- `lib/switchboard/settings.cjs` — hook registration generator pointing to `.cjs` files, not `.sh` files
+- Per-event migration: switch each hook in `settings.json` from Bash to CJS; run `dynamo verify-memory` after each switch
+- Post-cutover: `graphiti/` directory deprecated; Python hooks removed from `settings.json`
+- `VERSION` file (Dynamo version for self-management)
+
+**Addresses from FEATURES.md:** Installer (S8), settings generator (S12), full feature parity checklist
+**Deferred (v1.2.x):** Deep diagnostics (S2), sync CJS rewrite (S9), stack start/stop CJS wrappers (S10/S11)
 
 ### Phase Ordering Rationale
 
-- Foundation before tools: PATH and backup infrastructure must exist before any MCP is installed because failures at install time are harder to diagnose than failures at foundation time
-- Security gate before any recommendation: Pitfall 2 (tool poisoning) applies at install time; `mcp-scan` must be established in Phase 1 so it can be run in Phase 2
-- P1 before P2: Core tools first ensures context budget is monitored from the start; P2 tools only added if gaps are confirmed, not assumed
-- Validation phase (Phase 3) before augmentation (Phase 4): Research explicitly distinguishes "connected" from "usable"; validation prevents compounding unverified tools on top of unverified tools
-- Operations last but non-optional: Maintenance cadence is what separates a setup that stays working from one that silently degrades over months
+- Foundation before hooks: 8 of 10 pitfalls live at the infrastructure level; fixing them in Phase 1 means hooks never encounter them
+- Hooks before operations: health check and verify-memory need real hook data to validate against; the pipeline must be flowing before it can be certified
+- Operations before cutover: you need a way to confirm the system works (`dynamo verify-memory`) before retiring the Python version
+- The Python/Bash system stays active alongside CJS during Phases 1-3 (both registered in `settings.json`) — Phase 4 is the only phase that removes Python hooks
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 4 (P2 Augmentation):** Brave Search + Firecrawl interaction needs evaluation — do they overlap? Does Playwright's browser access already cover Firecrawl's use case? This requires hands-on testing, not pre-research.
-- **Phase 5 (WordPress MCP Adapter):** Evaluation depends on WP 7.0 release (April 2026) — check official WordPress developer blog at release time; the architecture will have changed significantly from current per-site plugin model.
+Phases with well-documented patterns (skip research-phase, build directly):
+- **Phase 1:** CJS module patterns, Node.js built-in APIs, GSD patterns are verified from live source code. No novel integrations. Build directly.
+- **Phase 3:** CLI router, session CRUD, health check patterns all follow established GSD conventions. Build directly.
+- **Phase 4:** Installer pattern follows GSD's existing install mechanism. Build directly.
 
-Phases with standard patterns (research-phase not needed):
-- **Phase 1 (Foundation):** PATH config, backup scripting, and `mcp-scan` install are all well-documented standard patterns
-- **Phase 2 (P1 MCP Install):** All five tools have official install docs; `claude mcp add` syntax is authoritative; no novel integrations
-- **Phase 3 (Validation):** Verification steps are enumerated in PITFALLS.md checklist; no research needed
+Phases needing empirical investigation during implementation:
+- **Phase 2 (Stop hook timing):** Whether `Stop` has the same 1.5-second global cap as `SessionEnd` needs empirical confirmation. The documentation references both event names inconsistently. Use timing probes during Stop hook implementation; do not assume the 30-second `settings.json` timeout applies end-to-end.
+- **Phase 2 (MCP `notifications/initialized`):** The requirement to send the `notifications/initialized` message after `initialize` is documented as "may cause undefined behavior" if omitted. Capture a real MCP session handshake to verify before shipping the CJS MCP client.
 
 ---
 
@@ -147,52 +186,52 @@ Phases with standard patterns (research-phase not needed):
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Primary sources are official Claude Code docs (WebFetch verified), official MCP Registry, and official GitHub repos. All CLI commands and config file formats confirmed against live configuration on this machine. |
-| Features | HIGH | GitHub API used to verify stars and commit dates for all candidate tools. Recommendation matrix based on hard data, not ecosystem lists. Anti-feature rationale sourced from CC's own built-in tool documentation. |
-| Architecture | HIGH | Config file relationships and transport types sourced from official CC docs. Patterns confirmed against live `~/.claude.json` and `~/.claude/settings.json` on this machine. Hook execution flow sourced from official hooks documentation. |
-| Pitfalls | HIGH | CVEs are public record (CVE-2025-59536, CVE-2026-21852). GitHub Issues are linked directly (issue numbers verified). Snyk ToxicSkills report is published research. Context window bloat figures cited from Medium articles with specific version numbers. |
+| Stack | HIGH | Verified against installed runtime (Node v24.13.1), GSD source (14 CJS files), `~/.claude/package.json`, and official Node.js 24 LTS documentation. Zero ambiguity in technology choices. |
+| Features | HIGH | Full source code audit of all 17 files in the existing system (every function, every subcommand). Feature inventory is exhaustive and maps directly to CJS target modules. |
+| Architecture | HIGH | Directory structure and patterns derived directly from GSD production code (same environment). Hook registration verified from official Claude Code docs and live `settings.json`. Ledger/Switchboard boundary is clearly defined with an explicit boundary test. |
+| Pitfalls | HIGH | 10 of 12 pitfalls derived from v1.1 diagnostic history (DIAG-01, DIAG-02 with root causes documented). Remaining pitfalls derived from direct code comparison of Python httpx vs. Node.js fetch semantics. All 12 v1.1 fixes have explicit regression test specifications. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Context7 PHP/WP coverage depth:** Context7 has uneven library coverage. Coverage for PHP 8.x core and WordPress 6.x APIs should be verified hands-on in Phase 3 before relying on it for production WP sessions. Free tier (60 req/hour, 1,000/month) may require upgrade to $10/month paid tier for heavy documentation sessions.
+- **Stop hook global timeout cap:** Whether `Stop` has the same 1.5-second global cap as `SessionEnd` requires empirical measurement during Phase 2. Set timing probes on the session summary hook and test in a real Claude Code session before declaring the hook complete.
 
-- **GitHub PAT scope optimization:** Research recommends narrow-scoped PAT (repo read, issues read/write). The exact minimum scope set for GitHub MCP's full feature set needs verification at install time — GitHub's OAuth scope documentation should be consulted before creating the PAT.
+- **MCP `notifications/initialized` requirement:** Whether omitting this notification causes undefined behavior or is silently tolerated is unclear. Capture a real MCP handshake (via network inspection or verbose logging in the Python client) before implementing the CJS version.
 
-- **WP 7.0 timeline:** WordPress MCP Adapter deferral assumes WP 7.0 ships in April 2026 as announced. If delayed, Phase 5 evaluation date shifts accordingly. Monitor `developer.wordpress.org/news/` for updates.
+- **Sessions.json format compatibility:** The CJS sessions module must read the existing `sessions.json` written by Python. The format appears straightforward, but validate round-trip read/write compatibility before retiring the Python sessions module in Phase 4.
 
-- **Firecrawl vs Playwright overlap:** Whether Playwright MCP already covers Firecrawl's use cases (full-page content extraction) cannot be determined pre-implementation. This is a hands-on evaluation that belongs in Phase 4.
+- **Haiku model ID stability:** The curation pipeline uses `anthropic/claude-haiku-4.5` via OpenRouter. If this model ID changes, curation silently degrades to truncated output. Verify the model ID against the OpenRouter models endpoint at Phase 2 implementation time.
 
 ---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `code.claude.com/docs/en/mcp` — CLI commands, transport types, scope names, config file locations (WebFetch verified)
-- `code.claude.com/docs/en/settings` — config file locations, scope hierarchy, merge behavior (WebFetch verified)
-- `code.claude.com/docs/en/hooks` — lifecycle events, hook types, input/output schema (WebFetch verified)
-- `code.claude.com/docs/en/plugins-reference` — plugin structure, install scopes, CLI commands (WebFetch verified)
-- Live `~/.claude.json` and `~/.claude/settings.json` — confirmed actual config patterns (read directly)
-- GitHub API: stars + last commit for all evaluated repos (gh CLI, verified 2026-03-16)
-- CVE-2025-59536, CVE-2026-21852 — Check Point Research (public CVE records)
-- GitHub Issues #26437, #31864, #30989, #4938 — Claude Code repo (direct links, verified)
+
+- GSD source code `~/.claude/get-shit-done/bin/gsd-tools.cjs` and 14 `lib/*.cjs` modules — CJS patterns, module structure, zero-dependency philosophy (direct code inspection)
+- `~/.claude/package.json` — Confirmed `{"type":"commonjs"}` (direct inspection)
+- `~/.claude/settings.json` — Hook registration structure (direct inspection)
+- `~/.claude/hooks/gsd-context-monitor.js`, `gsd-statusline.js` — CJS hook patterns (direct inspection)
+- Node.js v24.13.1 installed runtime — `node:test`, `node:assert`, `globalThis.fetch` availability confirmed
+- Full source audit: `graphiti/graphiti-helper.py` (944 LOC), `graphiti/health-check.py` (553 LOC), `graphiti/diagnose.py` (588 LOC), 6 Bash hook scripts (~350 LOC total)
+- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks) — official hook event schemas, timeout behavior, stdin format, exit codes
+- [Node.js 24 LTS announcement](https://nodesource.com/blog/nodejs-24-becomes-lts) — LTS status confirmed
+- [js-yaml on npm](https://www.npmjs.com/package/js-yaml) — v4.1.1, 24,681 dependents, CJS-native confirmed
 
 ### Secondary (MEDIUM confidence)
-- `registry.modelcontextprotocol.io` — Official MCP Registry (6,400+ servers, API v0.1 frozen Oct 2025)
-- `github.com/modelcontextprotocol/servers` — Official reference server implementations (81K stars)
-- `smithery.ai` — Discovery catalog (3,305+ servers); vetting still required for individual servers
-- `github.com/punkpeye/awesome-mcp-servers` — Community curated list (83K stars, 2026-03-16)
-- `github.com/hesreallyhim/awesome-claude-code` — CC-specific curated list (28K stars, 2026-03-16)
-- Snyk ToxicSkills report — 13.4% of agent skills had critical security issues (published research)
-- Invariant Labs mcp-scan — tool poisoning detection tooling (published research)
 
-### Tertiary (LOW confidence — needs validation during implementation)
-- Context7 free tier limits (60 req/hour, 1,000/month) — sourced from blog post; verify against current Upstash pricing page at install time
-- WordPress MCP Adapter moving to WP 7.0 core (April 2026) — developer blog announcement; verify at release time
-- Sequential Thinking 54% benchmark improvement — reported in ecosystem sources; benchmark methodology not reviewed
+- [Claude Code Hooks Guide](https://claude.com/blog/how-to-configure-hooks) — configuration patterns and examples
+- [Claude Code Async Hooks](https://reading.sh/claude-code-async-hooks-what-they-are-and-when-to-use-them-61b21cd71aad) — async vs. foreground hook behavior; SessionEnd timeout cap behavior
+- [Node.js Loader Performance](https://blog.appsignal.com/2025/10/22/ways-to-improve-nodejs-loader-performance.html) — CJS require() cold-start optimization strategies
+- [Claude Code plugin-dev SKILL](https://github.com/anthropics/claude-code/blob/main/plugins/plugin-dev/skills/hook-development/SKILL.md) — hook development patterns (may be version-specific)
+
+### Internal (HIGH confidence)
+
+- `.planning/milestones/v1.1-phases/04-diagnostics/04-DIAGNOSTIC-REPORT.md` — DIAG-01, DIAG-02 root causes and fixes
+- `.planning/milestones/v1.1-phases/05-hook-reliability/05-VERIFICATION.md` — 8/8 truths verified
+- `graphiti/SCOPE_FALLBACK.md` — dash separator constraint documentation (Graphiti MCP v1.21.0 group_id validation)
 
 ---
-
-*Research completed: 2026-03-16*
+*Research completed: 2026-03-17*
 *Ready for roadmap: yes*
