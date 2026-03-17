@@ -5,11 +5,11 @@ milestone_name: Fix Memory System
 status: active
 stopped_at: ""
 last_updated: "2026-03-16"
-last_activity: 2026-03-16 — Milestone v1.1 started
+last_activity: 2026-03-16 — Roadmap created for v1.1, Phase 4 ready to plan
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
-  total_plans: 0
+  total_plans: 5
   completed_plans: 0
   percent: 0
 ---
@@ -21,16 +21,35 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** Every recommended tool must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Milestone v1.1 — Fix Memory System
+**Current focus:** Milestone v1.1 — Phase 4: Diagnostics
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-16 — Milestone v1.1 started
+Phase: 4 of 7 (Diagnostics)
+Plan: 0 of 1 in current phase
+Status: Ready to plan
+Last activity: 2026-03-16 — Roadmap created for v1.1, Phase 4 ready to plan
 
 Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0 (v1.1)
+- Average duration: —
+- Total execution time: —
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| - | - | - | - |
+
+**Recent Trend:**
+- Last 5 plans: —
+- Trend: —
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
@@ -42,6 +61,7 @@ Recent decisions affecting current work:
 - [v1.1-init]: Diagnostic-first milestone — make memory system work as designed before considering improvements
 - [v1.1-init]: Root cause: hooks display status messages but MCP calls to Graphiti fail silently
 - [v1.1-init]: Zero project-scoped memories stored despite hooks appearing to execute
+- [v1.1-roadmap]: Phase 6 (Session Management) depends on Phase 5 (Hook Reliability) — session features require working hooks
 
 ### Pending Todos
 
@@ -56,5 +76,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: Milestone v1.1 initialization
+Stopped at: Roadmap created — Phase 4 Diagnostics ready to plan
 Resume file: —
