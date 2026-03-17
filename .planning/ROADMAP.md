@@ -84,9 +84,9 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 10-01-PLAN.md -- Shared diagnostic stages module (13 stages) and pretty formatter
-- [ ] 10-02-PLAN.md -- Health check, diagnose, and verify-memory orchestrators
-- [ ] 10-03-PLAN.md -- Bidirectional sync and Docker stack start/stop
+- [x] 10-01-PLAN.md -- Shared diagnostic stages module (13 stages) and pretty formatter
+- [x] 10-02-PLAN.md -- Health check, diagnose, and verify-memory orchestrators
+- [x] 10-03-PLAN.md -- Bidirectional sync and Docker stack start/stop
 - [ ] 10-04-PLAN.md -- CLI router, installer, cutover, and end-to-end verification
 
 ### Phase 11: Master Roadmap
@@ -116,5 +116,5 @@ Plans:
 | 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 8. Foundation and Branding | v1.2 | 3/3 | Complete | 2026-03-17 |
 | 9. Hook Migration | v1.2 | 4/4 | Complete | 2026-03-17 |
-| 10. Operations and Cutover | 2/4 | In Progress|  | - |
+| 10. Operations and Cutover | v1.2 | 3/4 | In Progress | - |
 | 11. Master Roadmap | v1.2 | 0/? | Not started | - |
