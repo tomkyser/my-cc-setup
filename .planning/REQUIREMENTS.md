@@ -38,8 +38,8 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 - [ ] **SWB-04**: CJS installer deploying to ~/.claude/dynamo/, eliminating Python venv
 - [ ] **SWB-05**: Settings generator for hook registrations pointing to .cjs files
 - [ ] **SWB-06**: Unified `dynamo <command>` CLI router
-- [ ] **SWB-07**: Bidirectional sync rewrite (sync-graphiti.sh to CJS)
-- [ ] **SWB-08**: Stack start/stop commands (Docker compose wrappers)
+- [x] **SWB-07**: Bidirectional sync rewrite (sync-graphiti.sh to CJS)
+- [x] **SWB-08**: Stack start/stop commands (Docker compose wrappers)
 
 ### Branding
 
@@ -126,8 +126,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SWB-04 | Phase 10 | Pending |
 | SWB-05 | Phase 10 | Pending |
 | SWB-06 | Phase 10 | Pending |
-| SWB-07 | Phase 10 | Pending |
-| SWB-08 | Phase 10 | Pending |
+| SWB-07 | Phase 10 | Complete |
+| SWB-08 | Phase 10 | Complete |
 | BRD-01 | Phase 8 | Complete |
 | BRD-02 | Phase 8 | Complete |
 | MRP-01 | Phase 11 | Pending |
