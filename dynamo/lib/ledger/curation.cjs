@@ -26,7 +26,8 @@ async function callHaiku(promptName, variables, options = {}) {
   let userContent = prompt.user;
   for (const [key, value] of Object.entries(variables)) {
     if (key === 'fallback') continue;
-    userContent = userContent.replace(new RegExp('\\{' + key + '\\}', 'g'), String(value));
+    const strValue = (typeof value === 'object') ? JSON.stringify(value, null, 2) : String(value);
+    userContent = userContent.replace(new RegExp('\\{' + key + '\\}', 'g'), strValue);
   }
 
   const timeout = options.timeout || config.timeouts.curation;
@@ -71,16 +72,18 @@ async function curateResults(memories, contextText, options = {}) {
   if (!memories) return '';
 
   const apiKey = process.env.OPENROUTER_API_KEY;
+  const memoriesStr = (typeof memories === 'object') ? JSON.stringify(memories, null, 2) : String(memories);
+
   if (!apiKey) {
-    return '[uncurated]\n' + memories.slice(0, 500);
+    return '[uncurated]\n' + memoriesStr.slice(0, 500);
   }
 
   const result = await callHaiku('curation', {
-    memories,
+    memories: memoriesStr,
     project_name: options.projectName || 'unknown',
     session_type: options.sessionType || 'startup',
     prompt: contextText || '',
-    fallback: '[uncurated]\n' + (memories || '').slice(0, 500)
+    fallback: '[uncurated]\n' + memoriesStr.slice(0, 500)
   }, options);
 
   return result.text;
