@@ -1,55 +1,85 @@
 # Requirements: Claude Code Global Setup Enhancers
 
 **Defined:** 2025-03-16
-**Core Value:** Every recommended tool must be self-manageable by Claude Code and work harmoniously in the global scope
+**Core Value:** Every recommended tool must be self-manageable by Claude Code without manual user config file edits
 
-## v1 Requirements
+## v1.0 Requirements (Complete)
 
-### Research & Documentation
+All v1.0 requirements shipped. See MILESTONES.md for details.
 
-- [x] **DOCS-01**: Produce vetted assessment of Context7 MCP — GitHub activity, stars, self-management capability, install method, context cost, PHP/WP coverage depth
-- [x] **DOCS-02**: Produce vetted assessment of WPCS Skill — scope, maintenance approach, how CC self-manages it, zero context cost verification
+- [x] **DOCS-01**: Context7 MCP assessment
+- [x] **DOCS-02**: WPCS Skill assessment
+- [x] **DEVT-01**: GitHub MCP assessment
+- [x] **DEVT-02**: Playwright MCP assessment
+- [x] **DEVT-03**: Sequential Thinking MCP assessment
+- [x] **WRIT-01**: Creative writing tools research
+- [x] **WRIT-02**: Technical writing tools research
+- [x] **GMGR-01**: GSD self-management lifecycle
+- [x] **GMGR-02**: Coexistence strategy
+- [x] **MEMO-01**: Memory browsing interface research
+- [x] **MEMO-02**: Session management visibility research
+- [x] **MEMO-03**: Hook gap analysis
+- [x] **INFR-01**: Vetting protocol
+- [x] **INFR-02**: Anti-features list
+- [x] **INFR-03**: Self-management lifecycle per tool
+- [x] **DLVR-01**: Ranked report
+- [x] **DLVR-02**: Context cost estimates
+- [x] **DLVR-03**: Security assessments
 
-### Dev Tools
+## v1.1 Requirements
 
-- [x] **DEVT-01**: Produce vetted assessment of GitHub MCP — GitHub activity, stars, self-management capability, PAT requirements, permissions model
-- [x] **DEVT-02**: Produce vetted assessment of Playwright MCP — GitHub activity, stars, self-management capability, install method, context cost
-- [x] **DEVT-03**: Produce vetted assessment of Sequential Thinking MCP — GitHub activity, stars, self-management capability, install method, context cost
+Requirements for Fix Memory System milestone. Each maps to roadmap phases.
 
-### Writing Tools
+### Diagnostics
 
-- [x] **WRIT-01**: Research and vet tools/MCPs that enhance creative writing capabilities (storytelling, content creation, copywriting)
-- [x] **WRIT-02**: Research and vet tools/MCPs that enhance technical writing capabilities (documentation, API docs, READMEs)
+- [ ] **DIAG-01**: Root cause identified for why hooks display success but fail to persist data to Graphiti
+- [ ] **DIAG-02**: Root cause identified for why project-scoped memories are not stored
+- [ ] **DIAG-03**: Reusable health check command verifies the full memory pipeline (hooks -> graphiti-helper.py -> Graphiti API -> Neo4j)
 
-### Global Tool Management
+### Hook Reliability
 
-- [x] **GMGR-01**: Document GSD framework self-management lifecycle — install, update (git pull + version check), troubleshoot, how CC manages it globally
-- [x] **GMGR-02**: Document harmonious coexistence strategy — how all tools (MCPs + GSD + Graphiti + plugins) share global scope without conflicts
+- [ ] **HOOK-01**: Hooks persist data to Graphiti or visibly fail — no silent phantom writes
+- [ ] **HOOK-02**: Hook failures produce visible error output the user can see
+- [ ] **HOOK-03**: Hook-level logging captures errors for post-mortem debugging
 
-### Memory System Enhancements
+### Session Management
 
-- [x] **MEMO-01**: Research approaches for a memory browsing interface — view all nodes, facts, episodes across scopes (web UI, CLI tool, CC skill, or MCP-based)
-- [x] **MEMO-02**: Research approaches for session management visibility — list sessions, select/review past sessions, session timeline
-- [x] **MEMO-03**: Identify potential enhancements to current Graphiti hook system — gaps in capture, curation quality, performance, missing lifecycle hooks
+- [ ] **SESS-01**: User can list all sessions chronologically via Claude Code
+- [ ] **SESS-02**: User can select and view a specific session's content
+- [ ] **SESS-03**: User can manually rename/label a session
+- [ ] **SESS-04**: Sessions auto-generate meaningful names (not raw timestamps)
 
-### Infrastructure
+### Verification
 
-- [x] **INFR-01**: Document vetting protocol — programmatic criteria (GitHub stars, commit recency <30 days, security, self-management capability)
-- [x] **INFR-02**: Document anti-features list with reasoning (tools to explicitly avoid and why)
-- [x] **INFR-03**: Document self-management lifecycle for each recommended tool (install, configure, update, troubleshoot commands)
+- [ ] **VRFY-01**: Memory system proven working end-to-end across sessions and projects
+- [ ] **VRFY-02**: Reusable verification mechanism confirms the system is healthy on demand
 
-### Deliverable
+### Sync
 
-- [x] **DLVR-01**: Produce ranked report in markdown — categories, ratings, pros/cons, final recommendations (5-8 tools)
-- [x] **DLVR-02**: Report includes context cost estimates per tool (token overhead)
-- [x] **DLVR-03**: Report includes security assessment per tool (mcp-scan or equivalent)
+- [ ] **SYNC-01**: All memory system fixes reflected in this repo's publishable artifacts
+- [ ] **SYNC-02**: Automated or semi-automated mechanism to sync between live ~/.claude implementation and this repo
 
-## v2 Requirements
+## Future Requirements
+
+Identified in v1.0 research (MEMO-03 Hook Gaps), deferred beyond v1.1:
+
+### Hook Enhancements
+
+- **HKENH-01**: Bash tool error capture (PostToolUse hook with exit_code != 0 filtering)
+- **HKENH-02**: Semantic diff summaries on file changes (richer than path-only capture)
+- **HKENH-03**: Active task state injected at SessionStart
+- **HKENH-04**: Targeted unresolved-questions capture at PreCompact
+- **HKENH-05**: Cross-scope promotion (project preferences -> global when project-agnostic)
+
+### Memory Quality
+
+- **MQUAL-01**: Context quality feedback loop (track retrieval frequency for pruning)
+- **MQUAL-02**: Re-evaluate mcp-neo4j-cypher when stars >= 1,000
 
 ### Web Research & Scraping
 
-- **WEBS-01**: Evaluate Brave Search MCP after v1 tools are in use (may overlap with CC built-in WebSearch)
-- **WEBS-02**: Evaluate Firecrawl MCP after v1 tools are in use (may overlap with CC built-in WebFetch)
+- **WEBS-01**: Evaluate Brave Search MCP after v1 tools are in use
+- **WEBS-02**: Evaluate Firecrawl MCP after v1 tools are in use
 
 ### WordPress-Specific
 
@@ -59,43 +89,39 @@
 
 | Feature | Reason |
 |---------|--------|
-| Memory/knowledge graph MCPs | Already solved with Graphiti |
+| Memory system redesign | Fix first, redesign later — diagnostic-first milestone |
+| New MCP tools for memory | Use existing Graphiti MCP tools; no new memory tool installs |
+| Real-time chat/notification for errors | Visible error output in Claude Code session is sufficient |
+| TodoWrite capture hook | Requires empirical testing of CC hook API; deferred to future |
+| Creative writing tools | Flagged in v1.0 research; separate concern from memory system |
 | Per-project tool configuration | Everything lives in global scope |
-| Installing or configuring chosen tools | Research only — install later |
-| Abandoned tools (no updates in 30 days) | Hard disqualifier |
-| Filesystem/Fetch MCP servers | Duplicate CC built-in tools |
-| PHP-specific MCP servers | Immature/abandoned ecosystem — use native phpstan/phpcs via Bash |
-| SSE-transport MCPs | Deprecated protocol as of March 2026 |
-| Database/SQL access MCPs | Not requested |
 
 ## Traceability
 
+Which phases cover which requirements. Updated during roadmap creation.
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFR-01 | Phase 1 | Complete |
-| INFR-02 | Phase 1 | Complete |
-| DOCS-01 | Phase 2 | Complete |
-| DOCS-02 | Phase 2 | Complete |
-| DEVT-01 | Phase 2 | Complete |
-| DEVT-02 | Phase 2 | Complete |
-| DEVT-03 | Phase 2 | Complete |
-| WRIT-01 | Phase 2 | Complete |
-| WRIT-02 | Phase 2 | Complete |
-| GMGR-01 | Phase 2 | Complete |
-| GMGR-02 | Phase 2 | Complete |
-| MEMO-01 | Phase 2 | Complete |
-| MEMO-02 | Phase 2 | Complete |
-| MEMO-03 | Phase 2 | Complete |
-| INFR-03 | Phase 3 | Complete |
-| DLVR-01 | Phase 3 | Complete |
-| DLVR-02 | Phase 3 | Complete |
-| DLVR-03 | Phase 3 | Complete |
+| DIAG-01 | — | Pending |
+| DIAG-02 | — | Pending |
+| DIAG-03 | — | Pending |
+| HOOK-01 | — | Pending |
+| HOOK-02 | — | Pending |
+| HOOK-03 | — | Pending |
+| SESS-01 | — | Pending |
+| SESS-02 | — | Pending |
+| SESS-03 | — | Pending |
+| SESS-04 | — | Pending |
+| VRFY-01 | — | Pending |
+| VRFY-02 | — | Pending |
+| SYNC-01 | — | Pending |
+| SYNC-02 | — | Pending |
 
 **Coverage:**
-- v1 requirements: 18 total
-- Mapped to phases: 18
-- Unmapped: 0
+- v1.1 requirements: 14 total
+- Mapped to phases: 0
+- Unmapped: 14
 
 ---
 *Requirements defined: 2025-03-16*
-*Last updated: 2026-03-16 after roadmap creation — traceability complete*
+*Last updated: 2026-03-16 after v1.1 milestone requirements definition*
