@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Fix Memory System
 status: executing
-stopped_at: "Completed 05-hook-reliability/05-02-PLAN.md (Tasks 1-2 done; Task 3 checkpoint:human-verify pending)"
-last_updated: "2026-03-17T03:25:00.515Z"
+stopped_at: Completed 05-hook-reliability/05-02-PLAN.md — Phase 5 complete
+last_updated: "2026-03-17T03:33:19.986Z"
 last_activity: 2026-03-17 — Health check script built; 6-stage pipeline check with canary round-trip; awaiting user verification
 progress:
   total_phases: 4
@@ -53,6 +53,7 @@ Progress: [███░░░░░░░] 38%
 | Phase 04-diagnostics P02 | 15 | 2 tasks | 2 files |
 | Phase 05-hook-reliability P01 | 6 | 2 tasks | 4 files |
 | Phase 05-hook-reliability P02 | 3 | 2 tasks | 4 files |
+| Phase 05-hook-reliability P02 | -287 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Recent decisions affecting current work:
 - [Phase 05-02]: Hooks use global scope + [project-name] content prefix per SCOPE_FALLBACK.md — project:name colon format rejected by server v1.21.0
 - [Phase 05-02]: capture-change.sh runs add-episode foreground — 10s hook-level + 5s MCPClient timeout is acceptable; error capture requires foreground
 - [Phase 05-02]: Frostgale migration skipped — fallback active; project:frostgale would fail same colon constraint
+- [Phase Phase 05-02]: capture-change.sh runs add-episode foreground — 10s hook-level + 5s MCPClient timeout is acceptable; error capture requires foreground execution
+- [Phase Phase 05-02]: Frostgale migration skipped — fallback active; project:frostgale would fail same colon constraint as project:my-cc-setup
+- [Phase Phase 05-02]: Once-per-session health warning uses PPID-keyed /tmp flag — groups all hooks from one Claude Code process, OS-cleaned on reboot
 
 ### Pending Todos
 
@@ -93,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T03:25:00.513Z
-Stopped at: Completed 05-hook-reliability/05-02-PLAN.md (Tasks 1-2 done; Task 3 checkpoint:human-verify pending)
+Last session: 2026-03-17T03:33:19.984Z
+Stopped at: Completed 05-hook-reliability/05-02-PLAN.md — Phase 5 complete
 Resume file: None
