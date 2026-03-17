@@ -73,7 +73,7 @@ Plans:
 **Milestone Goal:** The Graphiti memory system works end-to-end — hooks persist data, failures surface visibly, sessions are navigable, and fixes are reflected in the publishable repo.
 
 - [x] **Phase 4: Diagnostics** - Map the exact failure point where hooks appear to work but data never reaches Graphiti (completed 2026-03-17)
-- [ ] **Phase 5: Hook Reliability** - Fix hooks so data persists or failures surface visibly — no more silent phantom writes
+- [x] **Phase 5: Hook Reliability** - Fix hooks so data persists or failures surface visibly — no more silent phantom writes (completed 2026-03-17)
 - [ ] **Phase 6: Session Management** - Make sessions navigable: list, view, label, and auto-name
 - [ ] **Phase 7: Verification and Sync** - Prove the system works end-to-end and publish fixes back to this repo
 
@@ -101,7 +101,7 @@ Plans:
   1. User can trigger a hook and observe either a confirmation that data was written or an explicit error message in the Claude Code session
   2. A log file captures hook errors with enough detail (timestamp, hook name, error type) to diagnose failures after the fact
   3. Running the Phase 4 health check after a hook fires shows data actually present in Neo4j, not just a success status message
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 05-01-PLAN.md — Fix scope isolation root cause (remove GRAPHITI_GROUP_ID from docker-compose.yml), harden graphiti-helper.py with 5s timeout, verify with diagnose.py
@@ -147,6 +147,6 @@ Phases execute in numeric order: 4 → 5 → 6 → 7
 | 2. Research | v1.0 | 6/6 | Complete | 2026-03-16 |
 | 3. Synthesis | v1.0 | 1/1 | Complete | 2026-03-17 |
 | 4. Diagnostics | v1.1 | 2/2 | Complete | 2026-03-17 |
-| 5. Hook Reliability | 1/2 | In Progress|  | - |
+| 5. Hook Reliability | 2/2 | Complete   | 2026-03-17 | - |
 | 6. Session Management | v1.1 | 0/1 | Not started | - |
 | 7. Verification and Sync | v1.1 | 0/2 | Not started | - |
