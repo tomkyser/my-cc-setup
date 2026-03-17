@@ -49,9 +49,9 @@
 **Plans**: 3 plans
 
 Plans:
-- [ ] 08-01-PLAN.md -- Foundation substrate: directory tree, config, core.cjs, scope.cjs
-- [ ] 08-02-PLAN.md -- MCP client and unit tests for all foundation modules
-- [ ] 08-03-PLAN.md -- Regression test suite covering all 12 v1.1 fixes
+- [x] 08-01-PLAN.md -- Foundation substrate: directory tree, config, core.cjs, scope.cjs
+- [x] 08-02-PLAN.md -- MCP client and unit tests for all foundation modules
+- [x] 08-03-PLAN.md -- Regression test suite covering all 12 v1.1 fixes
 
 ### Phase 9: Hook Migration
 **Goal**: All 5 Claude Code hook events are handled by the CJS dispatcher with full behavioral parity to the Python/Bash system, including curation, session naming, and sessions.json compatibility
@@ -63,12 +63,13 @@ Plans:
   3. The Haiku curation pipeline curates search results via OpenRouter, and gracefully degrades to truncated output if OpenRouter is unavailable
   4. Session management commands (list, view, label, backfill, index) read and write sessions.json in the existing format -- no data loss when switching from Python to CJS
   5. The Stop hook completes its summary + naming + Graphiti write within the configured timeout (verified by timing measurement in a real Claude Code session)
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
-- [ ] 09-03: TBD
+- [ ] 09-01-PLAN.md -- Library modules: curation, episodes, search + unit tests
+- [ ] 09-02-PLAN.md -- Session management module + unit tests
+- [ ] 09-03-PLAN.md -- Dispatcher + 5 hook handlers + integration tests
+- [ ] 09-04-PLAN.md -- Settings switchover + smoke test verification
 
 ### Phase 10: Operations and Cutover
 **Goal**: The CJS system is fully operational with health checking, diagnostics, verification, bidirectional sync, stack management, and a unified CLI -- and the Python/Bash system is retired
@@ -112,7 +113,7 @@ Plans:
 | 5. Hook Reliability | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 6. Session Management | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |
-| 8. Foundation and Branding | 3/3 | Complete   | 2026-03-17 | - |
-| 9. Hook Migration | v1.2 | 0/? | Not started | - |
+| 8. Foundation and Branding | v1.2 | 3/3 | Complete | 2026-03-17 |
+| 9. Hook Migration | v1.2 | 0/4 | Not started | - |
 | 10. Operations and Cutover | v1.2 | 0/? | Not started | - |
 | 11. Master Roadmap | v1.2 | 0/? | Not started | - |
