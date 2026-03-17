@@ -1,0 +1,21 @@
+{
+  "version": "0.1.0",
+  "graphiti": {
+    "mcp_url": "http://localhost:8100/mcp",
+    "health_url": "http://localhost:8100/health"
+  },
+  "curation": {
+    "model": "anthropic/claude-haiku-4.5",
+    "api_url": "https://openrouter.ai/api/v1/chat/completions"
+  },
+  "timeouts": {
+    "health": 3000,
+    "mcp": 5000,
+    "curation": 10000,
+    "summarization": 15000
+  },
+  "logging": {
+    "max_size_bytes": 1048576,
+    "file": "hook-errors.log"
+  }
+}
