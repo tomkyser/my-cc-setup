@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Fix Memory System
 status: executing
-stopped_at: Completed 06-session-management/06-01-PLAN.md
-last_updated: "2026-03-17T04:23:26.249Z"
-last_activity: "2026-03-17 — Session management core: 5 new subcommands in graphiti-helper.py, sessions.json index, hook wired"
+stopped_at: Completed 06-session-management/06-02-PLAN.md
+last_updated: "2026-03-17T04:31:00Z"
+last_activity: "2026-03-17 — Session auto-naming: two-phase Haiku naming in prompt-augment.sh and session-summary.sh, SESS-04 complete"
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 6 of 7 (Session Management)
-Plan: 1 of 2 complete in current phase
-Status: Executing — Plan 01 complete, Plan 02 pending
-Last activity: 2026-03-17 — Session management core: 5 new subcommands in graphiti-helper.py, sessions.json index, hook wired
+Phase: 6 of 7 (Session Management) -- COMPLETE
+Plan: 2 of 2 complete in current phase
+Status: Phase 6 complete -- ready for Phase 7 (Verification and Sync)
+Last activity: 2026-03-17 — Session auto-naming: two-phase Haiku naming in prompt-augment.sh and session-summary.sh, SESS-04 complete
 
-Progress: [████████░░] 83%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [████████░░] 83%
 | Phase 05-hook-reliability P02 | 3 | 2 tasks | 4 files |
 | Phase 05-hook-reliability P02 | -287 | 3 tasks | 4 files |
 | Phase 06 P01 | 3 | 2 tasks | 2 files |
+| Phase 06 P02 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,10 @@ Recent decisions affecting current work:
 - [Phase 06-01]: sessions.json uses labeled_by field (auto|user) to control whether auto-naming can overwrite labels
 - [Phase 06-01]: index-session subcommand bridges shell hooks to atomic JSON writes without jq dependency
 - [Phase 06-01]: session-summary.sh always writes index entry even if Graphiti summary is empty -- ensures session discoverability
+- [Phase 06-02]: Two-phase naming ensures even abnormally terminated sessions get a name from the first prompt
+- [Phase 06-02]: Haiku (claude-haiku-4.5) via OpenRouter for name generation at ~$0.001 per call; max_tokens: 30
+- [Phase 06-02]: Empty-label guard in index-session prevents refined naming from blanking preliminary names when summary is empty
+- [Phase 06-02]: Graceful degradation: all naming calls wrapped in 2>/dev/null || true to avoid breaking hook flow
 
 ### Pending Todos
 
@@ -101,6 +106,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T04:23:26.247Z
-Stopped at: Completed 06-session-management/06-01-PLAN.md
+Last session: 2026-03-17T04:31:00Z
+Stopped at: Completed 06-session-management/06-02-PLAN.md
 Resume file: None

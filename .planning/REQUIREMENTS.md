@@ -47,7 +47,7 @@ Requirements for Fix Memory System milestone. Each maps to roadmap phases.
 - [x] **SESS-01**: User can list all sessions chronologically via Claude Code
 - [x] **SESS-02**: User can select and view a specific session's content
 - [x] **SESS-03**: User can manually rename/label a session
-- [ ] **SESS-04**: Sessions auto-generate meaningful names (not raw timestamps)
+- [x] **SESS-04**: Sessions auto-generate meaningful names (not raw timestamps)
 
 ### Verification
 
@@ -111,7 +111,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SESS-01 | Phase 6 | Complete |
 | SESS-02 | Phase 6 | Complete |
 | SESS-03 | Phase 6 | Complete |
-| SESS-04 | Phase 6 | Pending |
+| SESS-04 | Phase 6 | Complete |
 | VRFY-01 | Phase 7 | Pending |
 | VRFY-02 | Phase 7 | Pending |
 | SYNC-01 | Phase 7 | Pending |

@@ -74,7 +74,7 @@ Plans:
 
 - [x] **Phase 4: Diagnostics** - Map the exact failure point where hooks appear to work but data never reaches Graphiti (completed 2026-03-17)
 - [x] **Phase 5: Hook Reliability** - Fix hooks so data persists or failures surface visibly — no more silent phantom writes (completed 2026-03-17)
-- [ ] **Phase 6: Session Management** - Make sessions navigable: list, view, label, and auto-name
+- [x] **Phase 6: Session Management** - Make sessions navigable: list, view, label, and auto-name (completed 2026-03-17)
 - [ ] **Phase 7: Verification and Sync** - Prove the system works end-to-end and publish fixes back to this repo
 
 ## Phase Details
@@ -116,11 +116,11 @@ Plans:
   2. User can ask Claude Code to show the content of a specific session and receive the stored episodes
   3. User can assign a human-readable label to a session and retrieve it by that label later
   4. Sessions created after this phase are auto-named with a meaningful description rather than a raw timestamp
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 06-01-PLAN.md — Add list-sessions, view-session, label-session, backfill-sessions, and index-session subcommands to graphiti-helper.py; wire session-summary.sh to write sessions.json entries
-- [ ] 06-02-PLAN.md — Implement two-phase auto-naming via Haiku (preliminary at first prompt, refined at session end); user verification of end-to-end session management
+- [x] 06-01-PLAN.md — Add list-sessions, view-session, label-session, backfill-sessions, and index-session subcommands to graphiti-helper.py; wire session-summary.sh to write sessions.json entries
+- [x] 06-02-PLAN.md — Implement two-phase auto-naming via Haiku (preliminary at first prompt, refined at session end); user verification of end-to-end session management
 
 ### Phase 7: Verification and Sync
 **Goal**: The memory system is proven working across sessions and projects, and all fixes are reflected in this repo's publishable artifacts
@@ -149,5 +149,5 @@ Phases execute in numeric order: 4 → 5 → 6 → 7
 | 3. Synthesis | v1.0 | 1/1 | Complete | 2026-03-17 |
 | 4. Diagnostics | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 5. Hook Reliability | v1.1 | 2/2 | Complete | 2026-03-17 |
-| 6. Session Management | v1.1 | 0/2 | Not started | - |
+| 6. Session Management | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 7. Verification and Sync | v1.1 | 0/2 | Not started | - |
