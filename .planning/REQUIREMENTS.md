@@ -38,7 +38,7 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 - [ ] **SWB-04**: CJS installer deploying to ~/.claude/dynamo/, eliminating Python venv
 - [ ] **SWB-05**: Settings generator for hook registrations pointing to .cjs files
 - [ ] **SWB-06**: Unified `dynamo <command>` CLI router
-- [ ] **SWB-07**: Bidirectional sync rewrite (sync-graphiti.sh → CJS)
+- [ ] **SWB-07**: Bidirectional sync rewrite (sync-graphiti.sh to CJS)
 - [ ] **SWB-08**: Stack start/stop commands (Docker compose wrappers)
 
 ### Branding
@@ -48,7 +48,7 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 
 ### Master Roadmap
 
-- [ ] **MRP-01**: Backlog items prioritized and assigned to v1.3–v2.0 milestones
+- [ ] **MRP-01**: Backlog items prioritized and assigned to v1.3-v2.0 milestones
 - [ ] **MRP-02**: Master Roadmap document created in project root
 
 ## Future Requirements
@@ -56,8 +56,8 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 Deferred to v1.3+. Tracked but not in current roadmap.
 
 ### Memory Enhancement
-- **MENH-01**: Decision engine — infer global, project, and session level context type
-- **MENH-02**: Preload engine — auto inference and injection after user prompt
+- **MENH-01**: Decision engine -- infer global, project, and session level context type
+- **MENH-02**: Preload engine -- auto inference and injection after user prompt
 - **MENH-03**: Memory synthesis and export
 - **MENH-04**: Memory inference and understanding
 - **MENH-05**: Flat file support in addition to Graph DB
@@ -91,7 +91,7 @@ Deferred to v1.3+. Tracked but not in current roadmap.
 
 | Feature | Reason |
 |---------|--------|
-| New memory features in v1.2 | Foundation first — parity before enhancement |
+| New memory features in v1.2 | Foundation first -- parity before enhancement |
 | UI/dashboard in v1.2 | Requires stable CJS substrate; deferred to v1.4+ |
 | Domain skills in v1.2 | Requires modular injection pattern to mature; deferred to v1.3+ |
 | ESM modules | CJS is the standard in this ecosystem (GSD, existing hooks, package.json) |
@@ -103,41 +103,41 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | — | Pending |
-| FND-02 | — | Pending |
-| FND-03 | — | Pending |
-| FND-04 | — | Pending |
-| FND-05 | — | Pending |
-| FND-06 | — | Pending |
-| FND-07 | — | Pending |
-| LDG-01 | — | Pending |
-| LDG-02 | — | Pending |
-| LDG-03 | — | Pending |
-| LDG-04 | — | Pending |
-| LDG-05 | — | Pending |
-| LDG-06 | — | Pending |
-| LDG-07 | — | Pending |
-| LDG-08 | — | Pending |
-| LDG-09 | — | Pending |
-| LDG-10 | — | Pending |
-| SWB-01 | — | Pending |
-| SWB-02 | — | Pending |
-| SWB-03 | — | Pending |
-| SWB-04 | — | Pending |
-| SWB-05 | — | Pending |
-| SWB-06 | — | Pending |
-| SWB-07 | — | Pending |
-| SWB-08 | — | Pending |
-| BRD-01 | — | Pending |
-| BRD-02 | — | Pending |
-| MRP-01 | — | Pending |
-| MRP-02 | — | Pending |
+| FND-01 | Phase 8 | Pending |
+| FND-02 | Phase 8 | Pending |
+| FND-03 | Phase 8 | Pending |
+| FND-04 | Phase 8 | Pending |
+| FND-05 | Phase 8 | Pending |
+| FND-06 | Phase 8 | Pending |
+| FND-07 | Phase 8 | Pending |
+| LDG-01 | Phase 9 | Pending |
+| LDG-02 | Phase 9 | Pending |
+| LDG-03 | Phase 9 | Pending |
+| LDG-04 | Phase 9 | Pending |
+| LDG-05 | Phase 9 | Pending |
+| LDG-06 | Phase 9 | Pending |
+| LDG-07 | Phase 9 | Pending |
+| LDG-08 | Phase 9 | Pending |
+| LDG-09 | Phase 9 | Pending |
+| LDG-10 | Phase 9 | Pending |
+| SWB-01 | Phase 10 | Pending |
+| SWB-02 | Phase 10 | Pending |
+| SWB-03 | Phase 10 | Pending |
+| SWB-04 | Phase 10 | Pending |
+| SWB-05 | Phase 10 | Pending |
+| SWB-06 | Phase 10 | Pending |
+| SWB-07 | Phase 10 | Pending |
+| SWB-08 | Phase 10 | Pending |
+| BRD-01 | Phase 8 | Pending |
+| BRD-02 | Phase 8 | Pending |
+| MRP-01 | Phase 11 | Pending |
+| MRP-02 | Phase 11 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 29 total
-- Mapped to phases: 0
-- Unmapped: 29 ⚠️
+- Mapped to phases: 29
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-17*
-*Last updated: 2026-03-17 after initial definition*
+*Last updated: 2026-03-17 after roadmap creation*
