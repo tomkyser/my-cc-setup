@@ -35,7 +35,7 @@ echo ""
 if [ "$PROJECT" != "unknown" ] && [ "$PROJECT" != "tom.kyser" ]; then
   echo "## Project: ${PROJECT}"
   PROJ_CTX=$($HELPER search --query "architecture decisions conventions patterns requirements" \
-    --scope "project:${PROJECT}" --limit 15 \
+    --scope "project-${PROJECT}" --limit 15 \
     --curate "Starting a ${SOURCE} session in project: ${PROJECT}" 2>/dev/null)
   if [ -n "$PROJ_CTX" ]; then
     echo "$PROJ_CTX"
@@ -47,7 +47,7 @@ if [ "$PROJECT" != "unknown" ] && [ "$PROJECT" != "tom.kyser" ]; then
   # Recent session summaries
   echo "## Recent Sessions"
   SESSIONS=$($HELPER search --query "session summary accomplished decisions outcome" \
-    --scope "project:${PROJECT}" --limit 5 \
+    --scope "project-${PROJECT}" --limit 5 \
     --curate "What happened in recent sessions for project: ${PROJECT}" 2>/dev/null)
   if [ -n "$SESSIONS" ]; then
     echo "$SESSIONS"

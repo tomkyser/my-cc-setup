@@ -1,6 +1,9 @@
 # Environment files with secrets
 graphiti/.env
 
+# Sync state
+graphiti/.last-sync
+
 # Python
 graphiti/.venv/
 __pycache__/

@@ -38,9 +38,12 @@ cp "$SCRIPT_DIR/graphiti/requirements.txt" "$DEST/"
 cp "$SCRIPT_DIR/graphiti/start-graphiti.sh" "$DEST/"
 cp "$SCRIPT_DIR/graphiti/stop-graphiti.sh" "$DEST/"
 cp "$SCRIPT_DIR/graphiti/curation/prompts.yaml" "$DEST/curation/"
+cp "$SCRIPT_DIR/graphiti/diagnose.py" "$DEST/"
+cp "$SCRIPT_DIR/graphiti/health-check.py" "$DEST/"
+cp "$SCRIPT_DIR/graphiti/SCOPE_FALLBACK.md" "$DEST/"
 cp "$SCRIPT_DIR/graphiti/hooks/"*.sh "$DEST/hooks/"
 
-chmod +x "$DEST/start-graphiti.sh" "$DEST/stop-graphiti.sh" "$DEST/hooks/"*.sh
+chmod +x "$DEST/start-graphiti.sh" "$DEST/stop-graphiti.sh" "$DEST/hooks/"*.sh "$DEST/diagnose.py" "$DEST/health-check.py" "$DEST/graphiti-helper.py"
 echo "  Files copied."
 
 # --- Python venv ---

@@ -34,7 +34,6 @@ services:
       - NEO4J_USER=${NEO4J_USER:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-graphiti-memory-2026}
       - NEO4J_DATABASE=${NEO4J_DATABASE:-neo4j}
-      - GRAPHITI_GROUP_ID=${GRAPHITI_GROUP_ID:-global}
       - SEMAPHORE_LIMIT=${SEMAPHORE_LIMIT:-8}
       - OPENAI_API_KEY=${OPENROUTER_API_KEY}
       - OPENAI_API_URL=https://openrouter.ai/api/v1
