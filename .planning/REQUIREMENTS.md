@@ -32,9 +32,9 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 
 ### Switchboard
 
-- [ ] **SWB-01**: Health check (6 stages: Docker, Neo4j, API, MCP session, env vars, canary)
+- [x] **SWB-01**: Health check (6 stages: Docker, Neo4j, API, MCP session, env vars, canary)
 - [ ] **SWB-02**: Verify-memory end-to-end pipeline test (6 checks including scope round-trip)
-- [ ] **SWB-03**: Deep diagnostics ported from diagnose.py (13 stages)
+- [x] **SWB-03**: Deep diagnostics ported from diagnose.py (13 stages)
 - [ ] **SWB-04**: CJS installer deploying to ~/.claude/dynamo/, eliminating Python venv
 - [ ] **SWB-05**: Settings generator for hook registrations pointing to .cjs files
 - [ ] **SWB-06**: Unified `dynamo <command>` CLI router
@@ -120,9 +120,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LDG-08 | Phase 9 (09-02) | Complete |
 | LDG-09 | Phase 9 (09-02) | Complete |
 | LDG-10 | Phase 9 (09-02) | Complete |
-| SWB-01 | Phase 10 | Pending |
+| SWB-01 | Phase 10 | Complete |
 | SWB-02 | Phase 10 | Pending |
-| SWB-03 | Phase 10 | Pending |
+| SWB-03 | Phase 10 | Complete |
 | SWB-04 | Phase 10 | Pending |
 | SWB-05 | Phase 10 | Pending |
 | SWB-06 | Phase 10 | Pending |
