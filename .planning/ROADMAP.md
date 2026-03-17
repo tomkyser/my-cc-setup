@@ -116,10 +116,11 @@ Plans:
   2. User can ask Claude Code to show the content of a specific session and receive the stored episodes
   3. User can assign a human-readable label to a session and retrieve it by that label later
   4. Sessions created after this phase are auto-named with a meaningful description rather than a raw timestamp
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 06-01: Implement session listing and viewing via Graphiti MCP tools; implement session labeling and auto-naming
+- [ ] 06-01-PLAN.md — Add list-sessions, view-session, label-session, backfill-sessions, and index-session subcommands to graphiti-helper.py; wire session-summary.sh to write sessions.json entries
+- [ ] 06-02-PLAN.md — Implement two-phase auto-naming via Haiku (preliminary at first prompt, refined at session end); user verification of end-to-end session management
 
 ### Phase 7: Verification and Sync
 **Goal**: The memory system is proven working across sessions and projects, and all fixes are reflected in this repo's publishable artifacts
@@ -147,6 +148,6 @@ Phases execute in numeric order: 4 → 5 → 6 → 7
 | 2. Research | v1.0 | 6/6 | Complete | 2026-03-16 |
 | 3. Synthesis | v1.0 | 1/1 | Complete | 2026-03-17 |
 | 4. Diagnostics | v1.1 | 2/2 | Complete | 2026-03-17 |
-| 5. Hook Reliability | 2/2 | Complete   | 2026-03-17 | - |
-| 6. Session Management | v1.1 | 0/1 | Not started | - |
+| 5. Hook Reliability | v1.1 | 2/2 | Complete | 2026-03-17 |
+| 6. Session Management | v1.1 | 0/2 | Not started | - |
 | 7. Verification and Sync | v1.1 | 0/2 | Not started | - |
