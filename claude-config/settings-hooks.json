@@ -1,5 +1,9 @@
 {
-  "_comment": "Merge these into your ~/.claude/settings.json. This file shows ONLY the Graphiti-specific additions.",
+  "_comment": "Merge these into your ~/.claude/settings.json. This file shows ONLY the Dynamo/Graphiti-specific additions.",
+
+  "env": {
+    "CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS": "10000"
+  },
 
   "permissions": {
     "allow": [
@@ -24,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/graphiti/hooks/session-start.sh",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
             "timeout": 30
           }
         ]
@@ -34,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/graphiti/hooks/session-start.sh",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
             "timeout": 30
           }
         ]
@@ -46,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/graphiti/hooks/prompt-augment.sh",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
             "timeout": 15
           }
         ]
@@ -58,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/graphiti/hooks/capture-change.sh",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
             "timeout": 10
           }
         ]
@@ -70,7 +74,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/graphiti/hooks/preserve-knowledge.sh",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
             "timeout": 30
           }
         ]
@@ -82,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/graphiti/hooks/session-summary.sh",
+            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
             "timeout": 30
           }
         ]
