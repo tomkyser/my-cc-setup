@@ -1,12 +1,12 @@
-# Claude Code Global Setup Enhancers
+# Dynamo
 
 ## What This Is
 
-A research and implementation project for enhancing Claude Code's global capabilities. v1.0 produced a ranked report of vetted MCPs and tools. v1.1 diagnosed and fixed the Graphiti memory system — hooks now persist data reliably, sessions are navigable, and the system is verified end-to-end.
+A Claude Code power-user platform comprising two systems: **Ledger** (memory — knowledge storage, retrieval, inference) and **Switchboard** (management — hooks, skills, agents, dependencies). v1.0 researched and ranked tools. v1.1 diagnosed and fixed the Graphiti-based memory system. v1.2 rebuilds the foundation on Node/CJS architecture with feature parity, establishing the substrate both systems build on.
 
 ## Core Value
 
-Every recommended tool must be self-manageable by Claude Code (install, configure, update, troubleshoot) without requiring manual user intervention in config files.
+Every capability must be self-manageable by Claude Code (install, configure, update, troubleshoot) without requiring manual user intervention in config files.
 
 ## Requirements
 
@@ -27,25 +27,44 @@ Every recommended tool must be self-manageable by Claude Code (install, configur
 
 ### Active
 
-(None — planning next milestone)
+- [ ] CJS architectural foundation (shared substrate for Ledger + Switchboard)
+- [ ] Dynamo/Ledger/Switchboard branding and project restructure
+- [ ] Modular injection pattern established
+- [ ] Feature parity: existing hooks, session mgmt, health checks, sync on CJS
+- [ ] Master Roadmap: prioritize and assign backlog to v1.3–v2.0
 
 ### Out of Scope
 
-- Memory/knowledge graph MCPs — already solved with Graphiti
-- Project-specific or workflow-specific tools — general-purpose only
-- Per-project configuration — everything lives in global scope (~/.claude)
+- New memory features (decision engine, preload engine) — deferred to v1.3+
+- UI/dashboard — deferred to v1.4+
+- Domain-specific skills/agents (WPCS, Context7, Playwright) — deferred to v1.3+
+- Council-style AI deliberation — deferred, needs research
 - Database/SQL access MCPs — not requested
-- Memory system redesign — fixed, not redesigned
 - Real-time chat/notification for errors — visible error output is sufficient
+
+## Current Milestone: v1.2 Dynamo Foundation
+
+**Goal:** Rewrite the Python/Bash foundation to Node/CJS architecture with full feature parity, establishing the shared substrate for Ledger (memory) and Switchboard (management).
+
+**Target features:**
+- CJS architectural foundation (modular, testable, GSD-pattern)
+- Dynamo/Ledger/Switchboard branding and identity
+- Modular injection pattern for hooks and capabilities
+- Feature parity with existing system on new architecture
+- Master Roadmap document for v1.3–v2.0
 
 ## Context
 
 Shipped v1.0 (research) and v1.1 (memory fixes) across 7 phases and 16 plans.
-Tech stack: Python (graphiti-helper.py, diagnose.py, health-check.py), Bash (hooks, sync), Claude Haiku (session naming via OpenRouter).
+Current tech stack: Python (graphiti-helper.py, diagnose.py, health-check.py), Bash (hooks, sync), Claude Haiku (session naming via OpenRouter).
 Total project: ~22,700 LOC across Python, Bash, Markdown, JSON, YAML.
 Memory system is now healthy: hooks persist data, errors surface visibly, sessions auto-name.
 
-Future requirements identified in v1.0 research (hook enhancements, memory quality, web research tools, WordPress MCP) are documented in the v1.1 requirements archive.
+v1.2 migrates to Node/CJS architecture following GSD patterns (see github.com/gsd-build/get-shit-done).
+Project rebranded: **Dynamo** (umbrella), **Ledger** (memory system), **Switchboard** (management system).
+Ledger = what Claude knows. Switchboard = how Claude behaves. Independently upgradeable, connected via shared CJS substrate.
+
+Future backlog (hook enhancements, memory quality, web research tools, WordPress MCP, UI, domain skills) documented in Master Roadmap and v1.1 requirements archive.
 
 ## Key Decisions
 
@@ -59,6 +78,9 @@ Future requirements identified in v1.0 research (hook enhancements, memory quali
 | Global scope + [project] content prefix | Graphiti v1.21.0 rejects colon in group_id | ✓ Good — workaround documented in SCOPE_FALLBACK.md |
 | Two-phase auto-naming via Haiku | Cost-efficient (~$0.001/call) with graceful degradation | ✓ Good |
 | Foreground hook execution with 5s timeout | Error capture requires foreground; fast timeout prevents blocking | ✓ Good |
+| Rebrand to Dynamo/Ledger/Switchboard | Separate memory (Ledger) from management (Switchboard) for independent evolution | — Pending |
+| CJS rewrite over Python/Bash | GSD-pattern CJS is proven, modular, testable; unifies tech stack | — Pending |
+| Feature parity before new features | Stable foundation first, new capabilities in v1.3+ | — Pending |
 
 ## Constraints
 
@@ -70,4 +92,4 @@ Future requirements identified in v1.0 research (hook enhancements, memory quali
 - **Platform**: macOS (Darwin), zsh, Homebrew available
 
 ---
-*Last updated: 2026-03-17 after v1.1 milestone*
+*Last updated: 2026-03-17 after v1.2 milestone start*
