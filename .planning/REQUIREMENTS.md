@@ -36,13 +36,13 @@
 
 - [x] **INFR-01**: Document vetting protocol — programmatic criteria (GitHub stars, commit recency <30 days, security, self-management capability)
 - [x] **INFR-02**: Document anti-features list with reasoning (tools to explicitly avoid and why)
-- [ ] **INFR-03**: Document self-management lifecycle for each recommended tool (install, configure, update, troubleshoot commands)
+- [x] **INFR-03**: Document self-management lifecycle for each recommended tool (install, configure, update, troubleshoot commands)
 
 ### Deliverable
 
-- [ ] **DLVR-01**: Produce ranked report in markdown — categories, ratings, pros/cons, final recommendations (5-8 tools)
-- [ ] **DLVR-02**: Report includes context cost estimates per tool (token overhead)
-- [ ] **DLVR-03**: Report includes security assessment per tool (mcp-scan or equivalent)
+- [x] **DLVR-01**: Produce ranked report in markdown — categories, ratings, pros/cons, final recommendations (5-8 tools)
+- [x] **DLVR-02**: Report includes context cost estimates per tool (token overhead)
+- [x] **DLVR-03**: Report includes security assessment per tool (mcp-scan or equivalent)
 
 ## v2 Requirements
 
@@ -86,10 +86,10 @@
 | MEMO-01 | Phase 2 | Complete |
 | MEMO-02 | Phase 2 | Complete |
 | MEMO-03 | Phase 2 | Complete |
-| INFR-03 | Phase 3 | Pending |
-| DLVR-01 | Phase 3 | Pending |
-| DLVR-02 | Phase 3 | Pending |
-| DLVR-03 | Phase 3 | Pending |
+| INFR-03 | Phase 3 | Complete |
+| DLVR-01 | Phase 3 | Complete |
+| DLVR-02 | Phase 3 | Complete |
+| DLVR-03 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 18 total
