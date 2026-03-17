@@ -18,13 +18,11 @@ Every recommended tool must be self-manageable by Claude Code (install, configur
 
 ### Active
 
-- [ ] Research MCP ecosystem for general capability enhancers (language refs, docs, linting, formatting)
-- [ ] Research CLI tools Claude Code can leverage globally
-- [ ] Research Claude Code plugins that add general capabilities
-- [ ] Vet each candidate against trust criteria (GitHub stars, recent commits within past month, active community)
-- [ ] Verify each candidate supports full lifecycle self-management by CC (install, configure, update, troubleshoot)
-- [ ] Produce ranked report with categories, ratings, pros/cons, and final recommendations
-- [ ] Final list is lean: 5-8 total additions max
+<!-- v1.1: Fix Memory System -->
+- [ ] Diagnose why Graphiti memory hooks fail silently (appear to work but don't persist data)
+- [ ] Diagnose why project-scoped memories are not being stored
+- [ ] Fix hook reliability — ensure MCP calls succeed or surface errors visibly
+- [ ] Verify memory system works end-to-end across sessions and projects
 
 ### Out of Scope
 
@@ -53,6 +51,16 @@ Every recommended tool must be self-manageable by Claude Code (install, configur
 - **Scope**: Global only — lives in ~/.claude or global config, available to all projects
 - **Platform**: macOS (Darwin), zsh, Homebrew available
 
+## Current Milestone: v1.1 Fix Memory System
+
+**Goal:** Diagnose and fix the Graphiti memory system — hooks appear to work but silently fail to persist data, especially for project-scoped memories.
+
+**Target features:**
+- Root cause diagnosis of silent hook failures
+- Fix hook → Graphiti MCP data persistence pipeline
+- Error visibility when memory operations fail
+- End-to-end verification that memories persist across sessions and projects
+
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
@@ -63,4 +71,4 @@ Every recommended tool must be self-manageable by Claude Code (install, configur
 | Lean final list (5-8) | Quality over quantity — only the best earn a spot | — Pending |
 
 ---
-*Last updated: 2025-03-16 after initialization*
+*Last updated: 2026-03-16 after milestone v1.1 start*
