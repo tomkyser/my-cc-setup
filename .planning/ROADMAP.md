@@ -104,7 +104,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 05-01: Apply fixes to hook scripts — add error propagation, visible failure output, and file-based logging; validate against Phase 4 failure points
+- [x] 05-01: Apply fixes to hook scripts — add error propagation, visible failure output, and file-based logging; validate against Phase 4 failure points (completed 2026-03-17)
 
 ### Phase 6: Session Management
 **Goal**: The user can browse, view, label, and auto-name sessions through Claude Code without touching raw Neo4j or config files

@@ -41,7 +41,7 @@ patterns-established:
 
 requirements-completed: [DIAG-03]
 
-duration: 4min
+duration: 15min
 completed: 2026-03-17
 ---
 
@@ -51,10 +51,10 @@ completed: 2026-03-17
 
 ## Performance
 
-- **Duration:** ~4 min
+- **Duration:** ~15 min (including checkpoint wait)
 - **Started:** 2026-03-17T02:31:15Z
-- **Completed:** 2026-03-17T02:35:00Z
-- **Tasks:** 1 of 2 complete (Task 2 is checkpoint:human-verify)
+- **Completed:** 2026-03-17T02:43:00Z
+- **Tasks:** 2 of 2 complete
 - **Files modified:** 2 (outside project git repo)
 
 ## Accomplishments
@@ -63,10 +63,12 @@ completed: 2026-03-17
 - Built `~/.claude/graphiti/hooks/health-check.sh` — thin shell wrapper that delegates to health-check.py, enabling `~/.claude/graphiti/hooks/health-check.sh [--json] [--verbose]` from Claude Code or terminal
 - Canary round-trip implemented: generates unique `diag-canary-{8chars}` ID, writes to global scope, waits 2 seconds, reads back; produces WARN (not FAIL) when read returns empty, which is the correct behavior given DIAG-02 finding
 - JSON output mode (`--json`) produces structured output with `healthy`, `summary`, and per-stage `status`/`detail` fields for programmatic use in Phase 7
+- User verification complete (via orchestrator): all 6 stages reported correctly — 5 OK + 1 WARN (canary round-trip, expected); JSON output valid with `healthy: true`, `passed: 5`, `warned: 1`, `failed: 0`; diagnostic report DIAG-01 and DIAG-02 root causes confirmed; root causes match observed behavior (GRAPHITI_GROUP_ID=global overrides all scopes)
 
 ## Task Commits
 
-1. **Task 1: Create health check script and shell wrapper** — files in `~/.claude/graphiti/` (outside project git repo, not committable to project history)
+1. **Task 1: Create health check script and shell wrapper** — `cb7c998` (docs — checkpoint commit; files in `~/.claude/graphiti/` are outside project git repo)
+2. **Task 2: Verify health check output and diagnostic findings** — checkpoint:human-verify, approved by orchestrator (no code commit — verification only)
 
 **Plan metadata:** [committed with this SUMMARY]
 
@@ -91,7 +93,7 @@ None - plan executed exactly as written.
 
 ## User Setup Required
 
-None — health check is ready to run. Task 2 (checkpoint:human-verify) asks the user to run the health check and confirm output is correct.
+None — health check is installed and verified. No external service configuration required.
 
 ## Next Phase Readiness
 
