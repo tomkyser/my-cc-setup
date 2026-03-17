@@ -32,8 +32,8 @@ Requirements for Fix Memory System milestone. Each maps to roadmap phases.
 
 ### Diagnostics
 
-- [ ] **DIAG-01**: Root cause identified for why hooks display success but fail to persist data to Graphiti
-- [ ] **DIAG-02**: Root cause identified for why project-scoped memories are not stored
+- [x] **DIAG-01**: Root cause identified for why hooks display success but fail to persist data to Graphiti
+- [x] **DIAG-02**: Root cause identified for why project-scoped memories are not stored
 - [ ] **DIAG-03**: Reusable health check command verifies the full memory pipeline (hooks -> graphiti-helper.py -> Graphiti API -> Neo4j)
 
 ### Hook Reliability
@@ -102,8 +102,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DIAG-01 | Phase 4 | Pending |
-| DIAG-02 | Phase 4 | Pending |
+| DIAG-01 | Phase 4 | Complete |
+| DIAG-02 | Phase 4 | Complete |
 | DIAG-03 | Phase 4 | Pending |
 | HOOK-01 | Phase 5 | Pending |
 | HOOK-02 | Phase 5 | Pending |

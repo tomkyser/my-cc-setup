@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Fix Memory System
-status: planning
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-17T02:05:59.583Z"
-last_activity: 2026-03-16 — Roadmap created for v1.1, Phase 4 ready to plan
+status: in-progress
+stopped_at: "Completed 04-01-PLAN.md"
+last_updated: "2026-03-17T02:28:00Z"
+last_activity: 2026-03-17 — Phase 4 Plan 1 complete: pipeline diagnostic identified DIAG-01/DIAG-02 root causes
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 4 of 7 (Diagnostics)
-Plan: 0 of 1 in current phase
-Status: Ready to plan
-Last activity: 2026-03-16 — Roadmap created for v1.1, Phase 4 ready to plan
+Plan: 1 of 2 in current phase
+Status: In progress — Plan 1 of 2 complete
+Last activity: 2026-03-17 — Pipeline diagnostic complete, root causes for DIAG-01 and DIAG-02 confirmed
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -62,6 +62,10 @@ Recent decisions affecting current work:
 - [v1.1-init]: Root cause: hooks display status messages but MCP calls to Graphiti fail silently
 - [v1.1-init]: Zero project-scoped memories stored despite hooks appearing to execute
 - [v1.1-roadmap]: Phase 6 (Session Management) depends on Phase 5 (Hook Reliability) — session features require working hooks
+- [04-01-diag]: DIAG-01 confirmed: NOT a silent write failure — writes succeed; 2>/dev/null is a future risk but not current root cause
+- [04-01-diag]: DIAG-02 confirmed: GRAPHITI_GROUP_ID=global in docker-compose.yml overrides per-request group_id; API v1.21.0 echoes requested group_id in response but stores as global
+- [04-01-diag]: Project detection is correct — detect-project returns 'my-cc-setup' from git remote, iCloud path is not the issue
+- [04-01-diag]: Fix direction for DIAG-02: remove GRAPHITI_GROUP_ID from docker-compose.yml and test server respects per-request group_id
 
 ### Pending Todos
 
@@ -69,12 +73,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- Hooks fire and print status but actual mcp__graphiti__add_memory calls may not execute or may error silently
-- No project-scoped episodes exist (e.g., project:frostgale has zero entries)
-- Global scope has sparse data — mostly test sessions and seed preferences
+- RESOLVED: Hooks fire and print status but actual mcp__graphiti__add_memory calls may not execute or may error silently — ACTUALLY: writes succeed, 2>/dev/null is a risk but not a current failure
+- RESOLVED ROOT CAUSE: No project-scoped episodes exist — BECAUSE: server-level GRAPHITI_GROUP_ID=global overrides all group_id values to global
+- Global scope has data (10+ episodes including session summaries) — scope isolation is the fix needed
 
 ## Session Continuity
 
-Last session: 2026-03-17T02:05:59.581Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-diagnostics/04-CONTEXT.md
+Last session: 2026-03-17T02:28:00Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: .planning/phases/04-diagnostics/04-01-SUMMARY.md
