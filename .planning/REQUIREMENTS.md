@@ -9,12 +9,12 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 
 ### Foundation
 
-- [ ] **FND-01**: CJS shared substrate (core.cjs) with config loading, .env parsing, project detection, output formatting
+- [x] **FND-01**: CJS shared substrate (core.cjs) with config loading, .env parsing, project detection, output formatting
 - [ ] **FND-02**: MCP client with SSE parsing for Graphiti JSON-RPC communication
-- [ ] **FND-03**: Scope constants and validation function rejecting invalid characters (colon constraint)
-- [ ] **FND-04**: Error logging with 1MB rotation, ISO timestamps, hook name prefix
-- [ ] **FND-05**: Health guard (once-per-session flag using process.ppid)
-- [ ] **FND-06**: Shared HTTP utility with explicit timeouts (fetchWithTimeout)
+- [x] **FND-03**: Scope constants and validation function rejecting invalid characters (colon constraint)
+- [x] **FND-04**: Error logging with 1MB rotation, ISO timestamps, hook name prefix
+- [x] **FND-05**: Health guard (once-per-session flag using process.ppid)
+- [x] **FND-06**: Shared HTTP utility with explicit timeouts (fetchWithTimeout)
 - [ ] **FND-07**: Regression test suite covering all 12 v1.1 fixes
 
 ### Ledger
@@ -43,8 +43,8 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 
 ### Branding
 
-- [ ] **BRD-01**: Project renamed to Dynamo with Ledger/Switchboard subsystem identity
-- [ ] **BRD-02**: Directory restructured to ~/.claude/dynamo/ with lib/ledger/ and lib/switchboard/
+- [x] **BRD-01**: Project renamed to Dynamo with Ledger/Switchboard subsystem identity
+- [x] **BRD-02**: Directory restructured to ~/.claude/dynamo/ with lib/ledger/ and lib/switchboard/
 
 ### Master Roadmap
 
@@ -103,12 +103,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 8 | Pending |
+| FND-01 | Phase 8 | Complete |
 | FND-02 | Phase 8 | Pending |
-| FND-03 | Phase 8 | Pending |
-| FND-04 | Phase 8 | Pending |
-| FND-05 | Phase 8 | Pending |
-| FND-06 | Phase 8 | Pending |
+| FND-03 | Phase 8 | Complete |
+| FND-04 | Phase 8 | Complete |
+| FND-05 | Phase 8 | Complete |
+| FND-06 | Phase 8 | Complete |
 | FND-07 | Phase 8 | Pending |
 | LDG-01 | Phase 9 | Pending |
 | LDG-02 | Phase 9 | Pending |
@@ -128,8 +128,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SWB-06 | Phase 10 | Pending |
 | SWB-07 | Phase 10 | Pending |
 | SWB-08 | Phase 10 | Pending |
-| BRD-01 | Phase 8 | Pending |
-| BRD-02 | Phase 8 | Pending |
+| BRD-01 | Phase 8 | Complete |
+| BRD-02 | Phase 8 | Complete |
 | MRP-01 | Phase 11 | Pending |
 | MRP-02 | Phase 11 | Pending |
 
