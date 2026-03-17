@@ -130,6 +130,17 @@ This means diagnose.py stage 8 remains FAIL (9/10), but per the plan's acceptanc
 - Container is clean: no GRAPHITI_GROUP_ID override, both containers healthy
 - `SCOPE_FALLBACK.md` provides the rationale for Plan 02's scope approach
 
+## Self-Check: PASSED
+
+All deliverables verified:
+- `~/.claude/graphiti/SCOPE_FALLBACK.md` exists
+- `.planning/phases/05-hook-reliability/05-01-SUMMARY.md` exists
+- `GRAPHITI_GROUP_ID` absent from `docker-compose.yml` (grep count: 0)
+- `GRAPHITI_GROUP_ID` absent from `.env` (grep count: 0)
+- `timeout.*5` present in `graphiti-helper.py` line 59
+- `docker inspect graphiti-mcp` shows no GRAPHITI_GROUP_ID in env
+- Final commit: `374bf44`
+
 ---
 *Phase: 05-hook-reliability*
 *Completed: 2026-03-17*
