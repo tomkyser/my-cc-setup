@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Fix Memory System
 status: executing
-stopped_at: Completed 05-hook-reliability/05-02-PLAN.md — Phase 5 complete
-last_updated: "2026-03-17T03:45:57.408Z"
-last_activity: 2026-03-17 — Health check script built; 6-stage pipeline check with canary round-trip; awaiting user verification
+stopped_at: Completed 06-session-management/06-01-PLAN.md
+last_updated: "2026-03-17T04:23:26.249Z"
+last_activity: "2026-03-17 — Session management core: 5 new subcommands in graphiti-helper.py, sessions.json index, hook wired"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 38
+  total_plans: 6
+  completed_plans: 5
+  percent: 83
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** Every recommended tool must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Milestone v1.1 — Phase 4: Diagnostics
+**Current focus:** Milestone v1.1 — Phase 6: Session Management
 
 ## Current Position
 
-Phase: 4 of 7 (Diagnostics)
-Plan: 2 of 2 in current phase (Task 1 complete, awaiting checkpoint:human-verify)
-Status: In progress — Plan 2 of 2 at checkpoint
-Last activity: 2026-03-17 — Health check script built; 6-stage pipeline check with canary round-trip; awaiting user verification
+Phase: 6 of 7 (Session Management)
+Plan: 1 of 2 complete in current phase
+Status: Executing — Plan 01 complete, Plan 02 pending
+Last activity: 2026-03-17 — Session management core: 5 new subcommands in graphiti-helper.py, sessions.json index, hook wired
 
-Progress: [███░░░░░░░] 38%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [███░░░░░░░] 38%
 | Phase 05-hook-reliability P01 | 6 | 2 tasks | 4 files |
 | Phase 05-hook-reliability P02 | 3 | 2 tasks | 4 files |
 | Phase 05-hook-reliability P02 | -287 | 3 tasks | 4 files |
+| Phase 06 P01 | 3 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase Phase 05-02]: capture-change.sh runs add-episode foreground — 10s hook-level + 5s MCPClient timeout is acceptable; error capture requires foreground execution
 - [Phase Phase 05-02]: Frostgale migration skipped — fallback active; project:frostgale would fail same colon constraint as project:my-cc-setup
 - [Phase Phase 05-02]: Once-per-session health warning uses PPID-keyed /tmp flag — groups all hooks from one Claude Code process, OS-cleaned on reboot
+- [Phase 06-01]: sessions.json uses labeled_by field (auto|user) to control whether auto-naming can overwrite labels
+- [Phase 06-01]: index-session subcommand bridges shell hooks to atomic JSON writes without jq dependency
+- [Phase 06-01]: session-summary.sh always writes index entry even if Graphiti summary is empty -- ensures session discoverability
 
 ### Pending Todos
 
@@ -97,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T03:33:19.984Z
-Stopped at: Completed 05-hook-reliability/05-02-PLAN.md — Phase 5 complete
+Last session: 2026-03-17T04:23:26.247Z
+Stopped at: Completed 06-session-management/06-01-PLAN.md
 Resume file: None
