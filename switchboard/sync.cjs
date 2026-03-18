@@ -16,9 +16,9 @@ const { DYNAMO_DIR, output, error } = require(resolveCore());
 
 // --- Constants ---
 
-const REPO_DIR = path.join(__dirname, '..');  // repo root from switchboard/
+const REPO_ROOT = path.join(__dirname, '..');  // repo root from switchboard/
 const LIVE_DIR = path.join(os.homedir(), '.claude', 'dynamo');
-const SYNC_STAMP = path.join(REPO_DIR, '.last-sync');
+const SYNC_STAMP = path.join(REPO_ROOT, '.last-sync');
 
 const SYNC_EXCLUDES = [
   '.env', '.env.example', '.venv', '__pycache__', 'sessions.json',
@@ -27,6 +27,13 @@ const SYNC_EXCLUDES = [
 ];
 
 const GLOB_EXCLUDES = ['*.pyc'];  // pattern-based excludes
+
+// 3-directory sync pairs: repo source dir -> live destination dir
+const SYNC_PAIRS = [
+  { repo: path.join(REPO_ROOT, 'dynamo'), live: LIVE_DIR, label: 'dynamo', excludes: [...SYNC_EXCLUDES, 'tests'] },
+  { repo: path.join(REPO_ROOT, 'ledger'), live: path.join(LIVE_DIR, 'ledger'), label: 'ledger', excludes: SYNC_EXCLUDES },
+  { repo: path.join(REPO_ROOT, 'switchboard'), live: path.join(LIVE_DIR, 'switchboard'), label: 'switchboard', excludes: SYNC_EXCLUDES },
+];
 
 // --- Helpers ---
 
@@ -191,6 +198,22 @@ function writeLastSync() {
   fs.writeFileSync(SYNC_STAMP, new Date().toISOString() + '\n', 'utf8');
 }
 
+/**
+ * Walk all sync pairs and return aggregated file maps for each direction.
+ * For repo-to-live: repo files are source, live files are destination.
+ * For live-to-repo: live files are source, repo files are destination.
+ * Returns per-pair results: [{ pair, repoFiles, liveFiles }]
+ */
+function walkAllPairs() {
+  const results = [];
+  for (const pair of SYNC_PAIRS) {
+    const repoFiles = walkDir(pair.repo, pair.excludes, GLOB_EXCLUDES);
+    const liveFiles = walkDir(pair.live, pair.excludes, GLOB_EXCLUDES);
+    results.push({ pair, repoFiles, liveFiles });
+  }
+  return results;
+}
+
 // --- Main command ---
 
 async function run(args, pretty) {
@@ -215,31 +238,42 @@ async function run(args, pretty) {
     return;
   }
 
-  // Walk both trees
-  const repoFiles = walkDir(REPO_DIR, SYNC_EXCLUDES, GLOB_EXCLUDES);
-  const liveFiles = walkDir(LIVE_DIR, SYNC_EXCLUDES, GLOB_EXCLUDES);
+  // Walk all sync pairs
+  const pairResults = walkAllPairs();
 
   // --- Status ---
   if (direction === 'status') {
-    const repoToLive = diffTrees(repoFiles, liveFiles);
-    const liveToRepo = diffTrees(liveFiles, repoFiles);
+    const pairs = [];
+    let totalRtl = 0, totalLtr = 0;
+    for (const { pair, repoFiles, liveFiles } of pairResults) {
+      const repoToLive = diffTrees(repoFiles, liveFiles);
+      const liveToRepo = diffTrees(liveFiles, repoFiles);
+      const rtl = repoToLive.toCopy.length + repoToLive.toDelete.length;
+      const ltr = liveToRepo.toCopy.length + liveToRepo.toDelete.length;
+      totalRtl += rtl;
+      totalLtr += ltr;
+      pairs.push({
+        label: pair.label,
+        repo_to_live: repoToLive,
+        live_to_repo: liveToRepo
+      });
+    }
+
     const result = {
       command: 'sync',
       subcommand: 'status',
-      repo_to_live: repoToLive,
-      live_to_repo: liveToRepo,
+      pairs,
       last_sync: readLastSync()
     };
 
     if (pretty) {
-      const rtl = repoToLive.toCopy.length + repoToLive.toDelete.length;
-      const ltr = liveToRepo.toCopy.length + liveToRepo.toDelete.length;
       process.stderr.write('Sync Status\n');
-      process.stderr.write('  Repo: ' + REPO_DIR + '\n');
-      process.stderr.write('  Live: ' + LIVE_DIR + '\n');
+      for (const { pair } of pairResults) {
+        process.stderr.write('  ' + pair.label + ': ' + pair.repo + ' <-> ' + pair.live + '\n');
+      }
       process.stderr.write('  Last sync: ' + (result.last_sync || 'never') + '\n');
-      process.stderr.write('  repo -> live: ' + rtl + ' changes\n');
-      process.stderr.write('  live -> repo: ' + ltr + ' changes\n');
+      process.stderr.write('  repo -> live: ' + totalRtl + ' changes\n');
+      process.stderr.write('  live -> repo: ' + totalLtr + ' changes\n');
     }
 
     output(result);
@@ -247,52 +281,72 @@ async function run(args, pretty) {
   }
 
   // --- Sync (live-to-repo or repo-to-live) ---
-  let srcDir, dstDir, srcFileMap, dstFileMap;
-  if (direction === 'live-to-repo') {
-    srcDir = LIVE_DIR;  dstDir = REPO_DIR;
-    srcFileMap = liveFiles;  dstFileMap = repoFiles;
-  } else {
-    srcDir = REPO_DIR;  dstDir = LIVE_DIR;
-    srcFileMap = repoFiles;  dstFileMap = liveFiles;
+  // Aggregate diffs and conflicts across all pairs
+  const allToCopy = [];    // { relPath, srcDir, dstDir }
+  const allToDelete = [];  // { relPath, dstDir }
+  const allConflicts = [];
+
+  for (const { pair, repoFiles, liveFiles } of pairResults) {
+    let srcDir, dstDir, srcFileMap, dstFileMap;
+    if (direction === 'live-to-repo') {
+      srcDir = pair.live;  dstDir = pair.repo;
+      srcFileMap = liveFiles;  dstFileMap = repoFiles;
+    } else {
+      srcDir = pair.repo;  dstDir = pair.live;
+      srcFileMap = repoFiles;  dstFileMap = liveFiles;
+    }
+
+    const diff = diffTrees(srcFileMap, dstFileMap);
+
+    for (const f of diff.toCopy) {
+      allToCopy.push({ relPath: f, srcDir, dstDir, label: pair.label });
+    }
+    for (const f of diff.toDelete) {
+      allToDelete.push({ relPath: f, dstDir, label: pair.label });
+    }
+
+    // Conflict detection (unless --force or --dry-run)
+    if (!force && !dryRun) {
+      const conflicts = detectConflicts(srcDir, dstDir, srcFileMap, dstFileMap);
+      for (const c of conflicts) {
+        allConflicts.push(pair.label + '/' + c);
+      }
+    }
   }
 
-  const diff = diffTrees(srcFileMap, dstFileMap);
+  // Handle conflicts
+  if (allConflicts.length > 0) {
+    const result = {
+      command: 'sync',
+      subcommand: direction,
+      status: 'conflict',
+      conflicts: allConflicts,
+      message: 'Both sides have changes. Use --force to override or --dry-run to preview.'
+    };
 
-  // Conflict detection (unless --force or --dry-run)
-  let conflicts = [];
-  if (!force && !dryRun) {
-    conflicts = detectConflicts(srcDir, dstDir, srcFileMap, dstFileMap);
-    if (conflicts.length > 0) {
-      const result = {
-        command: 'sync',
-        subcommand: direction,
-        status: 'conflict',
-        conflicts: conflicts,
-        message: 'Both sides have changes. Use --force to override or --dry-run to preview.'
-      };
-
-      if (pretty) {
-        process.stderr.write('CONFLICT: Both sides have changes.\n');
-        for (const c of conflicts) {
-          process.stderr.write('  ' + c + '\n');
-        }
-        process.stderr.write('Use --force to override.\n');
+    if (pretty) {
+      process.stderr.write('CONFLICT: Both sides have changes.\n');
+      for (const c of allConflicts) {
+        process.stderr.write('  ' + c + '\n');
       }
-
-      output(result);
-      return;
+      process.stderr.write('Use --force to override.\n');
     }
+
+    output(result);
+    return;
   }
 
   // Dry run
   if (dryRun) {
+    const filesToCopy = allToCopy.map(f => f.label + '/' + f.relPath);
+    const filesToDelete = allToDelete.map(f => f.label + '/' + f.relPath);
     const result = {
       command: 'sync',
       subcommand: direction,
       direction: direction,
       dry_run: true,
-      files_to_copy: diff.toCopy,
-      files_to_delete: diff.toDelete,
+      files_to_copy: filesToCopy,
+      files_to_delete: filesToDelete,
       files_copied: 0,
       files_deleted: 0,
       conflicts: []
@@ -300,15 +354,15 @@ async function run(args, pretty) {
 
     if (pretty) {
       process.stderr.write('DRY RUN: ' + direction + '\n');
-      if (diff.toCopy.length) {
+      if (filesToCopy.length) {
         process.stderr.write('  Would copy:\n');
-        for (const f of diff.toCopy) process.stderr.write('    + ' + f + '\n');
+        for (const f of filesToCopy) process.stderr.write('    + ' + f + '\n');
       }
-      if (diff.toDelete.length) {
+      if (filesToDelete.length) {
         process.stderr.write('  Would delete:\n');
-        for (const f of diff.toDelete) process.stderr.write('    - ' + f + '\n');
+        for (const f of filesToDelete) process.stderr.write('    - ' + f + '\n');
       }
-      if (!diff.toCopy.length && !diff.toDelete.length) {
+      if (!filesToCopy.length && !filesToDelete.length) {
         process.stderr.write('  (no changes)\n');
       }
     }
@@ -317,9 +371,17 @@ async function run(args, pretty) {
     return;
   }
 
-  // Execute sync
-  copyFiles(srcDir, dstDir, diff.toCopy);
-  deleteFiles(dstDir, diff.toDelete);
+  // Execute sync across all pairs
+  for (const f of allToCopy) {
+    const srcPath = path.join(f.srcDir, f.relPath);
+    const dstPath = path.join(f.dstDir, f.relPath);
+    fs.mkdirSync(path.dirname(dstPath), { recursive: true });
+    fs.copyFileSync(srcPath, dstPath);
+  }
+  for (const f of allToDelete) {
+    const fullPath = path.join(f.dstDir, f.relPath);
+    try { fs.unlinkSync(fullPath); } catch (e) { /* no-op */ }
+  }
   writeLastSync();
 
   const result = {
@@ -327,18 +389,18 @@ async function run(args, pretty) {
     subcommand: direction,
     direction: direction,
     dry_run: false,
-    files_copied: diff.toCopy.length,
-    files_deleted: diff.toDelete.length,
+    files_copied: allToCopy.length,
+    files_deleted: allToDelete.length,
     conflicts: []
   };
 
   if (pretty) {
     process.stderr.write('Sync complete: ' + direction + '\n');
-    process.stderr.write('  Copied: ' + diff.toCopy.length + ' files\n');
-    process.stderr.write('  Deleted: ' + diff.toDelete.length + ' files\n');
+    process.stderr.write('  Copied: ' + allToCopy.length + ' files\n');
+    process.stderr.write('  Deleted: ' + allToDelete.length + ' files\n');
   }
 
   output(result);
 }
 
-module.exports = { run, walkDir, diffTrees, detectConflicts, copyFiles, deleteFiles };
+module.exports = { run, walkDir, diffTrees, detectConflicts, copyFiles, deleteFiles, SYNC_PAIRS };

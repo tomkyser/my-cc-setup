@@ -72,6 +72,24 @@ describe('install.cjs', () => {
     const content = fs.readFileSync(INSTALL_PATH, 'utf8');
     assert.ok(content.includes('claude mcp add'), 'should reference MCP registration command');
   });
+
+  it('uses REPO_ROOT constant (renamed from REPO_DIR)', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    assert.ok(content.includes('REPO_ROOT'), 'should use REPO_ROOT constant');
+    assert.ok(!content.includes('REPO_DIR'), 'should not use old REPO_DIR constant');
+  });
+
+  it('copies from 3 source directories (dynamo, ledger, switchboard)', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'dynamo')"), 'should copy from dynamo/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'ledger')"), 'should copy from ledger/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'switchboard')"), 'should copy from switchboard/');
+  });
+
+  it('generateConfig includes enabled:true in source', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    assert.ok(content.includes('enabled: true'), 'should include enabled:true in generated config');
+  });
 });
 
 describe('copyTree helper', () => {
@@ -153,6 +171,20 @@ describe('generateConfig helper', () => {
     assert.ok(config.curation, 'should have curation section');
     assert.ok(config.timeouts, 'should have timeouts section');
     assert.ok(config.logging, 'should have logging section');
+  });
+
+  it('generated config includes enabled:true field', () => {
+    const envPath = path.join(tmpDir, '.env');
+    fs.writeFileSync(envPath, 'GRAPHITI_MCP_URL=http://test:8100/mcp\n', 'utf8');
+
+    const outDir = path.join(tmpDir, 'out');
+    fs.mkdirSync(outDir, { recursive: true });
+
+    const { generateConfig } = require(INSTALL_PATH);
+    generateConfig(envPath, outDir);
+
+    const config = readJSON(path.join(outDir, 'config.json'));
+    assert.strictEqual(config.enabled, true, 'generated config should have enabled:true');
   });
 });
 

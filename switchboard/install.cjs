@@ -18,13 +18,13 @@ const { formatInstallReport } = require(path.join(__dirname, 'pretty.cjs'));
 
 // --- Constants ---
 
-const REPO_DIR = path.join(__dirname, '..');               // repo root from switchboard/
+const REPO_ROOT = path.join(__dirname, '..');               // repo root from switchboard/
 const LIVE_DIR = path.join(os.homedir(), '.claude', 'dynamo');
 const GRAPHITI_DIR = path.join(os.homedir(), '.claude', 'graphiti');
 const LEGACY_DIR = path.join(os.homedir(), '.claude', 'graphiti-legacy');
 const SETTINGS_PATH = path.join(os.homedir(), '.claude', 'settings.json');
 const SETTINGS_BACKUP = SETTINGS_PATH + '.bak';  // ~/.claude/settings.json.bak
-const HOOKS_TEMPLATE = path.join(REPO_DIR, 'claude-config', 'settings-hooks.json');
+const HOOKS_TEMPLATE = path.join(REPO_ROOT, 'claude-config', 'settings-hooks.json');
 const INSTALL_EXCLUDES = ['tests', '.last-sync', '.git', '.DS_Store', 'node_modules'];
 
 // --- Helper: copyTree ---
@@ -73,7 +73,8 @@ function generateConfig(envPath, outDir) {
   loadEnv(envPath);
 
   const config = {
-    version: (safeReadFile(path.join(REPO_DIR, 'dynamo', 'VERSION')) || '0.1.0').trim(),
+    version: (safeReadFile(path.join(REPO_ROOT, 'dynamo', 'VERSION')) || '0.1.0').trim(),
+    enabled: true,
     graphiti: {
       mcp_url: process.env.GRAPHITI_MCP_URL || 'http://localhost:8100/mcp',
       health_url: process.env.GRAPHITI_HEALTH_URL || 'http://localhost:8100/health'
@@ -325,11 +326,11 @@ async function run(args = [], pretty = false) {
   try {
     let fileCount = 0;
     // Copy dynamo/* -> LIVE_DIR/* (core.cjs, dynamo.cjs, hooks/, prompts/, config.json, VERSION)
-    fileCount += copyTree(path.join(REPO_DIR, 'dynamo'), LIVE_DIR, [...INSTALL_EXCLUDES, 'tests']);
+    fileCount += copyTree(path.join(REPO_ROOT, 'dynamo'), LIVE_DIR, [...INSTALL_EXCLUDES, 'tests']);
     // Copy ledger/* -> LIVE_DIR/ledger/*
-    fileCount += copyTree(path.join(REPO_DIR, 'ledger'), path.join(LIVE_DIR, 'ledger'), INSTALL_EXCLUDES);
+    fileCount += copyTree(path.join(REPO_ROOT, 'ledger'), path.join(LIVE_DIR, 'ledger'), INSTALL_EXCLUDES);
     // Copy switchboard/* -> LIVE_DIR/switchboard/*
-    fileCount += copyTree(path.join(REPO_DIR, 'switchboard'), path.join(LIVE_DIR, 'switchboard'), INSTALL_EXCLUDES);
+    fileCount += copyTree(path.join(REPO_ROOT, 'switchboard'), path.join(LIVE_DIR, 'switchboard'), INSTALL_EXCLUDES);
     steps.push({ name: 'Copy files', status: 'OK', detail: fileCount + ' files copied to ' + LIVE_DIR });
   } catch (e) {
     steps.push({ name: 'Copy files', status: 'FAIL', detail: e.message });

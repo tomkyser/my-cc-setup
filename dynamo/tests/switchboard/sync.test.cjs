@@ -230,4 +230,38 @@ describe('sync module exports', () => {
   it('exports deleteFiles as a function', () => {
     assert.strictEqual(typeof sync.deleteFiles, 'function');
   });
+
+  it('exports SYNC_PAIRS with 3 directory pairs', () => {
+    assert.ok(Array.isArray(sync.SYNC_PAIRS), 'SYNC_PAIRS should be an array');
+    assert.strictEqual(sync.SYNC_PAIRS.length, 3, 'should have 3 sync pairs');
+    const labels = sync.SYNC_PAIRS.map(p => p.label);
+    assert.ok(labels.includes('dynamo'), 'should have dynamo pair');
+    assert.ok(labels.includes('ledger'), 'should have ledger pair');
+    assert.ok(labels.includes('switchboard'), 'should have switchboard pair');
+  });
+});
+
+// --- 3-directory layout tests ---
+
+describe('sync 3-directory layout', () => {
+  it('uses REPO_ROOT constant (renamed from REPO_DIR)', () => {
+    const syncPath = path.join(__dirname, '..', '..', '..', 'switchboard', 'sync.cjs');
+    const content = fs.readFileSync(syncPath, 'utf8');
+    assert.ok(content.includes('REPO_ROOT'), 'should use REPO_ROOT constant');
+    assert.ok(!content.includes('REPO_DIR'), 'should not use old REPO_DIR constant');
+  });
+
+  it('SYNC_PAIRS have correct structure (repo, live, label, excludes)', () => {
+    for (const pair of sync.SYNC_PAIRS) {
+      assert.ok(typeof pair.repo === 'string', 'pair should have repo path');
+      assert.ok(typeof pair.live === 'string', 'pair should have live path');
+      assert.ok(typeof pair.label === 'string', 'pair should have label');
+      assert.ok(Array.isArray(pair.excludes), 'pair should have excludes array');
+    }
+  });
+
+  it('dynamo pair excludes tests directory', () => {
+    const dynamoPair = sync.SYNC_PAIRS.find(p => p.label === 'dynamo');
+    assert.ok(dynamoPair.excludes.includes('tests'), 'dynamo pair should exclude tests');
+  });
 });
