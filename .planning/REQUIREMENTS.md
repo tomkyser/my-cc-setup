@@ -35,9 +35,9 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 - [x] **SWB-01**: Health check (6 stages: Docker, Neo4j, API, MCP session, env vars, canary)
 - [x] **SWB-02**: Verify-memory end-to-end pipeline test (6 checks including scope round-trip)
 - [x] **SWB-03**: Deep diagnostics ported from diagnose.py (13 stages)
-- [ ] **SWB-04**: CJS installer deploying to ~/.claude/dynamo/, eliminating Python venv
-- [ ] **SWB-05**: Settings generator for hook registrations pointing to .cjs files
-- [ ] **SWB-06**: Unified `dynamo <command>` CLI router
+- [x] **SWB-04**: CJS installer deploying to ~/.claude/dynamo/, eliminating Python venv
+- [x] **SWB-05**: Settings generator for hook registrations pointing to .cjs files
+- [x] **SWB-06**: Unified `dynamo <command>` CLI router
 - [x] **SWB-07**: Bidirectional sync rewrite (sync-graphiti.sh to CJS)
 - [x] **SWB-08**: Stack start/stop commands (Docker compose wrappers)
 
@@ -123,9 +123,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SWB-01 | Phase 10 | Complete |
 | SWB-02 | Phase 10 (10-02) | Complete |
 | SWB-03 | Phase 10 | Complete |
-| SWB-04 | Phase 10 | Pending |
-| SWB-05 | Phase 10 | Pending |
-| SWB-06 | Phase 10 | Pending |
+| SWB-04 | Phase 10 | Complete |
+| SWB-05 | Phase 10 | Complete |
+| SWB-06 | Phase 10 | Complete |
 | SWB-07 | Phase 10 | Complete |
 | SWB-08 | Phase 10 | Complete |
 | BRD-01 | Phase 8 | Complete |

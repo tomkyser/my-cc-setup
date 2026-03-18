@@ -31,7 +31,7 @@
 
 - [x] **Phase 8: Foundation and Branding** - CJS shared substrate, directory restructure, regression tests (completed 2026-03-17)
 - [x] **Phase 9: Hook Migration** - All 5 hooks, curation pipeline, session management on CJS (completed 2026-03-17)
-- [ ] **Phase 10: Operations and Cutover** - Health check, diagnostics, verify, CLI, installer, sync, stack commands
+- [x] **Phase 10: Operations and Cutover** - Health check, diagnostics, verify, CLI, installer, sync, stack commands (completed 2026-03-18)
 - [ ] **Phase 11: Master Roadmap** - Backlog prioritized and assigned to v1.3-v2.0
 
 ## Phase Details
@@ -116,5 +116,5 @@ Plans:
 | 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 8. Foundation and Branding | v1.2 | 3/3 | Complete | 2026-03-17 |
 | 9. Hook Migration | v1.2 | 4/4 | Complete | 2026-03-17 |
-| 10. Operations and Cutover | v1.2 | 3/4 | In Progress | - |
+| 10. Operations and Cutover | 4/4 | Complete   | 2026-03-18 | - |
 | 11. Master Roadmap | v1.2 | 0/? | Not started | - |
