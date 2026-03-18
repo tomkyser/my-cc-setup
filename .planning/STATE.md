@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.2.1
 milestone_name: Stabilization and Polish
-status: scoping
-stopped_at: v1.2.1 milestone scoped, awaiting /gsd:new-milestone
-last_updated: "2026-03-18T16:49:00Z"
-last_activity: 2026-03-18 -- Completed quick task 260318-gcj: Update GSD planning docs
+status: defining-requirements
+stopped_at: v1.2.1 milestone started, defining requirements
+last_updated: "2026-03-18T17:00:00Z"
+last_activity: 2026-03-18 -- Milestone v1.2.1 started
 progress:
   total_phases: 0
   completed_phases: 0
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Milestone v1.2.1 Stabilization and Polish: SCOPED (not yet started)
+Milestone v1.2.1 Stabilization and Polish: DEFINING REQUIREMENTS
 All 3 prior milestones shipped: v1.0, v1.1, v1.2 across 11 phases and 24 plans.
 v1.2.1 defines 10 stabilization requirements (STAB-01 through STAB-10).
-Next step: `/gsd:new-milestone` to formally start v1.2.1.
+Next step: Requirements confirmation → Roadmap creation.
 
 Progress: [..........] 0%
 

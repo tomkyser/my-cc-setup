@@ -8,6 +8,19 @@ A Claude Code power-user platform, Dynamo, comprising two systems: **Ledger** (m
 
 Every capability must be self-manageable by Claude Code (install, configure, update, troubleshoot) without requiring manual user intervention in config files.
 
+## Current Milestone: v1.2.1 Stabilization and Polish
+
+**Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work — branding, documentation, legacy cleanup, directory restructure, dev toggles, and architecture capture.
+
+**Target features:**
+- Complete Dynamo rebranding (README, repo, docs, directory structure)
+- Archive and remove legacy Python/Bash system
+- Exhaustive documentation and CLAUDE.md integration
+- Update/upgrade system for self-management
+- Global on/off and dev mode toggles
+- Neo4j admin browser fix
+- Architecture and design decision capture for development continuity
+
 ## Requirements
 
 ### Validated
@@ -101,4 +114,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-18 after v1.2.1 scoping -- planning docs updated with 10 STAB requirements and 4 new future items*
+*Last updated: 2026-03-18 after v1.2.1 milestone formally started*
