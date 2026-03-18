@@ -4,7 +4,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { output, error, safeReadFile } = require(path.join(__dirname, 'lib', 'core.cjs'));
+const { output, error, safeReadFile } = require(path.join(__dirname, 'core.cjs'));
 
 // --- Help ---
 
@@ -92,39 +92,39 @@ async function main() {
 
   switch (command) {
     case 'health-check':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'health-check.cjs')).run(restArgs, pretty);
+      await require(path.join(__dirname, '..', 'switchboard', 'health-check.cjs')).run(restArgs, pretty);
       break;
 
     case 'diagnose':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'diagnose.cjs')).run(restArgs, pretty);
+      await require(path.join(__dirname, '..', 'switchboard', 'diagnose.cjs')).run(restArgs, pretty);
       break;
 
     case 'verify-memory':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'verify-memory.cjs')).run(restArgs, pretty);
+      await require(path.join(__dirname, '..', 'switchboard', 'verify-memory.cjs')).run(restArgs, pretty);
       break;
 
     case 'sync':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'sync.cjs')).run(restArgs, pretty);
+      await require(path.join(__dirname, '..', 'switchboard', 'sync.cjs')).run(restArgs, pretty);
       break;
 
     case 'start':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'stack.cjs')).start(restArgs, pretty);
+      await require(path.join(__dirname, '..', 'switchboard', 'stack.cjs')).start(restArgs, pretty);
       break;
 
     case 'stop':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'stack.cjs')).stop(restArgs, pretty);
+      await require(path.join(__dirname, '..', 'switchboard', 'stack.cjs')).stop(restArgs, pretty);
       break;
 
     case 'install':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'install.cjs')).run(restArgs, pretty);
+      await require(path.join(__dirname, '..', 'switchboard', 'install.cjs')).run(restArgs, pretty);
       break;
 
     case 'rollback':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'install.cjs')).rollback(restArgs, pretty);
+      await require(path.join(__dirname, '..', 'switchboard', 'install.cjs')).rollback(restArgs, pretty);
       break;
 
     case 'session': {
-      const sessions = require(path.join(__dirname, 'lib', 'ledger', 'sessions.cjs'));
+      const sessions = require(path.join(__dirname, '..', 'ledger', 'sessions.cjs'));
       const subCmd = restArgs[0];
       switch (subCmd) {
         case 'list':
@@ -149,7 +149,9 @@ async function main() {
 
     case 'test': {
       const { execSync } = require('child_process');
-      execSync('node --test ' + path.join(__dirname, 'tests', '*.test.cjs'), { stdio: 'inherit' });
+      const testDir = path.join(__dirname, 'tests');
+      const cmd = 'node --test ' + path.join(testDir, '*.test.cjs') + ' ' + path.join(testDir, 'ledger', '*.test.cjs') + ' ' + path.join(testDir, 'switchboard', '*.test.cjs');
+      execSync(cmd, { stdio: 'inherit' });
       break;
     }
 

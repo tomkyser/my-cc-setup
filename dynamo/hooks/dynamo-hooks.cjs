@@ -2,8 +2,7 @@
 'use strict';
 
 const path = require('path');
-const { loadEnv, detectProject, logError } = require(path.join(__dirname, '..', 'lib', 'core.cjs'));
-const { SCOPE } = require(path.join(__dirname, '..', 'lib', 'ledger', 'scope.cjs'));
+const { loadEnv, detectProject, logError, SCOPE } = require(path.join(__dirname, '..', 'core.cjs'));
 
 // Load .env early (API keys needed by handlers)
 loadEnv();
@@ -28,7 +27,7 @@ process.stdin.on('end', async () => {
     const ctx = { ...data, project, scope };
 
     // Route to handler
-    const HANDLERS = path.join(__dirname, '..', 'lib', 'ledger', 'hooks');
+    const HANDLERS = path.join(__dirname, '..', '..', 'ledger', 'hooks');
     switch (event) {
       case 'SessionStart':
         await require(path.join(HANDLERS, 'session-start.cjs'))(ctx);
