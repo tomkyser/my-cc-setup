@@ -1,5 +1,21 @@
 # Milestones
 
+## v1.2 Dynamo Foundation (Shipped: 2026-03-18)
+
+**Phases completed:** 4 phases, 12 plans
+**Commits:** 29 feat/test | **Production LOC:** 3,585 CJS | **Test LOC:** 3,382 CJS
+**Timeline:** 2026-03-17 to 2026-03-18
+
+**Key accomplishments:**
+- Rewrote entire Python/Bash foundation to Node/CJS architecture with 272 passing tests
+- Built CJS shared substrate (core.cjs) with config loading, MCP client, scope validation, health guard
+- Migrated all 5 hook handlers to CJS dispatcher with full behavioral parity to Python/Bash system
+- Created unified CLI router (dynamo.cjs) dispatching 12 commands across Ledger and Switchboard
+- Built installer with settings.json merge, Python retirement to graphiti-legacy/, and rollback capability
+- Produced Master Roadmap assigning 26 deferred requirements to v1.3-v2.0 milestones
+
+---
+
 ## v1.1 Fix Memory System (Shipped: 2026-03-17)
 
 **Phases completed:** 4 phases, 8 plans

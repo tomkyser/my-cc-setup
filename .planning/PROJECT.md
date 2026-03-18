@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A Claude Code power-user platform comprising two systems: **Ledger** (memory — knowledge storage, retrieval, inference) and **Switchboard** (management — hooks, skills, agents, dependencies). v1.0 researched and ranked tools. v1.1 diagnosed and fixed the Graphiti-based memory system. v1.2 rebuilds the foundation on Node/CJS architecture with feature parity, establishing the substrate both systems build on.
+A Claude Code power-user platform comprising two systems: **Ledger** (memory — knowledge storage, retrieval, inference via Graphiti) and **Switchboard** (management — hooks, diagnostics, sync, stack, CLI). Built on a Node/CJS shared substrate at `~/.claude/dynamo/` with 272 passing tests. v1.0 researched and ranked tools. v1.1 diagnosed and fixed the memory system. v1.2 rewrote the entire foundation from Python/Bash to CJS with full feature parity.
 
 ## Core Value
 
@@ -24,47 +24,29 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 - ✓ Session management: list, view, label, auto-name via CLI — v1.1
 - ✓ Memory system verified end-to-end with verify-memory command — v1.1
 - ✓ Bidirectional sync between live ~/.claude and this repo — v1.1
+- ✓ CJS architectural foundation (shared substrate for Ledger + Switchboard) — v1.2
+- ✓ Dynamo/Ledger/Switchboard branding and project restructure — v1.2
+- ✓ Modular injection pattern established — v1.2
+- ✓ Feature parity: existing hooks, session mgmt, health checks, sync on CJS — v1.2
+- ✓ Master Roadmap: prioritize and assign backlog to v1.3-v2.0 — v1.2
 
 ### Active
 
-- [ ] CJS architectural foundation (shared substrate for Ledger + Switchboard)
-- [ ] Dynamo/Ledger/Switchboard branding and project restructure
-- [ ] Modular injection pattern established
-- [ ] Feature parity: existing hooks, session mgmt, health checks, sync on CJS
-- [ ] Master Roadmap: prioritize and assign backlog to v1.3–v2.0
+(None — next milestone requirements defined via `/gsd:new-milestone`)
 
 ### Out of Scope
 
-- New memory features (decision engine, preload engine) — deferred to v1.3+
-- UI/dashboard — deferred to v1.4+
-- Domain-specific skills/agents (WPCS, Context7, Playwright) — deferred to v1.3+
-- Council-style AI deliberation — deferred, needs research
 - Database/SQL access MCPs — not requested
 - Real-time chat/notification for errors — visible error output is sufficient
-
-## Current Milestone: v1.2 Dynamo Foundation
-
-**Goal:** Rewrite the Python/Bash foundation to Node/CJS architecture with full feature parity, establishing the shared substrate for Ledger (memory) and Switchboard (management).
-
-**Target features:**
-- CJS architectural foundation (modular, testable, GSD-pattern)
-- Dynamo/Ledger/Switchboard branding and identity
-- Modular injection pattern for hooks and capabilities
-- Feature parity with existing system on new architecture
-- Master Roadmap document for v1.3–v2.0
+- ESM modules — CJS is the standard in this ecosystem
 
 ## Context
 
-Shipped v1.0 (research) and v1.1 (memory fixes) across 7 phases and 16 plans.
-Current tech stack: Python (graphiti-helper.py, diagnose.py, health-check.py), Bash (hooks, sync), Claude Haiku (session naming via OpenRouter).
-Total project: ~22,700 LOC across Python, Bash, Markdown, JSON, YAML.
-Memory system is now healthy: hooks persist data, errors surface visibly, sessions auto-name.
-
-v1.2 migrates to Node/CJS architecture following GSD patterns (see github.com/gsd-build/get-shit-done).
-Project rebranded: **Dynamo** (umbrella), **Ledger** (memory system), **Switchboard** (management system).
-Ledger = what Claude knows. Switchboard = how Claude behaves. Independently upgradeable, connected via shared CJS substrate.
-
-Future backlog (hook enhancements, memory quality, web research tools, WordPress MCP, UI, domain skills) documented in Master Roadmap and v1.1 requirements archive.
+Shipped v1.0 (research), v1.1 (memory fixes), and v1.2 (CJS rewrite) across 11 phases and 24 plans.
+Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
+Total project: ~7,000 LOC CJS (3,585 production + 3,382 test) plus prompts.
+Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
+Future backlog (26 items across memory enhancement, management, UI) documented in MASTER-ROADMAP.md.
 
 ## Key Decisions
 
@@ -75,21 +57,23 @@ Future backlog (hook enhancements, memory quality, web research tools, WordPress
 | Full lifecycle self-management | User never wants to manually edit config files | ✓ Good |
 | Lean final list (5-8) | Quality over quantity | ✓ Good — 5+2 recommendations |
 | Diagnostic-first milestone (v1.1) | Fix memory before adding features | ✓ Good — root causes found and fixed |
-| Global scope + [project] content prefix | Graphiti v1.21.0 rejects colon in group_id | ✓ Good — workaround documented in SCOPE_FALLBACK.md |
+| Global scope + [project] content prefix | Graphiti v1.21.0 rejects colon in group_id | ✓ Good — workaround documented |
 | Two-phase auto-naming via Haiku | Cost-efficient (~$0.001/call) with graceful degradation | ✓ Good |
 | Foreground hook execution with 5s timeout | Error capture requires foreground; fast timeout prevents blocking | ✓ Good |
-| Rebrand to Dynamo/Ledger/Switchboard | Separate memory (Ledger) from management (Switchboard) for independent evolution | — Pending |
-| CJS rewrite over Python/Bash | GSD-pattern CJS is proven, modular, testable; unifies tech stack | — Pending |
-| Feature parity before new features | Stable foundation first, new capabilities in v1.3+ | — Pending |
+| Rebrand to Dynamo/Ledger/Switchboard | Separate memory from management for independent evolution | ✓ Good — clean architecture |
+| CJS rewrite over Python/Bash | GSD-pattern CJS is proven, modular, testable; unifies tech stack | ✓ Good — 272 tests, feature parity |
+| Feature parity before new features | Stable foundation first, new capabilities in v1.3+ | ✓ Good — foundation solid |
+| Content-based sync (Buffer.compare) | More accurate than mtime-only conflict detection | ✓ Good |
+| Options-based test isolation | Stage/module functions accept overrides for test isolation | ✓ Good — all tests use tmpdir |
+| Settings.json backup before modification | Atomic write (tmp+rename) with .bak for rollback | ✓ Good — safe cutover |
 
 ## Constraints
 
-- **Maintenance**: Tool must have commits within the past month (as of March 2026)
-- **Trust**: Must have meaningful GitHub stars/community adoption
 - **Self-management**: Claude Code must be able to fully manage the tool lifecycle
-- **Quantity**: Final recommendations capped at 5-8 tools
 - **Scope**: Global only — lives in ~/.claude or global config
 - **Platform**: macOS (Darwin), zsh, Homebrew available
+- **Architecture**: Node/CJS, zero npm dependencies beyond js-yaml
+- **Testing**: node:test built-in, 100% test isolation via tmpdir
 
 ---
-*Last updated: 2026-03-17 after v1.2 milestone start*
+*Last updated: 2026-03-18 after v1.2 milestone complete*
