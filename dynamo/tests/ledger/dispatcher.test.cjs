@@ -9,7 +9,11 @@ const os = require('os');
 
 const DYNAMO_DIR = path.join(os.homedir(), '.claude', 'dynamo');
 const DISPATCHER = path.join(DYNAMO_DIR, 'hooks', 'dynamo-hooks.cjs');
-const HANDLERS_DIR = path.join(DYNAMO_DIR, 'ledger', 'hooks');
+
+// Handlers: check deployed layout first (ledger/hooks/), fallback to legacy (lib/ledger/hooks/)
+const HANDLERS_DIR_NEW = path.join(DYNAMO_DIR, 'ledger', 'hooks');
+const HANDLERS_DIR_LEGACY = path.join(DYNAMO_DIR, 'lib', 'ledger', 'hooks');
+const HANDLERS_DIR = fs.existsSync(HANDLERS_DIR_NEW) ? HANDLERS_DIR_NEW : HANDLERS_DIR_LEGACY;
 
 describe('Dispatcher structure', () => {
   it('dispatcher file exists', () => {
@@ -65,7 +69,7 @@ describe('Handler exports', () => {
   for (const name of handlers) {
     it(`${name}.cjs exists and exports an async function`, () => {
       const handlerPath = path.join(HANDLERS_DIR, name + '.cjs');
-      assert.ok(fs.existsSync(handlerPath), `${name}.cjs must exist`);
+      assert.ok(fs.existsSync(handlerPath), `${name}.cjs must exist at ${HANDLERS_DIR}`);
       const handler = require(handlerPath);
       assert.strictEqual(typeof handler, 'function', `${name}.cjs must export a function`);
     });
