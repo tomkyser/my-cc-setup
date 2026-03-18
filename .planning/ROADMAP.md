@@ -87,7 +87,7 @@ Plans:
 - [x] 10-01-PLAN.md -- Shared diagnostic stages module (13 stages) and pretty formatter
 - [x] 10-02-PLAN.md -- Health check, diagnose, and verify-memory orchestrators
 - [x] 10-03-PLAN.md -- Bidirectional sync and Docker stack start/stop
-- [ ] 10-04-PLAN.md -- CLI router, installer, cutover, and end-to-end verification
+- [x] 10-04-PLAN.md -- CLI router, installer, cutover, and end-to-end verification
 
 ### Phase 11: Master Roadmap
 **Goal**: The backlog of deferred features is prioritized, assigned to future milestones (v1.3-v2.0), and documented as a living roadmap for the Dynamo project
@@ -96,10 +96,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Every deferred requirement from REQUIREMENTS.md (MENH-01 through MENH-09, MGMT-01 through MGMT-10, UI-01 through UI-07) is assigned to a specific future milestone with a brief rationale
   2. The Master Roadmap document exists in the project root and can be read by Claude Code to understand what comes after v1.2
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 11-01: TBD
+- [ ] 11-01-PLAN.md -- Prioritize 26 deferred requirements into v1.3-v2.0 milestones with rationale
 
 ## Progress
 
@@ -116,5 +116,5 @@ Plans:
 | 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 8. Foundation and Branding | v1.2 | 3/3 | Complete | 2026-03-17 |
 | 9. Hook Migration | v1.2 | 4/4 | Complete | 2026-03-17 |
-| 10. Operations and Cutover | 4/4 | Complete    | 2026-03-18 | - |
-| 11. Master Roadmap | v1.2 | 0/? | Not started | - |
+| 10. Operations and Cutover | v1.2 | 4/4 | Complete | 2026-03-18 |
+| 11. Master Roadmap | v1.2 | 0/1 | Not started | - |
