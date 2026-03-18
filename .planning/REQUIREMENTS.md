@@ -59,7 +59,7 @@ Requirements for stabilization and polish of the v1.2 CJS foundation.
 ### Stabilization
 
 - [ ] **STAB-01**: README and rebranding pass -- README reflects Dynamo identity, repo renamed on GitHub
-- [ ] **STAB-02**: Archive legacy Python/Bash system -- tag, branch, and remove from dev/master
+- [x] **STAB-02**: Archive legacy Python/Bash system -- tag, branch, and remove from dev/master
 - [ ] **STAB-03**: Exhaustive documentation -- architecture, usage, CLI, hooks, config, dev guide
 - [ ] **STAB-04**: Dynamo CLI integration in CLAUDE.md -- complete operational instructions for Claude Code
 - [ ] **STAB-05**: Update/upgrade system -- version checks, migration, rollback
@@ -165,7 +165,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | STAB-01 | Phase 14 | Pending |
-| STAB-02 | Phase 13 | Pending |
+| STAB-02 | Phase 13 | Complete |
 | STAB-03 | Phase 14 | Pending |
 | STAB-04 | Phase 14 | Pending |
 | STAB-05 | Phase 15 | Pending |
