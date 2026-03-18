@@ -3,6 +3,7 @@ graphiti/.env
 
 # Sync state
 graphiti/.last-sync
+.last-sync
 
 # Python
 graphiti/.venv/
