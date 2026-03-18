@@ -292,6 +292,30 @@ function loadPrompt(promptName) {
   return { system, user };
 }
 
+// --- Toggle mechanism (STAB-10) ---
+
+/**
+ * Check if Dynamo is enabled. Returns true if:
+ * - config.enabled is true (or absent, default = enabled)
+ * - OR process.env.DYNAMO_DEV === '1' (dev mode override)
+ * @param {string} [configPath] - Override config path for testing
+ * @returns {boolean}
+ */
+function isEnabled(configPath) {
+  try {
+    const cfgPath = configPath || path.join(DYNAMO_DIR, 'config.json');
+    const raw = fs.readFileSync(cfgPath, 'utf8');
+    const config = JSON.parse(raw);
+    if (config.enabled === false && process.env.DYNAMO_DEV !== '1') {
+      return false;
+    }
+    return true;
+  } catch (e) {
+    // If config can't be read, default to enabled
+    return true;
+  }
+}
+
 // Export base utilities first (before loading ledger modules to avoid circular dependency)
 module.exports = {
   DYNAMO_DIR,
@@ -304,7 +328,8 @@ module.exports = {
   fetchWithTimeout,
   logError,
   healthGuard,
-  loadPrompt
+  loadPrompt,
+  isEnabled
 };
 
 // --- Dual-path resolution for Ledger modules ---

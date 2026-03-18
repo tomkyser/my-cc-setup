@@ -14,6 +14,13 @@ process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => input += chunk);
 process.stdin.on('end', async () => {
   clearTimeout(stdinTimeout);
+
+  // Toggle gate: exit silently if Dynamo is disabled
+  const { isEnabled } = require(path.join(__dirname, '..', 'core.cjs'));
+  if (!isEnabled()) {
+    process.exit(0);  // Silent exit -- no error, no output
+  }
+
   try {
     const data = JSON.parse(input);
     const event = data.hook_event_name;

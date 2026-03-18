@@ -4,6 +4,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { output, error, safeReadFile } = require(path.join(__dirname, 'core.cjs'));
 
 // --- Help ---
@@ -23,6 +24,8 @@ Commands:
   stop           Stop the Graphiti Docker stack (preserves data)
   install        Deploy CJS system to ~/.claude/dynamo/ and retire Python
   rollback       Restore settings.json.bak and undo retirement
+  toggle         Enable or disable Dynamo globally (on/off)
+  status         Show Dynamo enabled/disabled state
   session        Session management (list, view, label, backfill)
   test           Run the Dynamo test suite
   version        Show Dynamo version
@@ -52,6 +55,8 @@ const COMMAND_HELP = {
   'stop':         'Usage: dynamo stop [--pretty]\n  Stop Graphiti Docker stack.',
   'install':      'Usage: dynamo install [--pretty]\n  Deploy CJS system and retire Python.',
   'rollback':     'Usage: dynamo rollback [--pretty]\n  Restore settings.json.bak and undo retirement.',
+  'toggle':       'Usage: dynamo toggle <on|off>\n  Enable or disable Dynamo globally.',
+  'status':       'Usage: dynamo status [--pretty]\n  Show Dynamo enabled/disabled state.',
   'session':      'Usage: dynamo session <list|view|label|backfill> [args] [--pretty]\n  Session management.',
   'test':         'Usage: dynamo test\n  Run the Dynamo test suite.',
   'version':      'Usage: dynamo version\n  Show Dynamo version.'
@@ -122,6 +127,41 @@ async function main() {
     case 'rollback':
       await require(path.join(__dirname, '..', 'switchboard', 'install.cjs')).rollback(restArgs, pretty);
       break;
+
+    case 'toggle': {
+      const action = restArgs[0];
+      if (action !== 'on' && action !== 'off') {
+        error('Usage: dynamo toggle <on|off>');
+        return;
+      }
+      // Use DYNAMO_CONFIG_PATH env var for testing, otherwise deployed config
+      const toggleConfigPath = process.env.DYNAMO_CONFIG_PATH || path.join(os.homedir(), '.claude', 'dynamo', 'config.json');
+      const cfg = JSON.parse(fs.readFileSync(toggleConfigPath, 'utf8'));
+      cfg.enabled = action === 'on';
+      fs.writeFileSync(toggleConfigPath, JSON.stringify(cfg, null, 2) + '\n');
+      if (pretty) {
+        process.stderr.write('Dynamo ' + (cfg.enabled ? 'enabled' : 'disabled') + '\n');
+      } else {
+        output({ command: 'toggle', enabled: cfg.enabled });
+      }
+      break;
+    }
+
+    case 'status': {
+      const { isEnabled, loadConfig } = require(path.join(__dirname, 'core.cjs'));
+      const cfg = loadConfig();
+      const enabled = cfg.enabled !== false;
+      const devMode = process.env.DYNAMO_DEV === '1';
+      const effective = enabled || devMode;
+      if (pretty) {
+        process.stderr.write(`Dynamo: ${effective ? 'ACTIVE' : 'INACTIVE'}\n`);
+        process.stderr.write(`  Global: ${enabled ? 'ON' : 'OFF'}\n`);
+        process.stderr.write(`  Dev mode: ${devMode ? 'ON' : 'OFF'}\n`);
+      } else {
+        output({ command: 'status', enabled, dev_mode: devMode, effective });
+      }
+      break;
+    }
 
     case 'session': {
       const sessions = require(path.join(__dirname, '..', 'ledger', 'sessions.cjs'));
