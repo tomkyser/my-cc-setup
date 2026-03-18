@@ -43,7 +43,7 @@
 **Milestone Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work. Ensure Dynamo is properly branded, fully documented, easy to update, and that architectural decisions are captured for continuity.
 
 - [x] **Phase 12: Structural Refactor** - Reorganize directories and code boundaries, add dev toggles (completed 2026-03-18)
-- [ ] **Phase 13: Cleanup and Fixes** - Archive legacy system, fix Neo4j browser
+- [x] **Phase 13: Cleanup and Fixes** - Archive legacy system, fix Neo4j browser (completed 2026-03-18)
 - [ ] **Phase 14: Documentation and Branding** - README, exhaustive docs, CLAUDE.md, architecture capture
 - [ ] **Phase 15: Update System** - Version checks, migration, and rollback
 
@@ -75,7 +75,7 @@ Plans:
   1. The legacy Python/Bash system is tagged, branched, and fully removed from dev/master -- no Python or Bash hook scripts remain in the active codebase
   2. The legacy archive is accessible for historical reference (tagged release or archive branch)
   3. Neo4j admin browser is accessible at port 7475 and can display the knowledge graph contents
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 13-01-PLAN.md -- Tag legacy archive + git rm all Python/Bash files
@@ -122,6 +122,6 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15
 | 10. Operations and Cutover | v1.2 | 4/4 | Complete | 2026-03-18 |
 | 11. Master Roadmap | v1.2 | 1/1 | Complete | 2026-03-18 |
 | 12. Structural Refactor | v1.2.1 | 4/4 | Complete | 2026-03-18 |
-| 13. Cleanup and Fixes | 1/2 | In Progress|  | - |
+| 13. Cleanup and Fixes | 2/2 | Complete   | 2026-03-18 | - |
 | 14. Documentation and Branding | v1.2.1 | 0/TBD | Not started | - |
 | 15. Update System | v1.2.1 | 0/TBD | Not started | - |
