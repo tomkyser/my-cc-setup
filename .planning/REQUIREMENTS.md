@@ -48,8 +48,8 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 
 ### Master Roadmap
 
-- [ ] **MRP-01**: Backlog items prioritized and assigned to v1.3-v2.0 milestones
-- [ ] **MRP-02**: Master Roadmap document created in project root
+- [x] **MRP-01**: Backlog items prioritized and assigned to v1.3-v2.0 milestones
+- [x] **MRP-02**: Master Roadmap document created in project root
 
 ## Future Requirements
 
@@ -130,8 +130,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SWB-08 | Phase 10 | Complete |
 | BRD-01 | Phase 8 | Complete |
 | BRD-02 | Phase 8 | Complete |
-| MRP-01 | Phase 11 | Pending |
-| MRP-02 | Phase 11 | Pending |
+| MRP-01 | Phase 11 | Complete |
+| MRP-02 | Phase 11 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 29 total
