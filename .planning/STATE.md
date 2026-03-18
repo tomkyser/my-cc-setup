@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 14-01-PLAN.md (README rewrite)
-last_updated: "2026-03-18T21:39:55.319Z"
+stopped_at: Completed 14-03-PLAN.md (codebase map refresh)
+last_updated: "2026-03-18T21:41:53.714Z"
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 9
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 14 (documentation-and-branding) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ### Prior Milestones
 
@@ -61,6 +61,8 @@ Recent decisions affecting current work:
 - [Phase 12]: [12-04 deregistration]: Used claude mcp remove CLI for Graphiti deregistration (preferred over manual JSON editing)
 - [Phase 12]: [12-04 CLAUDE.md]: Preserved all non-memory sections, replaced only the Graphiti MCP block with Dynamo CLI instructions
 - [Phase 13]: [13-01 archival]: Tagged v1.2-legacy-archive on dev before deletions for permanent historical reference
+- [Phase 14]: Full rewrite of all 7 codebase maps rather than incremental patches -- old Python/Bash content was entirely stale
+- [Phase 14]: All 20+ CLI commands included in CLAUDE.md grouped by category (Memory, Session, System, Diagnostics)
 
 ### Blockers/Concerns
 
@@ -68,6 +70,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T21:39:55.317Z
-Stopped at: Completed 14-01-PLAN.md (README rewrite)
+Last session: 2026-03-18T21:41:34.058Z
+Stopped at: Completed 14-03-PLAN.md (codebase map refresh)
 Resume file: None
