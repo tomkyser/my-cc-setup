@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.2.1
 milestone_name: Stabilization and Polish
-status: defining-requirements
-stopped_at: v1.2.1 milestone started, defining requirements
-last_updated: "2026-03-18T17:00:00Z"
-last_activity: 2026-03-18 -- Milestone v1.2.1 started
+status: ready-to-plan
+stopped_at: Roadmap created with 4 phases (12-15), ready to plan Phase 12
+last_updated: "2026-03-18T18:00:00Z"
+last_activity: 2026-03-18 -- Roadmap created for v1.2.1
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,16 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** v1.2.1 Stabilization and Polish -- close gaps before v1.3
+**Current focus:** Phase 12 -- Structural Refactor (directory restructure, component scope, dev toggles)
 
 ## Current Position
 
-Milestone v1.2.1 Stabilization and Polish: DEFINING REQUIREMENTS
-All 3 prior milestones shipped: v1.0, v1.1, v1.2 across 11 phases and 24 plans.
-v1.2.1 defines 10 stabilization requirements (STAB-01 through STAB-10).
-Next step: Requirements confirmation → Roadmap creation.
+Phase: 12 of 15 (Structural Refactor)
+Plan: None planned yet
+Status: Ready to plan
+Last activity: 2026-03-18 -- Roadmap created for v1.2.1 milestone (4 phases, 10 requirements)
 
 Progress: [..........] 0%
+
+### Prior Milestones
+
+v1.0 (3 phases, 8 plans), v1.1 (4 phases, 8 plans), v1.2 (4 phases, 12 plans) -- all shipped.
+Total prior: 11 phases, 28 plans completed.
 
 ### Quick Tasks Completed
 
@@ -38,8 +43,24 @@ Progress: [..........] 0%
 |---|-------------|------|--------|-----------|
 | 260318-gcj | Update GSD planning docs to reflect current project state | 2026-03-18 | 3281ecb | [260318-gcj](./quick/260318-gcj-update-gsd-planning-docs-to-reflect-curr/) |
 
+## Accumulated Context
+
+### Decisions
+
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- [v1.2.1 scoping]: Insert v1.2.1 before v1.3 to close stabilization gaps
+- [Phase ordering]: Structural refactors (STAB-08, STAB-09) first since they affect file paths everywhere
+- [Phase ordering]: Dev toggles (STAB-10) early to enable safe development of subsequent phases
+- [Phase ordering]: Documentation (STAB-01, STAB-03, STAB-04, STAB-06) after structural changes so docs describe the final state
+
+### Blockers/Concerns
+
+None yet.
+
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Planning docs updated to reflect v1.2.1 scoping state
+Stopped at: Roadmap created for v1.2.1, ready to plan Phase 12
 Resume file: None

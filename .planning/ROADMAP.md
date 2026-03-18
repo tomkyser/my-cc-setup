@@ -5,7 +5,7 @@
 - ✅ **v1.0 Research and Ranked Report** -- Phases 1-3 (shipped 2026-03-17)
 - ✅ **v1.1 Fix Memory System** -- Phases 4-7 (shipped 2026-03-17)
 - ✅ **v1.2 Dynamo Foundation** -- Phases 8-11 (shipped 2026-03-18)
-- **v1.2.1 Stabilization and Polish** -- 10 requirements (next)
+- **v1.2.1 Stabilization and Polish** -- Phases 12-15 (in progress)
 
 ## Phases
 
@@ -40,23 +40,63 @@
 
 ### v1.2.1 Stabilization and Polish
 
-**Status:** Scoping -- phases and plans to be defined via `/gsd:new-milestone`
+**Milestone Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work. Ensure Dynamo is properly branded, fully documented, easy to update, and that architectural decisions are captured for continuity.
 
-**Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work. Ensure Dynamo is properly branded, fully documented, easy to update, and that architectural decisions are captured for continuity.
+- [ ] **Phase 12: Structural Refactor** - Reorganize directories and code boundaries, add dev toggles
+- [ ] **Phase 13: Cleanup and Fixes** - Archive legacy system, fix Neo4j browser
+- [ ] **Phase 14: Documentation and Branding** - README, exhaustive docs, CLAUDE.md, architecture capture
+- [ ] **Phase 15: Update System** - Version checks, migration, and rollback
 
-**Requirements:**
-- STAB-01: README and rebranding pass
-- STAB-02: Archive legacy Python/Bash system
-- STAB-03: Exhaustive documentation
-- STAB-04: Dynamo CLI integration in CLAUDE.md
-- STAB-05: Update/upgrade system
-- STAB-06: Architecture and design decision capture
-- STAB-07: Fix Neo4j admin browser connectivity
-- STAB-08: Directory structure refactor
-- STAB-09: Component scope refactor
-- STAB-10: Global on/off and dev mode toggles
+## Phase Details
+
+### Phase 12: Structural Refactor
+**Goal**: Dynamo's directory structure and code organization reflect the three-component architecture, with toggle infrastructure for safe development
+**Depends on**: Phase 11 (v1.2 complete)
+**Requirements**: STAB-08, STAB-09, STAB-10
+**Success Criteria** (what must be TRUE):
+  1. The repo has `dynamo/`, `ledger/`, `switchboard/` as root-level directories with `graphiti/` under `ledger/` as its storage backend
+  2. Code in each component only imports from its own scope or shared core -- no cross-boundary leakage between Ledger and Switchboard
+  3. A global toggle disables all Dynamo hooks and MCP functionality across all Claude threads
+  4. A dev mode toggle overrides global-off for the current development thread, allowing selective Dynamo usage during development
+  5. All existing tests pass against the restructured codebase
+**Plans**: TBD
+
+### Phase 13: Cleanup and Fixes
+**Goal**: Legacy artifacts are removed and the Neo4j admin browser is accessible for knowledge graph visibility
+**Depends on**: Phase 12 (paths stable before cleanup references them)
+**Requirements**: STAB-02, STAB-07
+**Success Criteria** (what must be TRUE):
+  1. The legacy Python/Bash system is tagged, branched, and fully removed from dev/master -- no Python or Bash hook scripts remain in the active codebase
+  2. The legacy archive is accessible for historical reference (tagged release or archive branch)
+  3. Neo4j admin browser is accessible at port 7475 and can display the knowledge graph contents
+**Plans**: TBD
+
+### Phase 14: Documentation and Branding
+**Goal**: Dynamo is fully documented for both users and future Claude sessions, with complete branding and architectural knowledge captured for development continuity
+**Depends on**: Phase 13 (docs describe the clean, final state)
+**Requirements**: STAB-01, STAB-03, STAB-04, STAB-06
+**Success Criteria** (what must be TRUE):
+  1. README reflects Dynamo identity with accurate architecture description, installation instructions, and usage examples -- no references to the old Python/Bash system
+  2. Documentation covers architecture, CLI commands, hook behavior, configuration, and a development guide
+  3. CLAUDE.md contains complete operational instructions for using the Dynamo CLI and system -- Claude Code can self-manage Dynamo without user guidance
+  4. Architectural decisions from v1.0-v1.2 are captured in a structured format that new Claude sessions can read for development continuity
+  5. GitHub repo is renamed to reflect Dynamo identity
+**Plans**: TBD
+
+### Phase 15: Update System
+**Goal**: Dynamo can check for updates, apply upgrades, and roll back if something goes wrong -- without manual user intervention
+**Depends on**: Phase 14 (stable codebase and docs to build update system against)
+**Requirements**: STAB-05
+**Success Criteria** (what must be TRUE):
+  1. Dynamo can check its current version against the latest available version
+  2. An upgrade command pulls and applies new versions with migration support for breaking changes
+  3. A rollback mechanism restores the previous working version if an update fails
+**Plans**: TBD
 
 ## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
@@ -71,4 +111,7 @@
 | 9. Hook Migration | v1.2 | 4/4 | Complete | 2026-03-17 |
 | 10. Operations and Cutover | v1.2 | 4/4 | Complete | 2026-03-18 |
 | 11. Master Roadmap | v1.2 | 1/1 | Complete | 2026-03-18 |
-| v1.2.1 | v1.2.1 | TBD | Scoping | - |
+| 12. Structural Refactor | v1.2.1 | 0/TBD | Not started | - |
+| 13. Cleanup and Fixes | v1.2.1 | 0/TBD | Not started | - |
+| 14. Documentation and Branding | v1.2.1 | 0/TBD | Not started | - |
+| 15. Update System | v1.2.1 | 0/TBD | Not started | - |

@@ -164,22 +164,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STAB-01 | TBD | Pending |
-| STAB-02 | TBD | Pending |
-| STAB-03 | TBD | Pending |
-| STAB-04 | TBD | Pending |
-| STAB-05 | TBD | Pending |
-| STAB-06 | TBD | Pending |
-| STAB-07 | TBD | Pending |
-| STAB-08 | TBD | Pending |
-| STAB-09 | TBD | Pending |
-| STAB-10 | TBD | Pending |
+| STAB-01 | Phase 14 | Pending |
+| STAB-02 | Phase 13 | Pending |
+| STAB-03 | Phase 14 | Pending |
+| STAB-04 | Phase 14 | Pending |
+| STAB-05 | Phase 15 | Pending |
+| STAB-06 | Phase 14 | Pending |
+| STAB-07 | Phase 13 | Pending |
+| STAB-08 | Phase 12 | Pending |
+| STAB-09 | Phase 12 | Pending |
+| STAB-10 | Phase 12 | Pending |
 
 **v1.2.1 Coverage:**
 - v1.2.1 requirements: 10 total
-- Mapped to phases: 0
-- Unmapped: 10 (awaiting milestone start)
+- Mapped to phases: 10
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-17*
-*Last updated: 2026-03-18 after v1.2.1 scoping*
+*Last updated: 2026-03-18 after v1.2.1 roadmap creation*
