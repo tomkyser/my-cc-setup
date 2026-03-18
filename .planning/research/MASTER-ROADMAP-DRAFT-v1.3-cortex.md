@@ -58,14 +58,16 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 
 **Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture (Ledger Cortex Phase 1), while making the management system modular with self-contained dependency management and on-demand skill loading. The Inner Voice replaces Haiku-only curation with context-aware, personality-driven memory injection. Dual-path routing ensures cost control by routing 95% of operations through a fast, cheap hot path. `[CORTEX]`
 
+`[RECONCILED]` **Inner Voice v1.3 Artifacts:** Core artifacts: `ledger/inner-voice.cjs`, `ledger/dual-path.cjs`, `ledger/activation.cjs`, `inner-voice-state.json`. Feature flag: `dynamo config set ledger.mode classic|cortex`. Debug: `dynamo voice explain`. Cost tracking: `dynamo cost today`. v1.3 spreading activation is basic (1-hop, in-memory JSON, NOT Neo4j-backed). v1.3 session start briefings are factual, NOT narrative. **Explicitly NOT in v1.3:** relationship modeling beyond basic preferences, affect/emotional tagging, multi-hop spreading activation, observation synthesis/consolidation, narrative briefings with relational framing, metacognitive self-correction beyond the explain command, graph-backed state persistence (JSON only).
+
 **Dependencies:** v1.2.1 (stabilization complete, documentation and CLI integration in place)
 
 #### `[CORTEX]` Ledger Cortex Requirements (new and absorbed)
 
 | Requirement | Name | Source | Rationale |
 |-------------|------|--------|-----------|
-| CORTEX-01 | Inner Voice (basic) | New | `[CORTEX]` Semantic shift detection, smart curation replacing Haiku pipeline, self-model persistence (basic JSON cache). Absorbs MENH-01, MENH-02, MENH-10, MENH-11 functionality. |
-| CORTEX-02 | Dual-path routing | New | `[CORTEX]` Hot path (<1s, deterministic search + cached results) and deliberation path (LLM-powered deep reasoning). Deterministic path selection rules. |
+| CORTEX-01 | Inner Voice (basic) | New | `[CORTEX]` `[RECONCILED]` Semantic shift detection, smart curation replacing Haiku pipeline, self-model persistence (basic JSON cache). Absorbs MENH-01, MENH-02, MENH-10, MENH-11 functionality. **Implements 7 PRIMARY cognitive theories:** Dual-Process (Kahneman) -> dual-path architecture; Global Workspace (Baars) -> sublimation mechanism; Spreading Activation (Collins & Loftus) -> basic 1-hop cascading associations; Predictive Processing (Friston) -> semantic shift detection as surprise proxy; Working Memory (Baddeley) -> episodic buffer / integration function; Relevance Theory (Sperber & Wilson) -> injection format optimization; Cognitive Load (Sweller) -> injection volume constraints (500/150/50 token limits). Plus Hebbian Learning (SUPPORTING) for basic edge weight tracking. **Mechanical design:** Event-driven + persistent state architecture (not a compromise -- the correct design; human cognition is also event-driven at the neural level; persistent state + rapid re-activation creates the continuity illusion). Persistent state file (`inner-voice-state.json`) containing self-model, relationship model, activation map, pending associations, injection history, and predictive model state. Processing pipeline per hook: LOAD state -> PROCESS -> UPDATE -> PERSIST. See INNER-VOICE-SPEC.md Section 4 for full mechanical specification. |
+| CORTEX-02 | Dual-path routing | New | `[CORTEX]` `[RECONCILED]` Hot path (<1s, deterministic search + cached results) and deliberation path (LLM-powered deep reasoning). Deterministic path selection rules. **Deterministic sublimation threshold formula:** `sublimation_score = activation_level * surprise_factor * relevance_ratio * (1 - cognitive_load_penalty) * confidence_weight`. All factors deterministic or pre-computed -- no LLM call for threshold calculation. **Latency budgets:** Hot path target <500ms (deterministic processing + cached state); Deliberation path target <2s (Haiku call with prompt caching); Session start briefing <4s (Sonnet, acceptable for session start). **Target ratio:** 95% hot path / 5% deliberation. See INNER-VOICE-SPEC.md Section 4.4 and 4.8 for threshold mechanism and latency budget details. |
 | CORTEX-03 | Cost monitoring | New | `[CORTEX]` Per-agent/day/month budget tracking with hard enforcement. Degrades to hot-path-only when budget exhausted. CLI: `dynamo cost today/month/budget`. |
 | MENH-01 | Decision engine -- infer context type | Absorbed by CORTEX-01 | `[CORTEX]` Inner Voice context inference IS the decision engine. Not built separately. |
 | MENH-02 | Preload engine -- auto inference and injection | Absorbed by CORTEX-01 | `[CORTEX]` Inner Voice narrative briefing IS the preload engine. Not built separately. |
@@ -77,8 +79,8 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 
 | Requirement | Name | Rationale |
 |-------------|------|-----------|
-| MENH-06 | Support both API and native Haiku | Removes OpenRouter single-point-of-failure for curation; straightforward transport layer change on CJS |
-| MENH-07 | Support other model choices for curation | Natural extension of MENH-06; once transport is flexible, model selection follows. `[CORTEX]` Now also enables per-path model selection (Haiku for hot, Sonnet for deliberation). |
+| MENH-06 | Support both API and native Haiku | `[RECONCILED]` Removes OpenRouter single-point-of-failure for curation; straightforward transport layer change on CJS. **Enables Graphiti dual-model selection (Sonnet for complex relationship inference, Haiku for simple entity extraction). This is a prerequisite for CORTEX-01/02 model selection per path.** See INNER-VOICE-SPEC.md Section 4.7 for model-to-component mapping. |
+| MENH-07 | Support other model choices for curation | `[RECONCILED]` Natural extension of MENH-06; once transport is flexible, model selection follows. `[CORTEX]` Now also enables per-path model selection (Haiku for hot, Sonnet for deliberation). **Per-path model selection: Haiku 4.5 for hot path formatting, Sonnet 4.6 for deliberation path reasoning, session start briefing, stop synthesis, and self-model updates.** See INNER-VOICE-SPEC.md Section 4.7 for full model-to-component mapping. |
 | MGMT-01 | Self-contained dependency management | Core self-manageability requirement; Dynamo should manage its own dependencies (GSD, Graphiti, etc.) |
 | MGMT-02 | Domain-specific on-demand modules | Enables skill loading (WPCS, Context7, Playwright); requires modular injection pattern from v1.2 |
 | MGMT-03 | CC skill inference and internal use | Makes Claude Code aware of available skills; builds on MGMT-02's module system |
@@ -92,15 +94,17 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 
 **Goal:** Elevate the quality of stored memories through synthesis, comprehension, and alternative storage backends, while enabling intelligent persistence of user preferences at both global and project scopes. The advanced Inner Voice gains narrative briefings, relationship modeling, and cross-session continuity. Observation synthesis (inspired by Hindsight's reflect pattern) automatically identifies patterns across accumulated knowledge. `[CORTEX]`
 
+`[RECONCILED]` **Inner Voice v1.4 Advancements:** Spreading activation upgrades to 2-hop, Neo4j-backed (replacing in-memory JSON). Narrative briefings with relational framing (DMN-inspired session start narratives). Observation synthesis batch jobs (Memory Consolidation theory -- Hindsight-inspired reflect pattern). Metacognitive self-correction (feedback tracking + threshold adjustment). Graph-backed persistence (Graphiti nodes with temporal versioning replacing JSON-only state). New CLI commands: `dynamo voice model` (inspect self-model and relationship model), `dynamo voice reset` (reset models to defaults). Implements 5 SECONDARY + 2 TERTIARY cognitive theories (see CORTEX-04).
+
 **Dependencies:** v1.3 (Inner Voice basic + dual-path operational, intelligence layer and modular injection operational)
 
 #### `[CORTEX]` Ledger Cortex Requirements (new)
 
 | Requirement | Name | Source | Rationale |
 |-------------|------|--------|-----------|
-| CORTEX-04 | Inner Voice (advanced) | New | `[CORTEX]` Narrative briefings at session start, relationship modeling (user patterns, frustrations, communication style), personality adaptation across contexts. |
+| CORTEX-04 | Inner Voice (advanced) | New | `[CORTEX]` `[RECONCILED]` Narrative briefings at session start, relationship modeling (user patterns, frustrations, communication style), personality adaptation across contexts. **Implements 5 SECONDARY cognitive theories:** Attention Schema Theory (Graziano) -> full self-model as attention monitor with metacognitive capabilities; Somatic Marker Hypothesis (Damasio) -> affect/valence tagging on knowledge graph entities; Default Mode Network -> session boundary consolidation processing (background batch jobs); Memory Consolidation -> observation synthesis via Hindsight-inspired reflect pattern; Metacognition -> feedback-based self-correction and threshold adjustment. **Plus TERTIARY theories:** Schema Theory (Bartlett, Piaget) -> disposition/context adaptation ("debugging schema," "architecture planning schema" with different injection strategies). Note: Affect-as-Information (Schwarz, TERTIARY, LOW confidence) maps to processing depth modulation but should not be a primary v1.4 deliverable due to unreliable affect detection from text. |
 | CORTEX-05 | Enhanced Construction | New | `[CORTEX]` Observation synthesis (batch job, not persistent agent), consolidation runs, improved entity deduplication, conflict detection. Enhances Graphiti integration. |
-| CORTEX-06 | Inner Voice persistence (advanced) | New | `[CORTEX]` Cross-session continuity via graph-backed self-model evolution. Self-model and relationship model stored as Graphiti nodes with temporal versioning. JSON cache for hot path reads. |
+| CORTEX-06 | Inner Voice persistence (advanced) | New | `[CORTEX]` `[RECONCILED]` Cross-session continuity via graph-backed self-model evolution. Self-model and relationship model stored as Graphiti nodes with temporal versioning. JSON cache for hot path reads. Replaces v1.3's JSON-only persistence with graph-backed state, enabling temporal queries on self-model history. |
 
 #### Remaining Requirements
 
@@ -118,6 +122,8 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 ### v1.5 -- Dashboard, Visibility, and Agent Coordination `[CORTEX REVISED]`
 
 **Goal:** Provide users with visual insight into what Dynamo knows and does through a modular web dashboard, while integrating Cortex agent coordination capabilities. The Claude Agent SDK enables on-demand agent spawning for deep recall operations. A basic Access Agent provides scheduled codebase ingestion beyond what session hooks capture. The connector framework establishes the pluggable interface for future data sources (Claudia-aware). `[CORTEX]`
+
+`[RECONCILED]` **Inner Voice v1.5:** Agent-capable Inner Voice -- Claude Agent SDK integration for deep recall operations, on-demand subagent spawning for complex memory queries. See INNER-VOICE-SPEC.md Section 6.3.
 
 **Dependencies:** v1.4 (memory quality + Inner Voice advanced + observation synthesis stable enough to display and coordinate)
 
@@ -144,6 +150,8 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 ### v2.0 -- Advanced Capabilities `[CORTEX REVISED]`
 
 **Goal:** Deliver ambitious features that require significant research, architectural decisions, and a fully mature infrastructure. Multi-agent deliberation protocol enables sophisticated inter-agent reasoning. The domain agent framework provides Claudia-aware extensibility for future domain agents (Finance, Calendar, Home, etc.). `[CORTEX]`
+
+`[RECONCILED]` **Inner Voice v2.0:** Full cognitive architecture -- multi-agent deliberation (Inner Voice + Construction functions), active inference (full Predictive Processing implementation), cross-surface persistence (multi-session, multi-surface state for eventual Claudia integration). See INNER-VOICE-SPEC.md Section 6.3.
 
 **Dependencies:** v1.5 (stable, visible, well-understood system with agent coordination operational)
 
@@ -173,8 +181,8 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 | MENH-03 | Memory synthesis and export | v1.4 | |
 | MENH-04 | Memory inference and understanding | v1.4 | `[CORTEX]` Enhanced by CORTEX-05 |
 | MENH-05 | Flat file support alongside Graph DB | v1.4 | |
-| MENH-06 | Support both API and native Haiku | v1.3 | |
-| MENH-07 | Support other model choices for curation | v1.3 | |
+| MENH-06 | Support both API and native Haiku | v1.3 | `[RECONCILED]` Prerequisite for CORTEX-01/02 dual-model selection |
+| MENH-07 | Support other model choices for curation | v1.3 | `[RECONCILED]` Prerequisite for CORTEX-01/02 dual-model selection |
 | MENH-08 | Native or local text embedding model | v1.4 | |
 | MENH-09 | Council-style AI agent deliberation | v2.0 | `[CORTEX]` Absorbed by CORTEX-10 |
 | MENH-10 | Dynamic curation depth | v1.3 | `[CORTEX]` Absorbed by CORTEX-02 |
@@ -198,12 +206,12 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 | UI-06 | Memory CRUD operations | v1.5 | |
 | UI-07 | Memory with desktop app and mobile | v2.0 | |
 | UI-08 | Inline Dynamo visibility in Claude thread | v1.3 | |
-| CORTEX-01 | Inner Voice (basic) | v1.3 | `[CORTEX]` NEW -- smart curation, semantic shift detection, self-model |
-| CORTEX-02 | Dual-path routing | v1.3 | `[CORTEX]` NEW -- hot path + deliberation path |
+| CORTEX-01 | Inner Voice (basic) | v1.3 | `[CORTEX]` `[RECONCILED]` NEW -- smart curation, semantic shift detection, self-model; 7 PRIMARY theories mapped |
+| CORTEX-02 | Dual-path routing | v1.3 | `[CORTEX]` `[RECONCILED]` NEW -- hot path + deliberation path; deterministic sublimation threshold formula |
 | CORTEX-03 | Cost monitoring | v1.3 | `[CORTEX]` NEW -- budget tracking and enforcement |
-| CORTEX-04 | Inner Voice (advanced) | v1.4 | `[CORTEX]` NEW -- narrative briefings, relationship modeling |
+| CORTEX-04 | Inner Voice (advanced) | v1.4 | `[CORTEX]` `[RECONCILED]` NEW -- narrative briefings, relationship modeling; 5 SECONDARY + 2 TERTIARY theories mapped |
 | CORTEX-05 | Enhanced Construction | v1.4 | `[CORTEX]` NEW -- observation synthesis, consolidation |
-| CORTEX-06 | Inner Voice persistence (advanced) | v1.4 | `[CORTEX]` NEW -- graph-backed self-model evolution |
+| CORTEX-06 | Inner Voice persistence (advanced) | v1.4 | `[CORTEX]` `[RECONCILED]` NEW -- graph-backed self-model evolution; replaces JSON-only with Graphiti temporal versioning |
 | CORTEX-07 | Agent coordination | v1.5 | `[CORTEX]` NEW -- Claude Agent SDK, on-demand spawning |
 | CORTEX-08 | Access Agent (basic) | v1.5 | `[CORTEX]` NEW -- codebase indexer, background ingestion |
 | CORTEX-09 | Connector framework | v1.5 | `[CORTEX]` NEW -- pluggable source interface |
@@ -287,8 +295,22 @@ Four new principles added (marked `[CORTEX]`):
 3. **Dual-path is non-negotiable** -- every operation routes through hot or deliberation
 4. **Claudia-aware, not Claudia-scoped** -- design for extensibility, build for now
 
+### Reconciliation with Inner Voice Spec (2026-03-18)
+
+Source: INNER-VOICE-SPEC.md (Cognitive Architecture Specification)
+
+| Change | Requirement(s) | What Changed |
+|--------|---------------|--------------|
+| Theory tiering mapped to milestones | CORTEX-01, CORTEX-04 | 7 PRIMARY theories -> v1.3, 5 SECONDARY + 2 TERTIARY -> v1.4 |
+| Mechanical design findings | CORTEX-01, CORTEX-02 | Event-driven + persistent state resolution, deterministic sublimation threshold formula, latency budgets |
+| Inner Voice phasing refined | CORTEX-01, CORTEX-04, CORTEX-06 | Specific artifacts per milestone, explicit NOT-in-v1.3 list, v1.3 basic vs v1.4 advanced distinctions |
+| Graphiti dual-model | MENH-06, MENH-07 | Explicit Sonnet/Haiku per-path model selection as prerequisite for CORTEX dual-path |
+
+All changes marked with [RECONCILED] tag for traceability.
+
 ---
 *DRAFT -- Proposed revision created: 2026-03-18*
 *Based on Ledger Cortex research and adversarial analysis*
+*Reconciled with Inner Voice Cognitive Architecture Specification: 2026-03-18*
 *Pending user review and approval before replacing MASTER-ROADMAP.md*
-*Source: .planning/REQUIREMENTS.md + .planning/research/LEDGER-CORTEX-ANALYSIS.md*
+*Source: .planning/REQUIREMENTS.md + .planning/research/LEDGER-CORTEX-ANALYSIS.md + .planning/research/INNER-VOICE-SPEC.md*
