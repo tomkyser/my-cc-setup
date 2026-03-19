@@ -67,26 +67,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ARCH-01 | — | Pending |
-| ARCH-02 | — | Pending |
-| ARCH-03 | — | Pending |
-| ARCH-04 | — | Pending |
-| ARCH-05 | — | Pending |
-| ARCH-06 | — | Pending |
-| ARCH-07 | — | Pending |
-| MGMT-01 | — | Pending |
-| MGMT-08a | — | Pending |
-| MGMT-08b | — | Pending |
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| DATA-03 | — | Pending |
-| DATA-04 | — | Pending |
+| ARCH-01 | Phase 19 | Pending |
+| ARCH-02 | Phase 18 | Pending |
+| ARCH-03 | Phase 18 | Pending |
+| ARCH-04 | Phase 19 | Pending |
+| ARCH-05 | Phase 19 | Pending |
+| ARCH-06 | Phase 19 | Pending |
+| ARCH-07 | Phase 19 | Pending |
+| MGMT-01 | Phase 20 | Pending |
+| MGMT-08a | Phase 20 | Pending |
+| MGMT-08b | Phase 20 | Pending |
+| DATA-01 | Phase 21 | Pending |
+| DATA-02 | Phase 21 | Pending |
+| DATA-03 | Phase 21 | Pending |
+| DATA-04 | Phase 21 | Pending |
 
 **Coverage:**
 - v1.3-M1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14
+- Mapped to phases: 14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-19*
-*Last updated: 2026-03-19 after initial definition*
+*Last updated: 2026-03-19 after roadmap creation*
