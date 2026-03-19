@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 15-02-PLAN.md
-last_updated: "2026-03-19T01:09:33.671Z"
+stopped_at: Completed 15-03-PLAN.md
+last_updated: "2026-03-19T01:17:10.566Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 15 (update-system) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ### Prior Milestones
 
@@ -71,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 15]: Separate 404 handling from network errors for specific No releases published yet message
 - [Phase 15]: [15-02 compareVersions]: Duplicated in migrate.cjs intentionally -- each switchboard module is self-contained per codebase convention
 - [Phase 15]: [15-02 migration filter]: Uses >= for source version and <= for target version to include boundary migrations
+- [Phase 15]: Snapshot backup uses existing copyTree from install.cjs -- no new directory copy logic
+- [Phase 15]: install.cjs rollback() checks dynamo-backup/ first for full-snapshot restore, falls back to legacy settings-only
 
 ### Blockers/Concerns
 
@@ -78,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T01:09:33.669Z
-Stopped at: Completed 15-02-PLAN.md
+Last session: 2026-03-19T01:17:10.564Z
+Stopped at: Completed 15-03-PLAN.md
 Resume file: None
