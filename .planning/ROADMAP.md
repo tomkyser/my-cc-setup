@@ -106,7 +106,13 @@ Plans:
   1. Dynamo can check its current version against the latest available version
   2. An upgrade command pulls and applies new versions with migration support for breaking changes
   3. A rollback mechanism restores the previous working version if an update fails
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 15-01-PLAN.md -- Version check module (GitHub API + semver comparison)
+- [ ] 15-02-PLAN.md -- Migration harness (discover, sort, execute version-keyed scripts)
+- [ ] 15-03-PLAN.md -- Update orchestrator (snapshot + pull/download + migrate + install + verify + auto-rollback)
+- [ ] 15-04-PLAN.md -- CLI router wiring (check-update, update commands + help text + tests)
 
 ## Progress
 
@@ -128,5 +134,5 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15
 | 11. Master Roadmap | v1.2 | 1/1 | Complete | 2026-03-18 |
 | 12. Structural Refactor | v1.2.1 | 4/4 | Complete | 2026-03-18 |
 | 13. Cleanup and Fixes | v1.2.1 | 2/2 | Complete | 2026-03-18 |
-| 14. Documentation and Branding | 3/3 | Complete    | 2026-03-18 | - |
-| 15. Update System | v1.2.1 | 0/TBD | Not started | - |
+| 14. Documentation and Branding | v1.2.1 | 3/3 | Complete | 2026-03-18 |
+| 15. Update System | v1.2.1 | 0/4 | Not started | - |
