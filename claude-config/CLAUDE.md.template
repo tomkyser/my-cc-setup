@@ -40,8 +40,10 @@ Today's date is [look up the current date using web search for timezone GMT-6 (T
 |---------|-------------|----------|
 | `dynamo start` | Start the Graphiti Docker stack with health wait | Starting Dynamo for a session |
 | `dynamo stop` | Stop the Graphiti Docker stack (preserves data) | Shutting down when done |
-| `dynamo install` | Deploy CJS system to ~/.claude/dynamo/ | Initial install or reinstall |
-| `dynamo rollback` | Restore settings.json.bak and undo retirement | Reverting a bad install |
+| `dynamo install` | Deploy Dynamo to ~/.claude/dynamo/ (backup, copy, config, hooks, health check) | Initial install or reinstall |
+| `dynamo rollback` | Restore previous version from backup | Reverting a bad update or install |
+| `dynamo check-update` | Check for available Dynamo updates (current vs latest) | Checking if a newer version exists |
+| `dynamo update` | Update Dynamo to latest version (backup, pull, migrate, verify, auto-rollback) | Upgrading to a new release |
 | `dynamo sync` | Bidirectional sync between repo and live deployment | After editing source files in repo |
 | `dynamo toggle on\|off` | Enable or disable Dynamo globally | Maintenance or troubleshooting |
 | `dynamo status` | Show Dynamo enabled/disabled state | Checking if Dynamo is active |
@@ -149,12 +151,13 @@ When you see `[GRAPHITI MEMORY CONTEXT]` or `[RELEVANT MEMORY]`:
 ## Maintenance
 
 ### Updating Dynamo
-- Pull latest from repo: `cd <repo-dir> && git pull`
-- Sync changes to live: `dynamo sync`
-- Or full reinstall: `dynamo install`
+- Check for updates: `dynamo check-update`
+- Update to latest version: `dynamo update` (creates backup, pulls code, runs migrations, verifies health, auto-rolls back on failure)
+- Or manual: `cd <repo-dir> && git pull` then `dynamo install`
 
 ### Checking Version
 - `dynamo version` shows current version
+- `dynamo check-update` shows current vs latest version
 
 ### After Config Changes
 - If config.json changed: `dynamo sync` or `dynamo install`

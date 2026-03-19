@@ -208,8 +208,10 @@ All commands are invoked via `node ~/.claude/dynamo/dynamo.cjs <command>` (or `n
 |---------|-------------|
 | `dynamo start` | Start the Graphiti Docker stack with health wait |
 | `dynamo stop` | Stop the Graphiti Docker stack (preserves data) |
-| `dynamo install` | Deploy CJS system to `~/.claude/dynamo/` |
-| `dynamo rollback` | Restore `settings.json.bak` and undo retirement |
+| `dynamo install` | Deploy Dynamo to `~/.claude/dynamo/` (backup, copy, config, hooks, health check) |
+| `dynamo rollback` | Restore previous version from backup |
+| `dynamo check-update` | Check for available Dynamo updates (current vs latest version) |
+| `dynamo update` | Update Dynamo to latest version (backup, pull, migrate, verify, auto-rollback on failure) |
 | `dynamo sync <direction>` | Bidirectional sync between repo and live deployment |
 | `dynamo toggle <on\|off>` | Enable or disable Dynamo globally |
 | `dynamo status` | Show Dynamo enabled/disabled state |
