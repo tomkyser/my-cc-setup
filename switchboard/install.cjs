@@ -175,38 +175,6 @@ function mergeSettings(settingsPath, templatePath) {
   fs.renameSync(tmpPath, settingsPath);
 }
 
-// --- Helper: registerMcp ---
-
-/**
- * Register Graphiti MCP server via `claude mcp add` if not already registered.
- * @returns {{ status: string, detail: string }}
- */
-function registerMcp() {
-  // Check if already registered
-  try {
-    const claudeJsonPath = path.join(os.homedir(), '.claude.json');
-    const content = safeReadFile(claudeJsonPath);
-    if (content) {
-      const parsed = JSON.parse(content);
-      if (parsed.mcpServers && parsed.mcpServers.graphiti) {
-        return { status: 'OK', detail: 'Already registered' };
-      }
-    }
-  } catch (e) {
-    // Continue to registration attempt
-  }
-
-  try {
-    execSync('claude mcp add --transport http --scope user graphiti http://localhost:8100/mcp', {
-      timeout: 10000,
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return { status: 'OK', detail: 'Registered' };
-  } catch (e) {
-    return { status: 'WARN', detail: 'Registration failed: ' + e.message };
-  }
-}
-
 // --- Helper: retirePython ---
 
 /**
@@ -314,7 +282,7 @@ function restorePython(graphitiDir, legacyDir) {
 // --- Main: run (install) ---
 
 /**
- * Run the full installer: copy files, generate config, merge settings, register MCP, retire Python, health check.
+ * Run the full installer: copy files, generate config, merge settings, deregister MCP, deploy CLAUDE.md, clean stale lib/, retire Python, health check.
  * @param {string[]} args - CLI args
  * @param {boolean} pretty - Pretty output flag
  */
@@ -352,15 +320,46 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Merge settings', status: 'FAIL', detail: e.message });
   }
 
-  // Step 4: Register MCP
+  // Step 4: Deregister MCP (defensive -- CLI-only architecture per Phase 12-04)
   try {
-    const mcpResult = registerMcp();
-    steps.push({ name: 'Register MCP', status: mcpResult.status, detail: mcpResult.detail });
+    execSync('claude mcp remove graphiti', {
+      timeout: 10000,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    steps.push({ name: 'Deregister MCP', status: 'OK', detail: 'Graphiti MCP removed (CLI-only architecture)' });
   } catch (e) {
-    steps.push({ name: 'Register MCP', status: 'WARN', detail: e.message });
+    // Not registered -- that's the desired state
+    steps.push({ name: 'Deregister MCP', status: 'OK', detail: 'Not registered (already CLI-only)' });
   }
 
-  // Step 5: Retire Python
+  // Step 5: Deploy CLAUDE.md template
+  try {
+    const templatePath = path.join(REPO_ROOT, 'claude-config', 'CLAUDE.md.template');
+    const claudeMdPath = path.join(os.homedir(), '.claude', 'CLAUDE.md');
+    if (fs.existsSync(templatePath)) {
+      fs.copyFileSync(templatePath, claudeMdPath);
+      steps.push({ name: 'Deploy CLAUDE.md', status: 'OK', detail: 'Template copied to ~/.claude/CLAUDE.md' });
+    } else {
+      steps.push({ name: 'Deploy CLAUDE.md', status: 'WARN', detail: 'Template not found at ' + templatePath });
+    }
+  } catch (e) {
+    steps.push({ name: 'Deploy CLAUDE.md', status: 'WARN', detail: e.message });
+  }
+
+  // Step 6: Clean stale lib/ directory (pre-Phase 12 artifact)
+  try {
+    const staleLibDir = path.join(LIVE_DIR, 'lib');
+    if (fs.existsSync(staleLibDir)) {
+      fs.rmSync(staleLibDir, { recursive: true, force: true });
+      steps.push({ name: 'Clean stale lib/', status: 'OK', detail: 'Removed pre-Phase-12 lib/ directory' });
+    } else {
+      steps.push({ name: 'Clean stale lib/', status: 'OK', detail: 'No stale lib/ found' });
+    }
+  } catch (e) {
+    steps.push({ name: 'Clean stale lib/', status: 'WARN', detail: e.message });
+  }
+
+  // Step 7: Retire Python
   try {
     const retireResult = retirePython();
     steps.push({ name: 'Retire Python', status: 'OK', detail: retireResult.moved.length + ' items retired' });
@@ -368,7 +367,7 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Retire Python', status: 'WARN', detail: e.message });
   }
 
-  // Step 6: Post-install health check
+  // Step 8: Post-install health check
   let hcResult = null;
   try {
     const hc = require(path.join(__dirname, 'health-check.cjs'));
