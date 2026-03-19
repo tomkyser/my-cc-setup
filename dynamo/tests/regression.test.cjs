@@ -13,7 +13,8 @@ const { MCPClient, parseSSE } = require(path.join(__dirname, '..', '..', 'ledger
 
 const DYNAMO_DIR = path.join(os.homedir(), '.claude', 'dynamo');
 const GRAPHITI_DIR = path.join(os.homedir(), '.claude', 'graphiti');
-const LIB_DIR = path.join(DYNAMO_DIR, 'lib');
+// Current deployed layout: files at DYNAMO_DIR root + ledger/ + switchboard/ (no lib/)
+const SCAN_DIRS = [DYNAMO_DIR, path.join(DYNAMO_DIR, 'ledger'), path.join(DYNAMO_DIR, 'switchboard')];
 
 // --- Helper: recursively collect .cjs files ---
 function collectCjsFiles(dir) {
@@ -30,11 +31,19 @@ function collectCjsFiles(dir) {
   return results;
 }
 
+function collectAllCjsFiles() {
+  const results = [];
+  for (const dir of SCAN_DIRS) {
+    if (fs.existsSync(dir)) results.push(...collectCjsFiles(dir));
+  }
+  return results;
+}
+
 describe('v1.1 Regression Tests', () => {
 
   // --- Test 1: DIAG-01 -- No silent write failures ---
   it('Regression 1 (DIAG-01): no bare .catch(() => {}) patterns in production code', () => {
-    const cjsFiles = collectCjsFiles(LIB_DIR);
+    const cjsFiles = collectAllCjsFiles();
     const violations = [];
 
     for (const filePath of cjsFiles) {
@@ -121,7 +130,7 @@ describe('v1.1 Regression Tests', () => {
 
   // --- Test 6: GRAPHITI_VERBOSE support ---
   it('Regression 6 (GRAPHITI_VERBOSE): core.cjs references process.env.GRAPHITI_VERBOSE', () => {
-    const coreSource = fs.readFileSync(path.join(LIB_DIR, 'core.cjs'), 'utf8');
+    const coreSource = fs.readFileSync(path.join(DYNAMO_DIR, 'core.cjs'), 'utf8');
     assert.ok(coreSource.includes('GRAPHITI_VERBOSE'),
       'core.cjs must reference GRAPHITI_VERBOSE for debug output support');
   });
@@ -165,7 +174,7 @@ describe('v1.1 Regression Tests', () => {
 
   // --- Test 9: Once-per-session health warning with ppid ---
   it('Regression 9 (ppid health guard): healthGuard uses process.ppid, not standalone process.pid', () => {
-    const coreSource = fs.readFileSync(path.join(LIB_DIR, 'core.cjs'), 'utf8');
+    const coreSource = fs.readFileSync(path.join(DYNAMO_DIR, 'core.cjs'), 'utf8');
 
     assert.ok(coreSource.includes('process.ppid'),
       'healthGuard must use process.ppid');
@@ -243,9 +252,9 @@ describe('v1.1 Regression Tests', () => {
 });
 
 describe('Branding (BRD-01)', () => {
-  it('all .cjs files in lib/ start with "// Dynamo >" identity block', () => {
-    const cjsFiles = collectCjsFiles(LIB_DIR);
-    assert.ok(cjsFiles.length > 0, 'Should find at least one .cjs file in lib/');
+  it('all .cjs files start with "// Dynamo >" identity block', () => {
+    const cjsFiles = collectAllCjsFiles();
+    assert.ok(cjsFiles.length > 0, 'Should find at least one .cjs file in dynamo/');
 
     const violations = [];
     for (const filePath of cjsFiles) {
@@ -262,8 +271,8 @@ describe('Branding (BRD-01)', () => {
 });
 
 describe('Directory Structure (BRD-02)', () => {
-  it('required directories exist: lib, lib/ledger, lib/switchboard, prompts, tests', () => {
-    const requiredDirs = ['lib', 'lib/ledger', 'lib/switchboard', 'prompts', 'tests'];
+  it('required directories exist: ledger, switchboard, hooks, prompts, tests', () => {
+    const requiredDirs = ['ledger', 'switchboard', 'hooks', 'prompts', 'tests'];
     for (const dir of requiredDirs) {
       const fullPath = path.join(DYNAMO_DIR, dir);
       assert.ok(fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory(),
