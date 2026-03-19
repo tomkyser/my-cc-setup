@@ -1,5 +1,6 @@
 {
   "version": "0.1.0",
+  "enabled": true,
   "graphiti": {
     "mcp_url": "http://localhost:8100/mcp",
     "health_url": "http://localhost:8100/health"

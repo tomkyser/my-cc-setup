@@ -2,6 +2,53 @@
 
 *A living document updated after each milestone. Lessons feed forward into future planning.*
 
+## Milestone: v1.2.1 — Stabilization and Polish
+
+**Shipped:** 2026-03-19
+**Phases:** 6 | **Plans:** 17 | **Commits:** 104 | **Production LOC:** 9,253 CJS | **Tests:** 374
+
+### What Was Built
+- Directory restructure to 3 root-level components (`dynamo/`, `ledger/`, `switchboard/`) with import boundary enforcement tests
+- Global on/off toggle with complete blackout — CLI gate, hook gate, MCP deregistration, no bypass paths
+- 8 CLI memory commands replacing Graphiti MCP tools, all toggle-gated
+- Legacy Python/Bash system archived (tagged `v1.2-legacy-archive`) and fully removed
+- README rewrite (537 lines, Mermaid architecture diagram, 25 CLI commands), CLAUDE.md template (20+ commands), 19 architecture decision records, 7 codebase maps
+- Self-updating system: GitHub Releases API version checks, dual-mode update (git pull/tarball), migration harness, snapshot rollback
+- Deploy pipeline hardening: dual-layout path resolution (resolveSibling/resolveHandlers), defensive MCP deregistration, CLAUDE.md template deployment
+
+### What Worked
+- Milestone audit after Phase 16 caught 6 integration/flow gaps that would have shipped broken — audit-then-fix pattern validated
+- `resolveSibling()` pattern established in Phase 16 for CLI router was directly reusable in Phase 17 for hook dispatcher
+- Gap closure phases (16, 17) were small and focused — 1-3 plans each, fast turnaround
+- Human verification checkpoint in Phase 17 caught the deployment working correctly first try — no rework needed
+- 374 tests provided high confidence during refactoring — zero regressions across directory restructure
+
+### What Was Inefficient
+- Phase 12 scope was large (4 plans) — could have been split into directory restructure + toggle as separate phases
+- Milestone audit discovered gaps that could have been caught by integration testing during Phase 15 execution
+- Some test file scanning bugs (regression tests scanning their own test files for production patterns) only surfaced during Phase 17 execution
+
+### Patterns Established
+- Dual-layout path resolution: `resolveSibling()` / `resolveHandlers()` — check repo path first, fall back to deployed path
+- Defensive deregistration: `claude mcp remove` on install to prevent stale MCP registrations
+- CLAUDE.md template deployment: installer copies template to `~/.claude/CLAUDE.md` ensuring live file stays current
+- Milestone audit → gap closure phase pattern: audit finds integration gaps, create focused phase to close them
+- 8-step installer: copy files, generate config, merge settings, deregister MCP, deploy CLAUDE.md, clean stale dirs, retire legacy, health check
+
+### Key Lessons
+1. Milestone audits should be mandatory before archival — they consistently find integration gaps that per-phase verification misses
+2. Deploy pipeline testing needs both unit tests AND deployed environment verification — unit tests can pass while deployed code fails
+3. Stale directories/registrations from prior architectures persist across installs — defensive cleanup steps are worth the cost
+4. Documentation phases should come after ALL code changes, including deploy pipeline fixes — Phase 14 docs were partially outdated by Phase 17 fixes
+
+### Cost Observations
+- Model mix: opus (executor, planner, researcher), sonnet (verifier, plan-checker)
+- 6 phases completed across 2 days of wall time
+- 17 plans executed with 104 commits
+- Phase 17 human verification confirmed all automated checks — zero manual fixes needed
+
+---
+
 ## Milestone: v1.2 — Dynamo Foundation
 
 **Shipped:** 2026-03-18
@@ -134,11 +181,12 @@
 
 ### Process Evolution
 
-| Milestone | Commits | Phases | Key Change |
-|-----------|---------|--------|------------|
-| v1.0 | ~26 | 3 | Established vetting protocol and research patterns |
-| v1.1 | 34 | 4 | Added diagnostic-first approach and verification tools |
-| v1.2 | 29 | 4 | CJS rewrite with TDD, 272 tests, full feature parity |
+| Milestone | Commits | Phases | Plans | Tests | Key Change |
+|-----------|---------|--------|-------|-------|------------|
+| v1.0 | ~26 | 3 | 8 | 0 | Established vetting protocol and research patterns |
+| v1.1 | 34 | 4 | 8 | 0 | Added diagnostic-first approach and verification tools |
+| v1.2 | 29 | 4 | 12 | 272 | CJS rewrite with TDD, full feature parity |
+| v1.2.1 | 104 | 6 | 17 | 374 | Stabilization: restructure, toggle, docs, update system, deploy hardening |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -147,3 +195,5 @@
 3. Each milestone should produce reusable tools (vetting protocol, diagnose.py, verify-memory) not just outcomes
 4. TDD with zero-dependency test runners (node:test) eliminates framework overhead and speeds execution
 5. Options-based dependency injection enables complete test isolation without mocking frameworks
+6. Milestone audits before archival consistently find integration gaps — make them mandatory
+7. Dual-layout path resolution patterns are reusable across modules — establish once, apply everywhere

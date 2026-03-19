@@ -4,7 +4,69 @@
 
 const path = require('path');
 const fs = require('fs');
-const { output, error, safeReadFile } = require(path.join(__dirname, 'lib', 'core.cjs'));
+const os = require('os');
+const { output, error, safeReadFile, isEnabled } = require(path.join(__dirname, 'core.cjs'));
+
+// --- Path resolution: dual-layout support ---
+// Repo layout:     dynamo/dynamo.cjs  -> switchboard/ and ledger/ are at ../switchboard/ and ../ledger/
+// Deployed layout: ~/.claude/dynamo/dynamo.cjs -> switchboard/ and ledger/ are at ./switchboard/ and ./ledger/
+
+function resolveSibling(subdir, file) {
+  const repoPath = path.join(__dirname, '..', subdir, file);
+  if (fs.existsSync(repoPath)) return repoPath;
+  return path.join(__dirname, subdir, file);
+}
+
+// --- Flag/arg helpers for memory commands ---
+
+/**
+ * Extract a flag value from args array. Returns the value after the flag, or null.
+ * Example: extractFlag(['--scope', 'global', '--format', 'json'], '--scope') -> 'global'
+ */
+function extractFlag(args, flag) {
+  const idx = args.indexOf(flag);
+  if (idx === -1 || idx + 1 >= args.length) return null;
+  return args[idx + 1];
+}
+
+/**
+ * Get non-flag arguments (arguments that don't start with --)
+ */
+function getPositionalArgs(args) {
+  const result = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--')) { i++; continue; }  // Skip flag + value
+    result.push(args[i]);
+  }
+  return result;
+}
+
+/**
+ * Format output based on --format flag
+ */
+function formatOutput(data, format, humanText) {
+  if (format === 'json') {
+    output(data);
+  } else if (format === 'raw') {
+    // Raw: dump the full content as-is
+    const raw = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    process.stdout.write(raw + '\n');
+  } else {
+    // Default: human-readable to stderr
+    process.stderr.write(humanText + '\n');
+  }
+}
+
+/**
+ * Toggle gate for memory commands.
+ * Respects DYNAMO_CONFIG_PATH env var for test isolation.
+ */
+function requireEnabled() {
+  const configPath = process.env.DYNAMO_CONFIG_PATH || undefined;
+  if (!isEnabled(configPath)) {
+    error('Dynamo is disabled. Use "dynamo toggle on" or set DYNAMO_DEV=1');
+  }
+}
 
 // --- Help ---
 
@@ -22,14 +84,26 @@ Commands:
   start          Start the Graphiti Docker stack with health wait
   stop           Stop the Graphiti Docker stack (preserves data)
   install        Deploy CJS system to ~/.claude/dynamo/ and retire Python
-  rollback       Restore settings.json.bak and undo retirement
+  rollback       Restore previous version from backup
+  check-update   Check for available Dynamo updates
+  update         Update Dynamo to the latest version
+  search         Search knowledge graph for facts and entities
+  remember       Store a memory in the knowledge graph
+  recall         Retrieve episodes from a scope
+  edge           Inspect a specific entity relationship
+  forget         Delete an episode or edge by UUID
+  clear          Clear all data for a scope (destructive)
+  toggle         Enable or disable Dynamo globally (on/off)
+  status         Show Dynamo enabled/disabled state
   session        Session management (list, view, label, backfill)
   test           Run the Dynamo test suite
   version        Show Dynamo version
   help           Show this help message
 
 Options:
-  --pretty       Human-readable output (default: JSON)
+  --pretty       Human-readable output (default: JSON for operational commands)
+  --format       Output format: text (human), json (structured), raw (full source)
+  --scope        Memory scope: global, project-<name>, session-<ts>, task-<desc>
   --verbose      Show detailed stage output
   --help         Show command-specific help
 
@@ -51,7 +125,17 @@ const COMMAND_HELP = {
   'start':        'Usage: dynamo start [--pretty]\n  Start Graphiti Docker stack.',
   'stop':         'Usage: dynamo stop [--pretty]\n  Stop Graphiti Docker stack.',
   'install':      'Usage: dynamo install [--pretty]\n  Deploy CJS system and retire Python.',
-  'rollback':     'Usage: dynamo rollback [--pretty]\n  Restore settings.json.bak and undo retirement.',
+  'rollback':     'Usage: dynamo rollback [--pretty]\n  Restore previous version from backup.',
+  'check-update': 'Usage: dynamo check-update [--format json]\n  Check for available Dynamo updates. Shows current vs latest version.',
+  'update':       'Usage: dynamo update [--pretty]\n  Update Dynamo to the latest version. Creates backup, pulls code, runs migrations, verifies health. Auto-rolls back on failure.',
+  'search':       'Usage: dynamo search <query> [--facts|--nodes] [--scope <scope>] [--format json|raw]\n  Search knowledge graph.',
+  'remember':     'Usage: dynamo remember <content> [--scope <scope>] [--format json|raw]\n  Store a memory.',
+  'recall':       'Usage: dynamo recall [--scope <scope>] [--format json|raw]\n  Retrieve episodes from a scope.',
+  'edge':         'Usage: dynamo edge <uuid> [--format json|raw]\n  Inspect a specific entity relationship.',
+  'forget':       'Usage: dynamo forget <uuid> [--edge] [--format json|raw]\n  Delete an episode or edge.',
+  'clear':        'Usage: dynamo clear --scope <scope> --confirm [--format json|raw]\n  Clear all data for a scope (DESTRUCTIVE).',
+  'toggle':       'Usage: dynamo toggle <on|off>\n  Enable or disable Dynamo globally.',
+  'status':       'Usage: dynamo status [--pretty]\n  Show Dynamo enabled/disabled state.',
   'session':      'Usage: dynamo session <list|view|label|backfill> [args] [--pretty]\n  Session management.',
   'test':         'Usage: dynamo test\n  Run the Dynamo test suite.',
   'version':      'Usage: dynamo version\n  Show Dynamo version.'
@@ -92,39 +176,218 @@ async function main() {
 
   switch (command) {
     case 'health-check':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'health-check.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'health-check.cjs')).run(restArgs, pretty);
       break;
 
     case 'diagnose':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'diagnose.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'diagnose.cjs')).run(restArgs, pretty);
       break;
 
     case 'verify-memory':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'verify-memory.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'verify-memory.cjs')).run(restArgs, pretty);
       break;
 
     case 'sync':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'sync.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'sync.cjs')).run(restArgs, pretty);
       break;
 
     case 'start':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'stack.cjs')).start(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'stack.cjs')).start(restArgs, pretty);
       break;
 
     case 'stop':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'stack.cjs')).stop(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'stack.cjs')).stop(restArgs, pretty);
       break;
 
     case 'install':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'install.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'install.cjs')).run(restArgs, pretty);
       break;
 
     case 'rollback':
-      await require(path.join(__dirname, 'lib', 'switchboard', 'install.cjs')).rollback(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'install.cjs')).rollback(restArgs, pretty);
       break;
 
+    case 'check-update': {
+      const updateCheck = require(resolveSibling('switchboard', 'update-check.cjs'));
+      const result = await updateCheck.checkUpdate();
+      const format = extractFlag(restArgs, '--format') || null;
+
+      if (format === 'json') {
+        output({ command: 'check-update', ...result });
+      } else {
+        // Human-readable inline status to stderr
+        if (result.error) {
+          process.stderr.write(result.error + '\n');
+        } else if (result.update_available) {
+          process.stderr.write('Dynamo ' + result.current + ' -> ' + result.latest + ' available. Run "dynamo update" to upgrade.\n');
+        } else {
+          process.stderr.write('Dynamo ' + result.current + ' is up to date.\n');
+        }
+        // Exit cleanly (no output() call -- already wrote to stderr)
+        // For non-JSON mode, just exit 0 without JSON stdout
+      }
+      break;
+    }
+
+    case 'update':
+      await require(resolveSibling('switchboard', 'update.cjs')).update(restArgs, pretty);
+      break;
+
+    // --- Memory Commands ---
+
+    case 'search': {
+      requireEnabled();
+      const query = getPositionalArgs(restArgs).join(' ');
+      if (!query) { error('Usage: dynamo search <query> [--facts|--nodes] [--scope <scope>] [--format json|raw]'); return; }
+      const scopeArg = extractFlag(restArgs, '--scope') || 'global';
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const search = require(resolveSibling('ledger', 'search.cjs'));
+      let result;
+      if (restArgs.includes('--nodes')) {
+        result = await search.searchNodes(query, scopeArg);
+      } else if (restArgs.includes('--facts')) {
+        result = await search.searchFacts(query, scopeArg);
+      } else {
+        result = await search.combinedSearch(query, scopeArg);
+      }
+      formatOutput(
+        { command: 'search', query, scope: scopeArg, result },
+        format,
+        result || 'No results found.'
+      );
+      break;
+    }
+
+    case 'remember': {
+      requireEnabled();
+      const content = getPositionalArgs(restArgs).join(' ');
+      if (!content) { error('Usage: dynamo remember <content> [--scope <scope>] [--format json|raw]'); return; }
+      const scopeArg = extractFlag(restArgs, '--scope') || 'global';
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { addEpisode } = require(resolveSibling('ledger', 'episodes.cjs'));
+      const result = await addEpisode(content, scopeArg);
+      formatOutput(
+        { command: 'remember', content, scope: scopeArg, success: !!result },
+        format,
+        result ? 'Memory stored.' : 'Failed to store memory.'
+      );
+      break;
+    }
+
+    case 'recall': {
+      requireEnabled();
+      const scopeArg = extractFlag(restArgs, '--scope') || 'global';
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { extractContent } = require(resolveSibling('ledger', 'episodes.cjs'));
+      const client = new MCPClient();
+      const response = await client.callTool('get_episodes', { group_ids: [scopeArg] });
+      const content = extractContent(response);
+      formatOutput(
+        { command: 'recall', scope: scopeArg, episodes: content },
+        format,
+        content || 'No episodes found.'
+      );
+      break;
+    }
+
+    case 'edge': {
+      requireEnabled();
+      const uuid = restArgs.find(a => !a.startsWith('--'));
+      if (!uuid) { error('Usage: dynamo edge <uuid> [--format json|raw]'); return; }
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { extractContent } = require(resolveSibling('ledger', 'episodes.cjs'));
+      const client = new MCPClient();
+      const response = await client.callTool('get_entity_edge', { uuid });
+      const content = extractContent(response);
+      formatOutput(
+        { command: 'edge', uuid, result: content },
+        format,
+        content || 'Edge not found.'
+      );
+      break;
+    }
+
+    case 'forget': {
+      requireEnabled();
+      const isEdge = restArgs.includes('--edge');
+      const uuid = restArgs.find(a => !a.startsWith('--'));
+      if (!uuid) { error('Usage: dynamo forget <uuid> [--edge] [--format json|raw]'); return; }
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { extractContent } = require(resolveSibling('ledger', 'episodes.cjs'));
+      const client = new MCPClient();
+      const toolName = isEdge ? 'delete_entity_edge' : 'delete_episode';
+      const response = await client.callTool(toolName, { uuid });
+      const content = extractContent(response);
+      formatOutput(
+        { command: 'forget', uuid, type: isEdge ? 'edge' : 'episode', result: content },
+        format,
+        `Deleted ${isEdge ? 'edge' : 'episode'}: ${uuid}`
+      );
+      break;
+    }
+
+    case 'clear': {
+      requireEnabled();
+      if (!restArgs.includes('--confirm')) {
+        error('DESTRUCTIVE: This will clear all data for the specified scope.\nUsage: dynamo clear --scope <scope> --confirm');
+        return;
+      }
+      const scopeArg = extractFlag(restArgs, '--scope');
+      if (!scopeArg) { error('Usage: dynamo clear --scope <scope> --confirm'); return; }
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { extractContent } = require(resolveSibling('ledger', 'episodes.cjs'));
+      const client = new MCPClient();
+      const response = await client.callTool('clear_graph', { group_ids: [scopeArg] });
+      const content = extractContent(response);
+      formatOutput(
+        { command: 'clear', scope: scopeArg, result: content },
+        format,
+        `Cleared scope: ${scopeArg}`
+      );
+      break;
+    }
+
+    case 'toggle': {
+      const action = restArgs[0];
+      if (action !== 'on' && action !== 'off') {
+        error('Usage: dynamo toggle <on|off>');
+        return;
+      }
+      // Use DYNAMO_CONFIG_PATH env var for testing, otherwise deployed config
+      const toggleConfigPath = process.env.DYNAMO_CONFIG_PATH || path.join(os.homedir(), '.claude', 'dynamo', 'config.json');
+      const cfg = JSON.parse(fs.readFileSync(toggleConfigPath, 'utf8'));
+      cfg.enabled = action === 'on';
+      fs.writeFileSync(toggleConfigPath, JSON.stringify(cfg, null, 2) + '\n');
+      if (pretty) {
+        process.stderr.write('Dynamo ' + (cfg.enabled ? 'enabled' : 'disabled') + '\n');
+      } else {
+        output({ command: 'toggle', enabled: cfg.enabled });
+      }
+      break;
+    }
+
+    case 'status': {
+      const { isEnabled, loadConfig } = require(path.join(__dirname, 'core.cjs'));
+      const cfg = loadConfig();
+      const enabled = cfg.enabled !== false;
+      const devMode = process.env.DYNAMO_DEV === '1';
+      const effective = enabled || devMode;
+      if (pretty) {
+        process.stderr.write(`Dynamo: ${effective ? 'ACTIVE' : 'INACTIVE'}\n`);
+        process.stderr.write(`  Global: ${enabled ? 'ON' : 'OFF'}\n`);
+        process.stderr.write(`  Dev mode: ${devMode ? 'ON' : 'OFF'}\n`);
+      } else {
+        output({ command: 'status', enabled, dev_mode: devMode, effective });
+      }
+      break;
+    }
+
     case 'session': {
-      const sessions = require(path.join(__dirname, 'lib', 'ledger', 'sessions.cjs'));
+      const sessions = require(resolveSibling('ledger', 'sessions.cjs'));
       const subCmd = restArgs[0];
       switch (subCmd) {
         case 'list':
@@ -149,7 +412,9 @@ async function main() {
 
     case 'test': {
       const { execSync } = require('child_process');
-      execSync('node --test ' + path.join(__dirname, 'tests', '*.test.cjs'), { stdio: 'inherit' });
+      const testDir = path.join(__dirname, 'tests');
+      const cmd = 'node --test ' + path.join(testDir, '*.test.cjs') + ' ' + path.join(testDir, 'ledger', '*.test.cjs') + ' ' + path.join(testDir, 'switchboard', '*.test.cjs');
+      execSync(cmd, { stdio: 'inherit' });
       break;
     }
 
