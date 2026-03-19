@@ -19,7 +19,7 @@ created: 2026-03-19
 |----------|-------|
 | **Framework** | node:test (built-in) |
 | **Config file** | none — tests use node:test directly |
-| **Quick run command** | `node dynamo/tests/test-resolve.cjs` |
+| **Quick run command** | `node --test dynamo/tests/resolve.test.cjs` |
 | **Full suite command** | `node dynamo/tests/` |
 | **Estimated runtime** | ~5 seconds |
 
@@ -27,7 +27,7 @@ created: 2026-03-19
 
 ## Sampling Rate
 
-- **After every task commit:** Run `node dynamo/tests/test-resolve.cjs`
+- **After every task commit:** Run `node --test dynamo/tests/resolve.test.cjs`
 - **After every plan wave:** Run `node dynamo/tests/`
 - **Before `/gsd:verify-work`:** Full suite must be green
 - **Max feedback latency:** 5 seconds
@@ -38,10 +38,10 @@ created: 2026-03-19
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 18-01-01 | 01 | 1 | ARCH-02 | unit | `node dynamo/tests/test-resolve.cjs` | ❌ W0 | ⬜ pending |
-| 18-01-02 | 01 | 1 | ARCH-02 | integration | `node dynamo/tests/` | ✅ | ⬜ pending |
-| 18-02-01 | 02 | 1 | ARCH-03 | unit | `node dynamo/tests/test-dep-graph.cjs` | ❌ W0 | ⬜ pending |
-| 18-03-01 | 03 | 2 | ARCH-02 | integration | `node dynamo/tests/` | ✅ | ⬜ pending |
+| 18-01-01 | 01 | 1 | ARCH-02 | unit | `node --test dynamo/tests/resolve.test.cjs` | ❌ W0 | ⬜ pending |
+| 18-01-02 | 01 | 1 | ARCH-03 | unit | `node --test dynamo/tests/dep-graph.test.cjs && node --test dynamo/tests/circular-deps.test.cjs` | ❌ W0 | ⬜ pending |
+| 18-02-01 | 02 | 2 | ARCH-02 | integration | inline stale-resolver scan | ✅ | ⬜ pending |
+| 18-02-02 | 02 | 2 | ARCH-02, ARCH-03 | regression | `node --test dynamo/tests/*.test.cjs dynamo/tests/ledger/*.test.cjs dynamo/tests/switchboard/*.test.cjs` | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -49,8 +49,9 @@ created: 2026-03-19
 
 ## Wave 0 Requirements
 
-- [ ] `dynamo/tests/test-resolve.cjs` — unit tests for lib/resolve.cjs (layout detection, logical name resolution, error messages)
-- [ ] `dynamo/tests/test-dep-graph.cjs` — unit tests for lib/dep-graph.cjs (cycle detection, allowlist)
+- [ ] `dynamo/tests/resolve.test.cjs` — unit tests for lib/resolve.cjs (layout detection, logical name resolution, error messages)
+- [ ] `dynamo/tests/dep-graph.test.cjs` — unit tests for lib/dep-graph.cjs (cycle detection, allowlist)
+- [ ] `dynamo/tests/circular-deps.test.cjs` — integration test scanning all production modules for circular require() chains
 
 *Existing test infrastructure (node:test, test runner) covers framework needs.*
 
