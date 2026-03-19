@@ -42,7 +42,7 @@ Total prior: 11 phases, 28 plans completed.
 | 260318-pt7 | Apply approved Cortex roadmap draft to MASTER-ROADMAP.md | 2026-03-18 | d55bf0c | | [260318-pt7](./quick/260318-pt7-apply-approved-cortex-roadmap-draft-to-m/) |
 | 260318-x55 | Update MASTER-ROADMAP.md to mark v1.2.1 as shipped | 2026-03-19 | 5869aff | | [260318-x55](./quick/260318-x55-update-the-master-roadmap-now-that-1-2-1/) |
 | 260318-x21 | Steel-man analysis and implementation planning for Synthesis v2 | 2026-03-19 | 5fe6a40 | Verified | [260318-x21](./quick/260318-x21-steel-man-analysis-and-implementation-pl/) |
-| 260319-17p | Re-evaluate subagent verdict and cascade corrections | 2026-03-19 | 06a60a2 | Complete | [260319-17p](./quick/260319-17p-re-evaluate-subagent-verdict-and-cascade/) |
+| 260319-17p | Re-evaluate subagent verdict and cascade corrections | 2026-03-19 | 06a60a2 | Verified | [260319-17p](./quick/260319-17p-re-evaluate-subagent-verdict-and-cascade/) |
 
 ## Accumulated Context
 
