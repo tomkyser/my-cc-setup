@@ -45,7 +45,8 @@ describe('dynamo.cjs CLI router', () => {
       'start', 'stop', 'install', 'rollback', 'session',
       'search', 'remember', 'recall', 'edge', 'forget', 'clear',
       'toggle', 'status',
-      'test', 'version', 'help'
+      'test', 'version', 'help',
+      'check-update', 'update'
     ];
     for (const cmd of expectedCommands) {
       assert.ok(result.includes(cmd), `help should mention "${cmd}"`);
@@ -264,4 +265,59 @@ describe('memory command error handling', () => {
       assert.ok(combined.includes('Usage: dynamo clear'), 'should show clear usage');
     }
   });
+});
+
+// --- Update system command tests ---
+
+describe('update system commands', () => {
+
+  it('check-update command exists in switch statement', () => {
+    const content = fs.readFileSync(DYNAMO_PATH, 'utf8');
+    assert.ok(content.includes("case 'check-update':"), 'should have check-update case');
+  });
+
+  it('update command exists in switch statement', () => {
+    const content = fs.readFileSync(DYNAMO_PATH, 'utf8');
+    assert.ok(content.includes("case 'update':"), 'should have update case');
+  });
+
+  it('check-update references update-check.cjs module', () => {
+    const content = fs.readFileSync(DYNAMO_PATH, 'utf8');
+    assert.ok(content.includes('update-check.cjs'), 'should reference update-check module');
+  });
+
+  it('update references update.cjs module', () => {
+    const content = fs.readFileSync(DYNAMO_PATH, 'utf8');
+    // Must reference switchboard/update.cjs (not update-check.cjs)
+    assert.ok(content.includes("'update.cjs'"), 'should reference update module');
+  });
+
+  it('COMMAND_HELP has check-update entry', () => {
+    const content = fs.readFileSync(DYNAMO_PATH, 'utf8');
+    assert.ok(content.includes("'check-update':"), 'COMMAND_HELP should have check-update');
+  });
+
+  it('COMMAND_HELP has update entry', () => {
+    const content = fs.readFileSync(DYNAMO_PATH, 'utf8');
+    // Look for update entry that is NOT check-update
+    assert.ok(content.includes("'update':"), 'COMMAND_HELP should have update');
+  });
+
+  it('rollback description updated from legacy', () => {
+    const content = fs.readFileSync(DYNAMO_PATH, 'utf8');
+    assert.ok(content.includes('Restore previous version from backup'), 'rollback help should reflect new behavior');
+  });
+
+  it('check-update supports --format json flag', () => {
+    const content = fs.readFileSync(DYNAMO_PATH, 'utf8');
+    // The check-update case should look for --format flag
+    assert.ok(content.includes("extractFlag(restArgs, '--format')"), 'check-update should support --format');
+  });
+
+  it('check-update handles offline gracefully (inline status pattern)', () => {
+    const content = fs.readFileSync(DYNAMO_PATH, 'utf8');
+    assert.ok(content.includes('is up to date'), 'should have up-to-date message');
+    assert.ok(content.includes('Run "dynamo update" to upgrade'), 'should have upgrade message');
+  });
+
 });
