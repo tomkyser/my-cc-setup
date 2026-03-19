@@ -2,24 +2,18 @@
 
 ## What This Is
 
-A Claude Code power-user platform, Dynamo, comprising two systems: **Ledger** (memory — knowledge storage, retrieval, inference via Graphiti) and **Switchboard** (management — hooks, diagnostics, sync, stack, CLI). Built on a Node/CJS shared substrate at `~/.claude/dynamo/` with 272+ passing tests. v1.0 researched and ranked tools. v1.1 diagnosed and fixed the memory system. v1.2 rewrote the entire foundation from Python/Bash to CJS with full feature parity. v1.2.1 stabilized with documentation, branding, structural refactors, and a self-updating system.
+A Claude Code power-user platform, Dynamo, comprising two systems: **Ledger** (memory — knowledge storage, retrieval, inference via Graphiti) and **Switchboard** (management — hooks, diagnostics, sync, stack, CLI). Built on a Node/CJS shared substrate at `~/.claude/dynamo/` with 374 passing tests and 9,253 LOC. v1.0 researched and ranked tools. v1.1 diagnosed and fixed the memory system. v1.2 rewrote the entire foundation from Python/Bash to CJS with full feature parity. v1.2.1 stabilized with directory restructure, global toggle, comprehensive documentation, self-updating system, and deploy pipeline hardening.
 
 ## Core Value
 
 Every capability must be self-manageable by Claude Code (install, configure, update, troubleshoot) without requiring manual user intervention in config files.
 
-## Current Milestone: v1.2.1 Stabilization and Polish
+## Current State
 
-**Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work — branding, documentation, legacy cleanup, directory restructure, dev toggles, and architecture capture.
+**Shipped:** v1.2.1 Stabilization and Polish (2026-03-19)
+**Next milestone:** Not yet scoped — run `/gsd:new-milestone` to begin v1.3
 
-**Target features:**
-- Complete Dynamo rebranding (README, repo, docs, directory structure)
-- Archive and remove legacy Python/Bash system
-- Exhaustive documentation and CLAUDE.md integration
-- Update/upgrade system for self-management
-- Global on/off and dev mode toggles
-- Neo4j admin browser fix
-- Architecture and design decision capture for development continuity
+v1.2.1 closed all stabilization gaps: directory restructure, global toggle with complete blackout, comprehensive documentation, self-updating system, legacy removal, and deploy pipeline hardening. The platform is fully documented, self-manageable, and production-hardened. Ready for v1.3 intelligence work (memory enhancement, semantic search, context-aware hooks).
 
 ## Requirements
 
@@ -53,9 +47,9 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 - ✓ STAB-06: Architecture and design decision capture — Validated in Phase 14: Documentation and Branding
 - ✓ STAB-05: Update/upgrade system — Validated in Phase 15: Update System
 
-### Active (v1.2.1)
+### Active
 
-(none — all v1.2.1 requirements validated)
+(none — next milestone not yet scoped)
 
 ### Out of Scope
 
@@ -73,9 +67,9 @@ Phase 15 complete — Self-updating system: `dynamo check-update` (GitHub Releas
 Phase 16 complete — Tech debt cleanup: all 6 v1.2.1 audit gaps closed (CLI reference tables updated, stale MCP permissions removed, CLI router dual-path resolution for deployed layout).
 Phase 17 complete — Deploy pipeline fixes: hook dispatcher dual-layout resolution, MCP deregistration from installer, CLAUDE.md template deployment, stale lib/ cleanup, regression tests updated, Neo4j port corrected. All 374 tests green, deployed and human-verified.
 Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
-Total project: ~7,000+ LOC CJS plus prompts.
+Total project: 9,253 LOC CJS, 374 tests passing, across 17 phases and 45 plans.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
-v1.2.1 has 10 stabilization requirements (STAB-01 through STAB-10). Future backlog beyond v1.2.1: 26 items across memory enhancement, management, UI documented in MASTER-ROADMAP.md.
+v1.2.1 shipped with all 10 STAB requirements complete. Future backlog: 26 items across memory enhancement, management, UI documented in MASTER-ROADMAP.md.
 
 ## Key Decisions
 
@@ -98,7 +92,10 @@ v1.2.1 has 10 stabilization requirements (STAB-01 through STAB-10). Future backl
 | Graphiti MCP deregistered; CLI commands replace MCP tools | Toggle blackout requires all memory access through Dynamo CLI | ✓ Good — complete blackout when disabled |
 | Repo renamed to "dynamo" on GitHub | Reflect Dynamo identity in repo name, not just internal naming | Done |
 | Branch renamed from main to master | Team convention preference; aligns with project terminology | Done |
-| Insert v1.2.1 before v1.3 | Close stabilization gaps (docs, branding, legacy cleanup, toggles) before building intelligence layer | Done -- 10 STAB requirements scoped |
+| Insert v1.2.1 before v1.3 | Close stabilization gaps (docs, branding, legacy cleanup, toggles) before building intelligence layer | ✓ Good -- all 10 STAB requirements shipped |
+| Dual-layout resolveSibling/resolveHandlers pattern | Code must resolve paths in both repo and deployed (`~/.claude/dynamo/`) layouts | ✓ Good -- applied to CLI router and hook dispatcher |
+| Structural refactors before documentation | Document the final state, not intermediate states | ✓ Good -- no rework needed |
+| Self-updating with snapshot rollback | Pre-update snapshot enables automatic rollback on failure | ✓ Good -- zero-risk update path |
 
 ## Decision Detail
 
@@ -271,7 +268,7 @@ v1.2.1 has 10 stabilization requirements (STAB-01 through STAB-10). Future backl
 - Zero npm dependencies beyond js-yaml
 
 **Downstream Implications:**
-- node:test for testing (built-in, no test framework dependency), 272+ tests
+- node:test for testing (built-in, no test framework dependency), 374 tests
 - Full feature parity with legacy system achieved
 - Every module uses the same patterns (switch/case router, options-based injection, JSON output)
 - If reversed, would need to reintroduce Python, Bash, venv, and multi-language tooling
@@ -327,7 +324,7 @@ v1.2.1 has 10 stabilization requirements (STAB-01 through STAB-10). Future backl
 **Downstream Implications:**
 - Every stage/module function accepts an options parameter with overrides
 - All tests use tmpdir for filesystem operations -- never touch real ~/.claude/
-- 100% test isolation achieved across 272+ tests
+- 100% test isolation achieved across 374 tests
 - If reversed, would need a mocking framework or accept flaky tests
 
 ### Decision: Settings.json backup before modification
@@ -455,4 +452,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-19 after Phase 17 (Deploy Pipeline Fixes — hooks, installer, tests, docs all fixed and deployed; v1.2.1 milestone complete)*
+*Last updated: 2026-03-19 after v1.2.1 milestone (Stabilization and Polish — all 10 STAB requirements shipped)*

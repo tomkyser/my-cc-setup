@@ -1,24 +1,22 @@
 # Milestones
 
-## v1.2.1 Stabilization and Polish (Scoping)
+## v1.2.1 Stabilization and Polish (Shipped: 2026-03-19)
 
-**Status:** Scoped, not yet started
-**Requirements:** 10 (STAB-01 through STAB-10)
-**Dependencies:** v1.2 (CJS substrate complete, feature parity achieved)
+**Phases completed:** 6 phases, 17 plans
+**Commits:** 104 | **Files changed:** 154 | **Lines:** +21,516 / -4,935
+**Production LOC:** 9,253 CJS | **Tests:** 374 passing
+**Timeline:** 2026-03-18 to 2026-03-19
+**Requirements:** 10/10 STAB requirements complete
 
-**Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work. The foundation is solid but public-facing artifacts (README, repo identity, docs) and operational concerns (update system, legacy cleanup, CLAUDE.md integration, toggles) were not addressed in v1.2. This milestone ensures Dynamo is properly branded, fully documented, easy to update, that the architecture is captured for continuity, and that dev toggles exist for safe development.
+**Key accomplishments:**
 
-**Requirements:**
-- STAB-01: README and rebranding pass
-- STAB-02: Archive legacy Python/Bash system
-- STAB-03: Exhaustive documentation
-- STAB-04: Dynamo CLI integration in CLAUDE.md
-- STAB-05: Update/upgrade system
-- STAB-06: Architecture and design decision capture
-- STAB-07: Fix Neo4j admin browser connectivity
-- STAB-08: Directory structure refactor
-- STAB-09: Component scope refactor
-- STAB-10: Global on/off and dev mode toggles
+- Restructured into 3 root-level component directories (`dynamo/`, `ledger/`, `switchboard/`) with import boundary enforcement
+- Built global on/off toggle with complete blackout — CLI gate, hook gate, MCP deregistration, no bypass paths
+- Replaced Graphiti MCP with 8 CLI memory commands, enabling toggle-gated memory access through Dynamo CLI
+- Archived and removed legacy Python/Bash system (tagged `v1.2-legacy-archive`), fixed Neo4j admin browser port
+- Comprehensive documentation: README (537 lines, Mermaid diagram), CLAUDE.md template (20+ commands), 19 architecture decision records, 7 codebase maps
+- Self-updating system: GitHub Releases API version checks, dual-mode update (git pull/tarball), migration harness with version-keyed scripts, pre-update snapshot with automatic rollback
+- Deploy pipeline hardened: dual-layout path resolution for hooks and CLI, defensive MCP deregistration, CLAUDE.md template deployment, stale directory cleanup
 
 ---
 
@@ -29,6 +27,7 @@
 **Timeline:** 2026-03-17 to 2026-03-18
 
 **Key accomplishments:**
+
 - Rewrote entire Python/Bash foundation to Node/CJS architecture with 272 passing tests
 - Built CJS shared substrate (core.cjs) with config loading, MCP client, scope validation, health guard
 - Migrated all 5 hook handlers to CJS dispatcher with full behavioral parity to Python/Bash system
@@ -45,6 +44,7 @@
 **Timeline:** 2026-03-16 to 2026-03-17
 
 **Key accomplishments:**
+
 - Diagnosed root causes: server-level GRAPHITI_GROUP_ID override forcing all writes to global scope; API v1.21.0 echoing requested group_id but storing differently
 - Fixed hook reliability: rewrote all 3 write hooks with foreground execution, error propagation, file logging, and 5s timeout
 - Built session management: 6 new subcommands (list, view, label, backfill, index, generate-name) with two-phase auto-naming via Haiku
@@ -59,6 +59,7 @@
 **Timeline:** 2026-03-16 to 2026-03-17
 
 **Key accomplishments:**
+
 - Established vetting protocol with 4 binary hard gates and anti-features list
 - Assessed 5 named MCP/tool candidates plus creative and technical writing tools
 - Documented GSD framework lifecycle and global scope coexistence strategy
