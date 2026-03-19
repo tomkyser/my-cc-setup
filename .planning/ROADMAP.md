@@ -5,7 +5,7 @@
 - ✅ **v1.0 Research and Ranked Report** -- Phases 1-3 (shipped 2026-03-17)
 - ✅ **v1.1 Fix Memory System** -- Phases 4-7 (shipped 2026-03-17)
 - ✅ **v1.2 Dynamo Foundation** -- Phases 8-11 (shipped 2026-03-18)
-- **v1.2.1 Stabilization and Polish** -- Phases 12-15 (in progress)
+- **v1.2.1 Stabilization and Polish** -- Phases 12-16 (in progress)
 
 ## Phases
 
@@ -46,6 +46,7 @@
 - [x] **Phase 13: Cleanup and Fixes** - Archive legacy system, fix Neo4j browser (completed 2026-03-18)
 - [x] **Phase 14: Documentation and Branding** - README, exhaustive docs, CLAUDE.md, architecture capture (completed 2026-03-18)
 - [x] **Phase 15: Update System** - Version checks, migration, and rollback (completed 2026-03-19)
+- [ ] **Phase 16: Tech Debt Cleanup** - Doc updates, stale permissions removal, deploy to live
 
 ## Phase Details
 
@@ -114,10 +115,25 @@ Plans:
 - [ ] 15-03-PLAN.md -- Update orchestrator (snapshot + pull/download + migrate + install + verify + auto-rollback)
 - [ ] 15-04-PLAN.md -- CLI router wiring (check-update, update commands + help text + tests)
 
+### Phase 16: Tech Debt Cleanup
+**Goal**: Close integration and flow gaps from milestone audit — update documentation for Phase 15 commands, remove stale config entries, and deploy to live
+**Depends on**: Phase 15 (update system must be complete before documenting it)
+**Requirements**: STAB-01, STAB-03, STAB-04, STAB-05, STAB-10
+**Gap Closure:** Closes INT-01, INT-02, INT-03, FLOW-01, FLOW-02, FLOW-03 from v1.2.1 audit
+**Success Criteria** (what must be TRUE):
+  1. README.md CLI reference table includes `check-update`, `update`, and updated `rollback` descriptions
+  2. CLAUDE.md.template CLI reference includes `check-update`, `update`, and updated `rollback` descriptions
+  3. settings-hooks.json contains zero `mcp__graphiti__*` permission entries
+  4. `dynamo install` deploys current code to live `~/.claude/dynamo/`
+**Plans:** 0/0 plans (pending)
+
+Plans:
+- (pending planning)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15
+Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15 -> 16
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
@@ -135,4 +151,5 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15
 | 12. Structural Refactor | v1.2.1 | 4/4 | Complete | 2026-03-18 |
 | 13. Cleanup and Fixes | v1.2.1 | 2/2 | Complete | 2026-03-18 |
 | 14. Documentation and Branding | v1.2.1 | 3/3 | Complete | 2026-03-18 |
-| 15. Update System | 4/4 | Complete    | 2026-03-19 | - |
+| 15. Update System | v1.2.1 | 4/4 | Complete | 2026-03-19 |
+| 16. Tech Debt Cleanup | v1.2.1 | 0/0 | Pending | - |

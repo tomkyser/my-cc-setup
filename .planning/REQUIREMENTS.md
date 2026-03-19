@@ -64,7 +64,7 @@ Requirements for stabilization and polish of the v1.2 CJS foundation.
 - [x] **STAB-04**: Dynamo CLI integration in CLAUDE.md -- complete operational instructions for Claude Code
 - [x] **STAB-05**: Update/upgrade system -- version checks, migration, rollback
 - [x] **STAB-06**: Architecture and design decision capture -- deep analysis of v1.0-v1.2 decisions
-- [ ] **STAB-07**: Fix Neo4j admin browser connectivity -- port 7475 not accessible
+- [x] **STAB-07**: Fix Neo4j admin browser connectivity -- port 7475 not accessible
 - [x] **STAB-08**: Directory structure refactor -- dynamo/, ledger/, switchboard/ as root-level directories
 - [x] **STAB-09**: Component scope refactor -- honor Dynamo/Ledger/Switchboard boundaries in code
 - [x] **STAB-10**: Global on/off and dev mode toggles -- disable hooks globally, dev override per-thread
@@ -170,7 +170,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAB-04 | Phase 14 | Complete |
 | STAB-05 | Phase 15 | Complete |
 | STAB-06 | Phase 14 | Complete |
-| STAB-07 | Phase 13 | Pending |
+| STAB-07 | Phase 13 | Complete |
 | STAB-08 | Phase 12 | Complete |
 | STAB-09 | Phase 12 | Complete |
 | STAB-10 | Phase 12 | Complete |
