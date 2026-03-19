@@ -62,7 +62,7 @@ Requirements for stabilization and polish of the v1.2 CJS foundation.
 - [x] **STAB-02**: Archive legacy Python/Bash system -- tag, branch, and remove from dev/master
 - [x] **STAB-03**: Exhaustive documentation -- architecture, usage, CLI, hooks, config, dev guide
 - [x] **STAB-04**: Dynamo CLI integration in CLAUDE.md -- complete operational instructions for Claude Code
-- [ ] **STAB-05**: Update/upgrade system -- version checks, migration, rollback
+- [x] **STAB-05**: Update/upgrade system -- version checks, migration, rollback
 - [x] **STAB-06**: Architecture and design decision capture -- deep analysis of v1.0-v1.2 decisions
 - [ ] **STAB-07**: Fix Neo4j admin browser connectivity -- port 7475 not accessible
 - [x] **STAB-08**: Directory structure refactor -- dynamo/, ledger/, switchboard/ as root-level directories
@@ -168,7 +168,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAB-02 | Phase 13 | Complete |
 | STAB-03 | Phase 14 | Complete |
 | STAB-04 | Phase 14 | Complete |
-| STAB-05 | Phase 15 | Pending |
+| STAB-05 | Phase 15 | Complete |
 | STAB-06 | Phase 14 | Complete |
 | STAB-07 | Phase 13 | Pending |
 | STAB-08 | Phase 12 | Complete |
