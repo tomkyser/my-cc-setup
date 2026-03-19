@@ -7,6 +7,16 @@ const fs = require('fs');
 const os = require('os');
 const { output, error, safeReadFile, isEnabled } = require(path.join(__dirname, 'core.cjs'));
 
+// --- Path resolution: dual-layout support ---
+// Repo layout:     dynamo/dynamo.cjs  -> switchboard/ and ledger/ are at ../switchboard/ and ../ledger/
+// Deployed layout: ~/.claude/dynamo/dynamo.cjs -> switchboard/ and ledger/ are at ./switchboard/ and ./ledger/
+
+function resolveSibling(subdir, file) {
+  const repoPath = path.join(__dirname, '..', subdir, file);
+  if (fs.existsSync(repoPath)) return repoPath;
+  return path.join(__dirname, subdir, file);
+}
+
 // --- Flag/arg helpers for memory commands ---
 
 /**
@@ -166,39 +176,39 @@ async function main() {
 
   switch (command) {
     case 'health-check':
-      await require(path.join(__dirname, '..', 'switchboard', 'health-check.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'health-check.cjs')).run(restArgs, pretty);
       break;
 
     case 'diagnose':
-      await require(path.join(__dirname, '..', 'switchboard', 'diagnose.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'diagnose.cjs')).run(restArgs, pretty);
       break;
 
     case 'verify-memory':
-      await require(path.join(__dirname, '..', 'switchboard', 'verify-memory.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'verify-memory.cjs')).run(restArgs, pretty);
       break;
 
     case 'sync':
-      await require(path.join(__dirname, '..', 'switchboard', 'sync.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'sync.cjs')).run(restArgs, pretty);
       break;
 
     case 'start':
-      await require(path.join(__dirname, '..', 'switchboard', 'stack.cjs')).start(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'stack.cjs')).start(restArgs, pretty);
       break;
 
     case 'stop':
-      await require(path.join(__dirname, '..', 'switchboard', 'stack.cjs')).stop(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'stack.cjs')).stop(restArgs, pretty);
       break;
 
     case 'install':
-      await require(path.join(__dirname, '..', 'switchboard', 'install.cjs')).run(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'install.cjs')).run(restArgs, pretty);
       break;
 
     case 'rollback':
-      await require(path.join(__dirname, '..', 'switchboard', 'install.cjs')).rollback(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'install.cjs')).rollback(restArgs, pretty);
       break;
 
     case 'check-update': {
-      const updateCheck = require(path.join(__dirname, '..', 'switchboard', 'update-check.cjs'));
+      const updateCheck = require(resolveSibling('switchboard', 'update-check.cjs'));
       const result = await updateCheck.checkUpdate();
       const format = extractFlag(restArgs, '--format') || null;
 
@@ -220,7 +230,7 @@ async function main() {
     }
 
     case 'update':
-      await require(path.join(__dirname, '..', 'switchboard', 'update.cjs')).update(restArgs, pretty);
+      await require(resolveSibling('switchboard', 'update.cjs')).update(restArgs, pretty);
       break;
 
     // --- Memory Commands ---
@@ -231,7 +241,7 @@ async function main() {
       if (!query) { error('Usage: dynamo search <query> [--facts|--nodes] [--scope <scope>] [--format json|raw]'); return; }
       const scopeArg = extractFlag(restArgs, '--scope') || 'global';
       const format = extractFlag(restArgs, '--format') || 'text';
-      const search = require(path.join(__dirname, '..', 'ledger', 'search.cjs'));
+      const search = require(resolveSibling('ledger', 'search.cjs'));
       let result;
       if (restArgs.includes('--nodes')) {
         result = await search.searchNodes(query, scopeArg);
@@ -254,7 +264,7 @@ async function main() {
       if (!content) { error('Usage: dynamo remember <content> [--scope <scope>] [--format json|raw]'); return; }
       const scopeArg = extractFlag(restArgs, '--scope') || 'global';
       const format = extractFlag(restArgs, '--format') || 'text';
-      const { addEpisode } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const { addEpisode } = require(resolveSibling('ledger', 'episodes.cjs'));
       const result = await addEpisode(content, scopeArg);
       formatOutput(
         { command: 'remember', content, scope: scopeArg, success: !!result },
@@ -269,7 +279,7 @@ async function main() {
       const scopeArg = extractFlag(restArgs, '--scope') || 'global';
       const format = extractFlag(restArgs, '--format') || 'text';
       const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
-      const { extractContent } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const { extractContent } = require(resolveSibling('ledger', 'episodes.cjs'));
       const client = new MCPClient();
       const response = await client.callTool('get_episodes', { group_ids: [scopeArg] });
       const content = extractContent(response);
@@ -287,7 +297,7 @@ async function main() {
       if (!uuid) { error('Usage: dynamo edge <uuid> [--format json|raw]'); return; }
       const format = extractFlag(restArgs, '--format') || 'text';
       const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
-      const { extractContent } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const { extractContent } = require(resolveSibling('ledger', 'episodes.cjs'));
       const client = new MCPClient();
       const response = await client.callTool('get_entity_edge', { uuid });
       const content = extractContent(response);
@@ -306,7 +316,7 @@ async function main() {
       if (!uuid) { error('Usage: dynamo forget <uuid> [--edge] [--format json|raw]'); return; }
       const format = extractFlag(restArgs, '--format') || 'text';
       const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
-      const { extractContent } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const { extractContent } = require(resolveSibling('ledger', 'episodes.cjs'));
       const client = new MCPClient();
       const toolName = isEdge ? 'delete_entity_edge' : 'delete_episode';
       const response = await client.callTool(toolName, { uuid });
@@ -329,7 +339,7 @@ async function main() {
       if (!scopeArg) { error('Usage: dynamo clear --scope <scope> --confirm'); return; }
       const format = extractFlag(restArgs, '--format') || 'text';
       const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
-      const { extractContent } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const { extractContent } = require(resolveSibling('ledger', 'episodes.cjs'));
       const client = new MCPClient();
       const response = await client.callTool('clear_graph', { group_ids: [scopeArg] });
       const content = extractContent(response);
@@ -377,7 +387,7 @@ async function main() {
     }
 
     case 'session': {
-      const sessions = require(path.join(__dirname, '..', 'ledger', 'sessions.cjs'));
+      const sessions = require(resolveSibling('ledger', 'sessions.cjs'));
       const subCmd = restArgs[0];
       switch (subCmd) {
         case 'list':
