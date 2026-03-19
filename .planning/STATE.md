@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 260319-fzc-04 (Reverie spec)
-last_updated: "2026-03-19T17:18:15Z"
+stopped_at: Completed 260319-fzc-05 (Roadmap refactor + GSD updates)
+last_updated: "2026-03-19T17:22:00Z"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** v1.3 architecture specification in progress (260319-fzc plan 05 remaining)
+**Current focus:** v1.3 architecture specification complete. Next: implementation planning for 1.3-M1 (Foundation and Infrastructure Refactor)
 
 ## Current Position
 
@@ -47,6 +47,7 @@ Total prior: 11 phases, 28 plans completed.
 | 260319-fzc-02 | Terminus + Switchboard subsystem specs | 2026-03-19 | c4d4274 | Complete | [260319-fzc](./quick/260319-fzc-housekeeping-clarification-and-inner-voi/) |
 | 260319-fzc-03 | Ledger + Assay subsystem specs | 2026-03-19 | c4c7a90 | Complete | [260319-fzc](./quick/260319-fzc-housekeeping-clarification-and-inner-voi/) |
 | 260319-fzc-04 | Reverie (Inner Voice) subsystem spec | 2026-03-19 | f5d0287 | Complete | [260319-fzc](./quick/260319-fzc-housekeeping-clarification-and-inner-voi/) |
+| 260319-fzc-05 | Master roadmap refactor + GSD planning file updates | 2026-03-19 | c184624 | Complete | [260319-fzc](./quick/260319-fzc-housekeeping-clarification-and-inner-voi/) |
 
 ## Accumulated Context
 
@@ -111,6 +112,9 @@ Recent decisions affecting current work:
 - [260319-fzc-04]: PostToolUse dispatched to BOTH Ledger (capture) and Reverie (activation update)
 - [260319-fzc-04]: Feature flag (reverie.mode) enables instant rollback to classic Haiku curation
 - [260319-fzc-04]: Subscription users pay $0.37/day (cheaper than current baseline)
+- [260319-fzc-05]: MASTER-ROADMAP.md refactored to 1.3-M1 through 1.3-M7 milestoned delivery -- no v1.4/v1.5/v2.0 sections
+- [260319-fzc-05]: All ~40 active requirements assigned to 1.3-M* milestones or deferred (only UI-07 deferred)
+- [260319-fzc-05]: PROJECT.md updated to reflect six-subsystem architecture and v1.3 milestoned delivery model
 
 ### Blockers/Concerns
 
@@ -118,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T17:18:15Z
-Stopped at: Completed 260319-fzc-04 (Reverie spec)
+Last session: 2026-03-19T17:22:00Z
+Stopped at: Completed 260319-fzc-05 (Roadmap refactor + GSD updates)
 Resume file: None

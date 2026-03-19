@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A Claude Code power-user platform, Dynamo, comprising two systems: **Ledger** (memory — knowledge storage, retrieval, inference via Graphiti) and **Switchboard** (management — hooks, diagnostics, sync, stack, CLI). Built on a Node/CJS shared substrate at `~/.claude/dynamo/` with 374 passing tests and 9,253 LOC. v1.0 researched and ranked tools. v1.1 diagnosed and fixed the memory system. v1.2 rewrote the entire foundation from Python/Bash to CJS with full feature parity. v1.2.1 stabilized with directory restructure, global toggle, comprehensive documentation, self-updating system, and deploy pipeline hardening.
+A Claude Code power-user platform for persistent memory and self-management. Dynamo comprises six subsystems: **Dynamo** (system wrapper -- CLI router, shared resources, API surface), **Switchboard** (dispatcher -- hook routing, install/sync/update lifecycle), **Ledger** (data construction -- episode creation, write operations), **Assay** (data access -- search, session queries, entity inspection), **Terminus** (data infrastructure -- MCP transport, Docker stack, health/diagnostics, migrations), and **Reverie** (Inner Voice -- cognitive processing, dual-path routing, activation management, REM consolidation). Built on a Node/CJS shared substrate at `~/.claude/dynamo/` with 374 passing tests and 9,253 LOC. The `cc/` platform adapter pattern isolates all Claude Code-specific integration, enabling future platform adapters (`/web`, `/api`, `/mcp`) without touching subsystem logic. v1.0 researched and ranked tools. v1.1 diagnosed and fixed the memory system. v1.2 rewrote the entire foundation from Python/Bash to CJS with full feature parity. v1.2.1 stabilized with directory restructure, global toggle, comprehensive documentation, self-updating system, and deploy pipeline hardening. v1.3 architecture specification complete with 9 documents (1 abstract concept, 1 PRD, 5 subsystem specs, 1 refactored roadmap, GSD planning updates).
 
 ## Core Value
 
@@ -11,9 +11,9 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 ## Current State
 
 **Shipped:** v1.2.1 Stabilization and Polish (2026-03-19)
-**Next milestone:** Not yet scoped — run `/gsd:new-milestone` to begin v1.3
+**Next milestone:** v1.3 milestoned delivery (1.3-M1 through 1.3-M7) -- architecture specification complete, implementation planning next
 
-v1.2.1 closed all stabilization gaps: directory restructure, global toggle with complete blackout, comprehensive documentation, self-updating system, legacy removal, and deploy pipeline hardening. The platform is fully documented, self-manageable, and production-hardened. Ready for v1.3 intelligence work (memory enhancement, semantic search, context-aware hooks).
+v1.2.1 closed all stabilization gaps. v1.3 architecture specification is complete: 6-subsystem model defined (Dynamo, Switchboard, Ledger, Assay, Terminus, Reverie), all subsystem specs written, Dynamo PRD authored, abstract Inner Voice concept documented, and master roadmap refactored to milestoned iterations. The platform adapter pattern (`cc/` directory) isolates Claude Code specifics. The hybrid architecture (CJS command hooks for hot path + custom subagent for deliberation) is specified. Next step: implementation planning for 1.3-M1 (Foundation and Infrastructure Refactor).
 
 ## Requirements
 
@@ -49,7 +49,15 @@ v1.2.1 closed all stabilization gaps: directory restructure, global toggle with 
 
 ### Active
 
-(none — next milestone not yet scoped)
+v1.3 requirements organized across 7 milestones (1.3-M1 through 1.3-M7). See MASTER-ROADMAP.md for full index. Key milestones:
+
+- **1.3-M1:** Foundation and Infrastructure Refactor (directory restructure, MENH-06/07, MGMT-01, MGMT-08, MGMT-11)
+- **1.3-M2:** Core Intelligence (CORTEX-01/02/03, MGMT-05, MGMT-10)
+- **1.3-M3:** Management and Visibility (MGMT-02/03, UI-08)
+- **1.3-M4:** Advanced Intelligence (CORTEX-04/05/06, MENH-08, MGMT-06/07)
+- **1.3-M5:** Platform Expansion (MENH-03/04/05, CORTEX-07/08/09)
+- **1.3-M6:** Dashboard and UI (UI-01 through UI-06, MGMT-04)
+- **1.3-M7:** Advanced Capabilities (CORTEX-10/11)
 
 ### Out of Scope
 
@@ -69,7 +77,14 @@ Phase 17 complete — Deploy pipeline fixes: hook dispatcher dual-layout resolut
 Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
 Total project: 9,253 LOC CJS, 374 tests passing, across 17 phases and 45 plans.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
-v1.2.1 shipped with all 10 STAB requirements complete. Future backlog: 26 items across memory enhancement, management, UI documented in MASTER-ROADMAP.md.
+v1.2.1 shipped with all 10 STAB requirements complete.
+v1.3 architecture specification complete (260319-fzc task, 5 plans across 4 waves):
+- Plan 01: Abstract Inner Voice concept doc (INNER-VOICE-ABSTRACT.md) + Dynamo PRD (DYNAMO-PRD.md)
+- Plan 02: Terminus + Switchboard subsystem specs
+- Plan 03: Ledger + Assay subsystem specs
+- Plan 04: Reverie (Inner Voice) subsystem spec -- most detailed spec (1,463 lines)
+- Plan 05: Master roadmap refactored to 1.3-M1 through 1.3-M7 milestoned delivery + GSD file updates
+Nine specification documents produced. All ~40 active requirements assigned to milestones or deferred. Six-subsystem architecture defined with interface contracts, migration paths, and boundary rules.
 
 ## Key Decisions
 
@@ -96,6 +111,12 @@ v1.2.1 shipped with all 10 STAB requirements complete. Future backlog: 26 items 
 | Dual-layout resolveSibling/resolveHandlers pattern | Code must resolve paths in both repo and deployed (`~/.claude/dynamo/`) layouts | ✓ Good -- applied to CLI router and hook dispatcher |
 | Structural refactors before documentation | Document the final state, not intermediate states | ✓ Good -- no rework needed |
 | Self-updating with snapshot rollback | Pre-update snapshot enables automatic rollback on failure | ✓ Good -- zero-risk update path |
+| Six-subsystem architecture | Split from 3 (Dynamo/Ledger/Switchboard) to 6 (+ Assay, Terminus, Reverie) with strict boundaries | Active -- specifications complete, implementation pending |
+| v1.3 milestoned delivery (1.3-M1 through 1.3-M7) | Fold all planned versions into single v1.3 with gated iteration milestones; no planning beyond v1.3 | Active -- roadmap refactored |
+| Hybrid Reverie architecture | CJS command hooks for hot path (<500ms) + custom subagent for deliberation (2-10s) | Active -- specified in REVERIE-SPEC.md |
+| Platform adapter pattern (cc/) | `cc/` directory isolates all Claude Code specifics; enables future `/web`, `/api`, `/mcp` adapters | Active -- specified in SWITCHBOARD-SPEC.md |
+| Abstract Inner Voice separated from platform spec | Platform-agnostic concept doc (INNER-VOICE-ABSTRACT.md) referenced by platform-specific Reverie spec | Active -- both documents written |
+| Claude Code (Max subscription) as platform | Minimize additional API dependence; use native features (agents, subagents, hooks, skills) | Active -- informs all subsystem specs |
 
 ## Decision Detail
 
@@ -437,7 +458,8 @@ v1.2.1 shipped with all 10 STAB requirements complete. Future backlog: 26 items 
 - **Platform**: macOS (Darwin), zsh, Homebrew available
 - **Architecture**: Node/CJS, zero npm dependencies beyond js-yaml
 - **Testing**: node:test built-in, 100% test isolation via tmpdir
-- **Component scope**: Dynamo (orchestration/CLI), Ledger (memory/knowledge), Switchboard (management/ops) — boundaries must be honored in design, code, and naming
+- **Six-subsystem scope**: Dynamo (system wrapper/CLI), Switchboard (dispatcher/ops), Ledger (data construction), Assay (data access), Terminus (data infrastructure), Reverie (Inner Voice/cognition) -- boundaries must be honored in design, code, and naming. Ledger does not read. Assay does not write. Reverie delegates both.
+- **Platform**: Claude Code (Max subscription) -- minimize additional API dependence; use native features (agents, subagents, hooks, skills) as the platform
 - **Branch workflow**: Development on `dev` branch. Push to origin after commits. Merge dev → master and push on milestone completion only.
 - **Disruption awareness**: Notify the user when testing or development will interrupt current usage of any part of Dynamo in the active thread or any other active Claude threads.
 
@@ -447,9 +469,9 @@ These items must be assessed during every phase's planning and execution. Not al
 
 - [ ] **User-facing docs and README**: Deep pass to assess what needs to be modified or added. Update as changes are made within the phase, not deferred.
 - [ ] **Sync, install, and update scripts**: Deep pass to assess if affected by this phase's changes. Update if so.
-- [ ] **Component scope adherence**: Verify that Dynamo/Ledger/Switchboard scope boundaries are honored in both design and naming. Flag violations and address in phase discussion.
+- [ ] **Subsystem scope adherence**: Verify that six-subsystem boundaries (Dynamo/Switchboard/Ledger/Assay/Terminus/Reverie) are honored in both design and naming. Flag violations and address in phase discussion.
 - [ ] **CLAUDE.md and injectable templates**: Update to reflect current usage and rules of Dynamo and its systems (both passive and active). Include self-management instructions to keep Dynamo up to date.
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-19 after v1.2.1 milestone (Stabilization and Polish — all 10 STAB requirements shipped)*
+*Last updated: 2026-03-19 after v1.3 architecture specification (260319-fzc task -- 6-subsystem architecture, milestoned roadmap, 9 spec documents)*
