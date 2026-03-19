@@ -94,4 +94,34 @@ describe('Import boundary enforcement', () => {
     assert.ok(!fs.existsSync(path.join(REPO_ROOT, 'dynamo', 'lib')),
       'dynamo/lib/ must not exist after restructure');
   });
+
+  it('lib/ shared substrate directory exists at repo root', () => {
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'lib')),
+      'lib/ must exist at repo root');
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'lib', 'resolve.cjs')),
+      'lib/resolve.cjs must exist');
+  });
+
+  it('no production file contains ad-hoc resolveCore/resolveSibling/resolveHandlers functions', () => {
+    const dirs = [
+      path.join(REPO_ROOT, 'dynamo'),
+      path.join(REPO_ROOT, 'ledger'),
+      path.join(REPO_ROOT, 'switchboard'),
+      path.join(REPO_ROOT, 'lib'),
+    ];
+    const files = [];
+    for (const dir of dirs) files.push(...getAllCjsFiles(dir));
+    for (const file of files) {
+      const content = fs.readFileSync(file, 'utf8');
+      const rel = path.relative(REPO_ROOT, file);
+      assert.ok(!content.includes('function resolveCore('),
+        `${rel} still contains resolveCore function`);
+      assert.ok(!content.includes('function resolveSibling('),
+        `${rel} still contains resolveSibling function`);
+      assert.ok(!content.includes('function resolveHandlers('),
+        `${rel} still contains resolveHandlers function`);
+      assert.ok(!content.includes('function resolveLedger('),
+        `${rel} still contains resolveLedger function`);
+    }
+  });
 });

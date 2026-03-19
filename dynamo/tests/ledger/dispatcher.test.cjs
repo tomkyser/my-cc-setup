@@ -51,22 +51,21 @@ describe('Dispatcher structure', () => {
     assert.ok(src.includes('process.exit(0)'), 'Must exit 0');
   });
 
-  it('dispatcher uses resolveHandlers() for dual-layout path resolution', () => {
+  it('dispatcher uses centralized resolver for dual-layout path resolution', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
-    assert.ok(src.includes('function resolveHandlers'), 'Must have resolveHandlers() function');
-    assert.ok(src.includes('resolveHandlers()'), 'Must call resolveHandlers()');
-    // Verify it checks both layouts
-    assert.ok(src.includes('fs.existsSync'), 'Must check path existence for layout detection');
+    assert.ok(src.includes("lib/resolve.cjs"), 'Must use centralized resolver bootstrap');
+    assert.ok(src.includes("resolve('ledger'"), 'Must resolve ledger via centralized resolver');
   });
 
-  it('dispatcher uses __dirname-based paths (no bare relative requires)', () => {
+  it('dispatcher uses resolver or __dirname-based paths (no ad-hoc relative requires)', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
-    // Dispatcher must use __dirname (directly or via HANDLERS variable derived from __dirname)
-    assert.ok(src.includes('__dirname'), 'Must reference __dirname for path resolution');
-    // Must NOT have bare relative requires like require('./foo') or require('../foo')
-    const bareRelatives = src.match(/require\(\s*['"][.\/]/g) || [];
+    // Dispatcher must use centralized resolver for cross-component resolution
+    assert.ok(src.includes("lib/resolve.cjs"), 'Must bootstrap centralized resolver');
+    // Only allowed bare relative requires are the bootstrap resolver paths
+    const bareRelatives = (src.match(/require\(\s*['"][.\/][^'"]*/g) || [])
+      .filter(r => !r.includes('lib/resolve.cjs'));
     assert.strictEqual(bareRelatives.length, 0,
-      'Must not use bare relative requires without __dirname: ' + bareRelatives.join(', '));
+      'Must not use bare relative requires except bootstrap resolver: ' + bareRelatives.join(', '));
   });
 });
 

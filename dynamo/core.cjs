@@ -4,7 +4,12 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const resolve = require('../lib/resolve.cjs');
+// Bootstrap resolver: dynamo/ files deploy to root of ~/.claude/dynamo/ (depth 0 in deployed, depth 1 in repo)
+const resolve = require(
+  require('fs').existsSync(require('path').join(__dirname, 'lib', 'resolve.cjs'))
+    ? './lib/resolve.cjs'     // deployed layout: core.cjs is at ~/.claude/dynamo/core.cjs
+    : '../lib/resolve.cjs'    // repo layout: core.cjs is at <repo>/dynamo/core.cjs
+);
 const { execSync } = require('child_process');
 
 const DYNAMO_DIR = path.join(os.homedir(), '.claude', 'dynamo');

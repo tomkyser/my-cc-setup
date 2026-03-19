@@ -231,13 +231,14 @@ describe('sync module exports', () => {
     assert.strictEqual(typeof sync.deleteFiles, 'function');
   });
 
-  it('exports SYNC_PAIRS with 3 directory pairs', () => {
+  it('exports SYNC_PAIRS with 4 directory pairs', () => {
     assert.ok(Array.isArray(sync.SYNC_PAIRS), 'SYNC_PAIRS should be an array');
-    assert.strictEqual(sync.SYNC_PAIRS.length, 3, 'should have 3 sync pairs');
+    assert.strictEqual(sync.SYNC_PAIRS.length, 4, 'should have 4 sync pairs');
     const labels = sync.SYNC_PAIRS.map(p => p.label);
     assert.ok(labels.includes('dynamo'), 'should have dynamo pair');
     assert.ok(labels.includes('ledger'), 'should have ledger pair');
     assert.ok(labels.includes('switchboard'), 'should have switchboard pair');
+    assert.ok(labels.includes('lib'), 'should have lib pair');
   });
 });
 

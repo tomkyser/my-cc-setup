@@ -94,9 +94,9 @@ describe('install.cjs', () => {
     assert.ok(content.includes('Deploy CLAUDE.md'), 'should have Deploy CLAUDE.md step name');
   });
 
-  it('cleans stale lib/ directory during install', () => {
+  it('verifies lib/ shared substrate during install', () => {
     const content = fs.readFileSync(INSTALL_PATH, 'utf8');
-    assert.ok(content.includes('staleLibDir') || content.includes('Clean stale lib'), 'should clean stale lib/ directory');
+    assert.ok(content.includes('Verify lib/'), 'should verify lib/ shared substrate deployment');
   });
 
   it('generateConfig includes enabled:true in source', () => {

@@ -3,7 +3,12 @@
 
 const path = require('path');
 const fs = require('fs');
-const resolve = require('../../lib/resolve.cjs');
+// Bootstrap resolver: dynamo/hooks/ deploys to ~/.claude/dynamo/hooks/ (depth 1 in deployed, depth 2 in repo)
+const resolve = require(
+  require('fs').existsSync(require('path').join(__dirname, '..', 'lib', 'resolve.cjs'))
+    ? '../lib/resolve.cjs'    // deployed layout: hooks/ is at ~/.claude/dynamo/hooks/
+    : '../../lib/resolve.cjs' // repo layout: hooks/ is at <repo>/dynamo/hooks/
+);
 const { loadEnv, detectProject, logError, SCOPE } = require(resolve('dynamo', 'core.cjs'));
 
 // Load .env early (API keys needed by handlers)

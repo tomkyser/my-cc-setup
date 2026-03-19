@@ -58,9 +58,9 @@ describe('update.cjs', () => {
     assert.ok(content.includes("require(path.join(__dirname, 'health-check.cjs'))"), 'should import health-check');
   });
 
-  it('uses resolveCore pattern', () => {
+  it('uses centralized resolver pattern', () => {
     const content = fs.readFileSync(MOD_PATH, 'utf8');
-    assert.ok(content.includes('function resolveCore()'), 'should have resolveCore function');
+    assert.ok(content.includes("require('../lib/resolve.cjs')"), 'should use centralized resolver');
   });
 });
 

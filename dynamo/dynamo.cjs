@@ -7,7 +7,12 @@ const fs = require('fs');
 const os = require('os');
 const { output, error, safeReadFile, isEnabled } = require(path.join(__dirname, 'core.cjs'));
 
-const resolve = require('../lib/resolve.cjs');
+// Bootstrap resolver: dynamo/ files deploy to root of ~/.claude/dynamo/ (depth 0 in deployed, depth 1 in repo)
+const resolve = require(
+  require('fs').existsSync(require('path').join(__dirname, 'lib', 'resolve.cjs'))
+    ? './lib/resolve.cjs'     // deployed layout: dynamo.cjs is at ~/.claude/dynamo/dynamo.cjs
+    : '../lib/resolve.cjs'    // repo layout: dynamo.cjs is at <repo>/dynamo/dynamo.cjs
+);
 
 // --- Flag/arg helpers for memory commands ---
 
