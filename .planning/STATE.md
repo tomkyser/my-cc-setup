@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: unknown
 stopped_at: Completed 17-03-PLAN.md (Phase 17 complete)
-last_updated: "2026-03-19T04:29:29.136Z"
+last_updated: "2026-03-19T04:55:30Z"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -40,6 +40,7 @@ Total prior: 11 phases, 28 plans completed.
 | 260318-nbm | Synthesize Inner Voice cognitive architecture specification | 2026-03-18 | 24f3801 | [260318-nbm](./quick/260318-nbm-inner-voice-cognitive-architecture-synth/) |
 | 260318-oog | Reconcile draft roadmap with Inner Voice spec findings | 2026-03-18 | f74d9b2 | [260318-oog](./quick/260318-oog-reconcile-draft-roadmap-with-inner-voice/) |
 | 260318-pt7 | Apply approved Cortex roadmap draft to MASTER-ROADMAP.md | 2026-03-18 | d55bf0c | [260318-pt7](./quick/260318-pt7-apply-approved-cortex-roadmap-draft-to-m/) |
+| 260318-x55 | Update MASTER-ROADMAP.md to mark v1.2.1 as shipped | 2026-03-19 | 5869aff | [260318-x55](./quick/260318-x55-update-the-master-roadmap-now-that-1-2-1/) |
 
 ## Accumulated Context
 
@@ -88,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T04:19:32.236Z
-Stopped at: Completed 17-03-PLAN.md (Phase 17 complete)
+Last session: 2026-03-19T04:55:30Z
+Stopped at: Completed 260318-x55 (MASTER-ROADMAP v1.2.1 shipped)
 Resume file: None
