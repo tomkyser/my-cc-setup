@@ -71,7 +71,10 @@
   1. A single `lib/resolve.cjs` module centralizes all dual-layout path resolution (no more per-module `resolveSibling`/`resolveHandlers` ad hoc patterns)
   2. A static analysis test detects circular `require()` chains across all production modules and fails if any are found
   3. Running `node dynamo/tests/` confirms all 374+ existing tests pass with the new resolver in place (no behavioral regressions)
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 18-01-PLAN.md -- Create lib/ shared substrate with centralized resolver and dependency graph cycle detector
+- [ ] 18-02-PLAN.md -- Migrate all production files to centralized resolver and update deploy pipeline
 
 ### Phase 19: Six-Subsystem Directory Restructure
 **Goal**: Codebase organized into the target six-subsystem architecture with all operational pipelines (sync, install, deploy) working on the new layout
@@ -141,7 +144,7 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 15. Update System | v1.2.1 | 4/4 | Complete | 2026-03-19 |
 | 16. Tech Debt Cleanup | v1.2.1 | 1/1 | Complete | 2026-03-19 |
 | 17. Deploy Pipeline Fixes | v1.2.1 | 3/3 | Complete | 2026-03-19 |
-| 18. Restructure Prerequisites | v1.3-M1 | 0/TBD | Not started | - |
+| 18. Restructure Prerequisites | v1.3-M1 | 0/2 | Not started | - |
 | 19. Six-Subsystem Directory Restructure | v1.3-M1 | 0/TBD | Not started | - |
 | 20. Management Hardening | v1.3-M1 | 0/TBD | Not started | - |
 | 21. SQLite Session Index | v1.3-M1 | 0/TBD | Not started | - |
