@@ -1,0 +1,92 @@
+# Requirements: Dynamo v1.3-M1
+
+**Defined:** 2026-03-19
+**Core Value:** Every capability must be self-manageable by Claude Code without manual user config file edits
+
+## v1.3-M1 Requirements
+
+Requirements for Foundation and Infrastructure Refactor. Each maps to roadmap phases.
+
+### Architecture
+
+- [ ] **ARCH-01**: Codebase organized into six-subsystem directory structure (`subsystems/`, `cc/`, `lib/`)
+- [ ] **ARCH-02**: All dual-layout resolution paths centralized into single resolver module in `lib/`
+- [ ] **ARCH-03**: Static circular dependency detection test validates all require() chains across subsystems
+- [ ] **ARCH-04**: Unified layout mapping module serves as single source of truth for sync, install, and deploy paths
+- [ ] **ARCH-05**: Sync system operates correctly with new six-subsystem directory layout
+- [ ] **ARCH-06**: Install and deploy pipeline operates correctly with new layout (settings.json references `cc/hooks/`)
+- [ ] **ARCH-07**: All existing tests pass after restructure (374+ green)
+
+### Management
+
+- [ ] **MGMT-01**: Install and health-check verify Node.js minimum version and Graphiti dependency status
+- [ ] **MGMT-08a**: Hook dispatcher validates JSON structure and enforces field length limits on all input
+- [ ] **MGMT-08b**: `additionalContext` injection includes boundary markers to prevent prompt injection bleed
+
+### Data Infrastructure
+
+- [ ] **DATA-01**: Session data stored in SQLite via `node:sqlite` DatabaseSync API
+- [ ] **DATA-02**: Session query functions maintain identical interface (listSessions, viewSession, labelSession, etc.)
+- [ ] **DATA-03**: One-time migration converts existing `sessions.json` to SQLite database
+- [ ] **DATA-04**: Graceful fallback to JSON file if `node:sqlite` is unavailable
+
+## Future Requirements
+
+Deferred to subsequent milestones. Tracked but not in current roadmap.
+
+### Intelligence (1.3-M2)
+
+- **CORTEX-01**: Inner Voice basic -- semantic shift detection, smart curation, self-model persistence
+- **CORTEX-02**: Dual-path routing -- hot path (<500ms) and deliberation path (2-10s)
+- **CORTEX-03**: Cost monitoring -- per-operation budget tracking with hard enforcement
+- **MGMT-05**: Hooks as primary behavior -- hooks replace static CLAUDE.md
+- **MGMT-10**: Modular injection control -- refined injection with feature flag rollback
+
+### Removed from Roadmap
+
+- **MENH-06**: Transport flexibility -- removed. Max subscription + subagents eliminates need for direct Anthropic API transport.
+- **MENH-07**: Model selection -- removed. Subagent YAML frontmatter provides native model selection at zero marginal cost.
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Reverie handler migration | M2 deliverable -- create stub directory only, handlers stay in ledger/hooks/ |
+| curation.cjs LLM function split | M2 deliverable -- functions stay in current file until Reverie exists |
+| ESM migration | Doubles effort, CJS is the ecosystem standard |
+| @anthropic-ai/sdk or better-sqlite3 | Violates zero-npm-dependency constraint |
+| Dynamic handler registration | Adds latency, no value when subscriber list is known at build time |
+| Test file relocation | Update require paths incrementally, don't move test files |
+| Direct Anthropic API calls | Max subscription + subagents eliminates need (MENH-06/07 removed) |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ARCH-01 | — | Pending |
+| ARCH-02 | — | Pending |
+| ARCH-03 | — | Pending |
+| ARCH-04 | — | Pending |
+| ARCH-05 | — | Pending |
+| ARCH-06 | — | Pending |
+| ARCH-07 | — | Pending |
+| MGMT-01 | — | Pending |
+| MGMT-08a | — | Pending |
+| MGMT-08b | — | Pending |
+| DATA-01 | — | Pending |
+| DATA-02 | — | Pending |
+| DATA-03 | — | Pending |
+| DATA-04 | — | Pending |
+
+**Coverage:**
+- v1.3-M1 requirements: 14 total
+- Mapped to phases: 0
+- Unmapped: 14
+
+---
+*Requirements defined: 2026-03-19*
+*Last updated: 2026-03-19 after initial definition*

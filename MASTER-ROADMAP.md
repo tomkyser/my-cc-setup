@@ -70,11 +70,11 @@ Each milestone gates the next: a milestone must prove its value before the next 
 | Requirement | Name | Subsystem | Description |
 |-------------|------|-----------|-------------|
 | -- | Directory restructure | All | Reorganize from 3-directory layout (`dynamo/`, `ledger/`, `switchboard/`) to six-subsystem architecture (`subsystems/`, `cc/`, `lib/`). Establish the `cc/` platform adapter pattern. |
-| MENH-06 | Transport flexibility | Terminus | Support both API and native Haiku; remove OpenRouter single-point-of-failure. Prerequisite for CORTEX-01/02 model selection per path. |
-| MENH-07 | Model selection | Terminus / Reverie | Per-path model selection (Haiku for hot path, Sonnet for deliberation). Natural extension of MENH-06. |
 | MGMT-01 | Dependency management | Switchboard | Self-contained dependency management. Dynamo manages its own dependencies (GSD, Graphiti, etc.). |
 | MGMT-08 | Jailbreak protection | Switchboard | Security hardening of the hook system while it is fresh and well-understood. |
 | MGMT-11 | SQLite session index | Assay / Terminus | Replace flat-file session index with SQLite for scalable session queries. Terminus owns schema; Assay owns queries. |
+
+**Removed:** MENH-06 (Transport flexibility) and MENH-07 (Model selection) -- Max subscription + Claude Code native subagents eliminates the need for direct Anthropic API transport and separate model routing. Subagent YAML frontmatter provides model selection at zero marginal cost.
 
 ---
 
@@ -82,7 +82,7 @@ Each milestone gates the next: a milestone must prove its value before the next 
 
 **Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces Haiku curation with context-aware, personality-driven injection. The hybrid architecture uses CJS command hooks for the hot path and custom subagents for deliberation.
 
-**Dependencies:** 1.3-M1 (six-subsystem architecture in place, transport flexibility operational)
+**Dependencies:** 1.3-M1 (six-subsystem architecture in place)
 
 | Requirement | Name | Subsystem | Description |
 |-------------|------|-----------|-------------|
@@ -214,8 +214,8 @@ All requirements are assigned to a 1.3-M* milestone, marked as shipped, absorbed
 | MENH-03 | Memory synthesis and export | 1.3-M5 | |
 | MENH-04 | Memory inference | 1.3-M5 | Enhanced by CORTEX-05 |
 | MENH-05 | Flat file support | 1.3-M5 | |
-| MENH-06 | Transport flexibility | 1.3-M1 | Prerequisite for CORTEX-01/02 |
-| MENH-07 | Model selection | 1.3-M1 | Prerequisite for CORTEX-01/02 |
+| MENH-06 | Transport flexibility | Removed | Max subscription + subagents eliminates need |
+| MENH-07 | Model selection | Removed | Subagent YAML frontmatter provides native model selection |
 | MENH-08 | Local embeddings | 1.3-M4 | |
 | MENH-09 | Council-style deliberation | 1.3-M7 | Absorbed by CORTEX-10 |
 | MENH-10 | Dynamic curation depth | 1.3-M2 | Absorbed by CORTEX-02 |
