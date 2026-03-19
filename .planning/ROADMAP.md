@@ -95,9 +95,9 @@ Plans:
 **Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 14-01-PLAN.md -- Complete README.md rewrite with all 10 sections and Mermaid architecture diagram
-- [ ] 14-02-PLAN.md -- CLAUDE.md template expansion + PROJECT.md architecture decision records
-- [ ] 14-03-PLAN.md -- Full rewrite of all 7 codebase map files for CJS architecture
+- [x] 14-01-PLAN.md -- Complete README.md rewrite with all 10 sections and Mermaid architecture diagram
+- [x] 14-02-PLAN.md -- CLAUDE.md template expansion + PROJECT.md architecture decision records
+- [x] 14-03-PLAN.md -- Full rewrite of all 7 codebase map files for CJS architecture
 
 ### Phase 15: Update System
 **Goal**: Dynamo can check for updates, apply upgrades, and roll back if something goes wrong -- without manual user intervention
@@ -110,10 +110,10 @@ Plans:
 **Plans:** 4/4 plans complete
 
 Plans:
-- [ ] 15-01-PLAN.md -- Version check module (GitHub API + semver comparison)
-- [ ] 15-02-PLAN.md -- Migration harness (discover, sort, execute version-keyed scripts)
-- [ ] 15-03-PLAN.md -- Update orchestrator (snapshot + pull/download + migrate + install + verify + auto-rollback)
-- [ ] 15-04-PLAN.md -- CLI router wiring (check-update, update commands + help text + tests)
+- [x] 15-01-PLAN.md -- Version check module (GitHub API + semver comparison)
+- [x] 15-02-PLAN.md -- Migration harness (discover, sort, execute version-keyed scripts)
+- [x] 15-03-PLAN.md -- Update orchestrator (snapshot + pull/download + migrate + install + verify + auto-rollback)
+- [x] 15-04-PLAN.md -- CLI router wiring (check-update, update commands + help text + tests)
 
 ### Phase 16: Tech Debt Cleanup
 **Goal**: Close integration and flow gaps from milestone audit — update documentation for Phase 15 commands, remove stale config entries, and deploy to live
@@ -125,10 +125,10 @@ Plans:
   2. CLAUDE.md.template CLI reference includes `check-update`, `update`, and updated `rollback` descriptions
   3. settings-hooks.json contains zero `mcp__graphiti__*` permission entries
   4. `dynamo install` deploys current code to live `~/.claude/dynamo/`
-**Plans:** 0/0 plans (pending)
+**Plans:** 1 plan
 
 Plans:
-- (pending planning)
+- [ ] 16-01-PLAN.md -- Update docs for Phase 15 commands, clean stale MCP permissions, deploy to live
 
 ## Progress
 
@@ -152,4 +152,4 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15 -> 16
 | 13. Cleanup and Fixes | v1.2.1 | 2/2 | Complete | 2026-03-18 |
 | 14. Documentation and Branding | v1.2.1 | 3/3 | Complete | 2026-03-18 |
 | 15. Update System | v1.2.1 | 4/4 | Complete | 2026-03-19 |
-| 16. Tech Debt Cleanup | v1.2.1 | 0/0 | Pending | - |
+| 16. Tech Debt Cleanup | v1.2.1 | 0/1 | Planned | - |
