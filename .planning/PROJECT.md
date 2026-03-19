@@ -65,6 +65,8 @@ v1.2.1 closed all stabilization gaps. v1.3 architecture specification is complet
 - ✓ STAB-04: Dynamo CLI integration in CLAUDE.md — Validated in Phase 14: Documentation and Branding
 - ✓ STAB-06: Architecture and design decision capture — Validated in Phase 14: Documentation and Branding
 - ✓ STAB-05: Update/upgrade system — Validated in Phase 15: Update System
+- ✓ ARCH-02: Centralized dual-layout resolver — Validated in Phase 18: Restructure Prerequisites
+- ✓ ARCH-03: Circular dependency detection — Validated in Phase 18: Restructure Prerequisites
 
 ### Active
 
@@ -93,8 +95,9 @@ Phase 14 complete — README rewritten (537 lines, Mermaid diagram, 25 CLI comma
 Phase 15 complete — Self-updating system: `dynamo check-update` (GitHub Releases API), `dynamo update` (dual-mode: git pull for devs, tarball download for users), version-keyed migration harness, pre-update snapshot with automatic rollback on failure.
 Phase 16 complete — Tech debt cleanup: all 6 v1.2.1 audit gaps closed (CLI reference tables updated, stale MCP permissions removed, CLI router dual-path resolution for deployed layout).
 Phase 17 complete — Deploy pipeline fixes: hook dispatcher dual-layout resolution, MCP deregistration from installer, CLAUDE.md template deployment, stale lib/ cleanup, regression tests updated, Neo4j port corrected. All 374 tests green, deployed and human-verified.
+Phase 18 complete — Restructure prerequisites: centralized dual-layout resolver (`lib/resolve.cjs`) with logical name API for 8 subsystems, dependency graph cycle detector (`lib/dep-graph.cjs`), all 23 production files migrated from ad-hoc resolution patterns, deploy pipeline updated for `lib/`. Validated in Phase 18: ARCH-02 (centralized resolver), ARCH-03 (circular dep detection). 397 tests passing.
 Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
-Total project: 9,253 LOC CJS, 374 tests passing, across 17 phases and 45 plans.
+Total project: ~9,500 LOC CJS, 397 tests passing, across 18 phases and 47 plans.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
 v1.2.1 shipped with all 10 STAB requirements complete.
 v1.3 architecture specification complete (260319-fzc task, 5 plans across 4 waves):
@@ -493,4 +496,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-19 after v1.3-M1 milestone start*
+*Last updated: 2026-03-19 after Phase 18 completion*
