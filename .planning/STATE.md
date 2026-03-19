@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 16-01-PLAN.md (Phase 16 complete)
-last_updated: "2026-03-19T02:18:31.089Z"
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-03-19T04:07:23.399Z"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 17
+  completed_plans: 15
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Phase 16 — tech-debt-cleanup
+**Current focus:** Phase 17 — deploy-pipeline-fixes
 
 ## Current Position
 
-Phase: 16 (tech-debt-cleanup) — COMPLETE
-Plan: 1 of 1 (done)
+Phase: 17 (deploy-pipeline-fixes) — EXECUTING
+Plan: 2 of 3
 
 ### Prior Milestones
 
@@ -77,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 15]: [15-04 inline status]: check-update exits cleanly without calling output() since status was already written to stderr
 - [Phase 16]: [16-01 resolveSibling]: Dual-layout path resolution in dynamo.cjs -- checks repo path first, falls back to deployed path
 - [Phase 16]: [16-01 permissions cleanup]: Removed entire permissions block from settings-hooks.json -- Graphiti MCP is deregistered, no permissions needed
+- [Phase 17]: [17-01 resolveHandlers]: Same dual-layout pattern as resolveSibling -- repo path first, deployed fallback
+- [Phase 17]: [17-01 defensive deregistration]: MCP deregistration is defensive -- OK status whether graphiti was registered or not
 
 ### Blockers/Concerns
 
@@ -84,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T02:13:16Z
-Stopped at: Completed 16-01-PLAN.md (Phase 16 complete)
+Last session: 2026-03-19T04:07:23.396Z
+Stopped at: Completed 17-01-PLAN.md
 Resume file: None
