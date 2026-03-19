@@ -31,9 +31,19 @@ function collectCjsFiles(dir) {
   return results;
 }
 
+// Collect production .cjs files from deployed layout (excludes tests/, prompts/, migrations/)
 function collectAllCjsFiles() {
   const results = [];
-  for (const dir of SCAN_DIRS) {
+  // Root-level .cjs files (non-recursive -- subdirs handled explicitly)
+  if (fs.existsSync(DYNAMO_DIR)) {
+    for (const entry of fs.readdirSync(DYNAMO_DIR, { withFileTypes: true })) {
+      if (!entry.isDirectory() && entry.name.endsWith('.cjs')) {
+        results.push(path.join(DYNAMO_DIR, entry.name));
+      }
+    }
+  }
+  // Production subdirectories (recursive)
+  for (const dir of [path.join(DYNAMO_DIR, 'hooks'), path.join(DYNAMO_DIR, 'ledger'), path.join(DYNAMO_DIR, 'switchboard')]) {
     if (fs.existsSync(dir)) results.push(...collectCjsFiles(dir));
   }
   return results;
@@ -259,9 +269,12 @@ describe('Branding (BRD-01)', () => {
     const violations = [];
     for (const filePath of cjsFiles) {
       const content = fs.readFileSync(filePath, 'utf8');
-      const firstLine = content.split('\n')[0];
-      if (!firstLine.startsWith('// Dynamo >')) {
-        violations.push(path.relative(DYNAMO_DIR, filePath) + ': first line is "' + firstLine + '"');
+      const lines = content.split('\n');
+      // Allow shebang on line 1 -- branding must be on line 1 or line 2
+      const hasBranding = lines[0].startsWith('// Dynamo >') ||
+        (lines[0].startsWith('#!') && lines[1] && lines[1].startsWith('// Dynamo >'));
+      if (!hasBranding) {
+        violations.push(path.relative(DYNAMO_DIR, filePath) + ': first line is "' + lines[0] + '"');
       }
     }
 
