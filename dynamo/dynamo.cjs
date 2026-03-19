@@ -74,7 +74,9 @@ Commands:
   start          Start the Graphiti Docker stack with health wait
   stop           Stop the Graphiti Docker stack (preserves data)
   install        Deploy CJS system to ~/.claude/dynamo/ and retire Python
-  rollback       Restore settings.json.bak and undo retirement
+  rollback       Restore previous version from backup
+  check-update   Check for available Dynamo updates
+  update         Update Dynamo to the latest version
   search         Search knowledge graph for facts and entities
   remember       Store a memory in the knowledge graph
   recall         Retrieve episodes from a scope
@@ -113,7 +115,9 @@ const COMMAND_HELP = {
   'start':        'Usage: dynamo start [--pretty]\n  Start Graphiti Docker stack.',
   'stop':         'Usage: dynamo stop [--pretty]\n  Stop Graphiti Docker stack.',
   'install':      'Usage: dynamo install [--pretty]\n  Deploy CJS system and retire Python.',
-  'rollback':     'Usage: dynamo rollback [--pretty]\n  Restore settings.json.bak and undo retirement.',
+  'rollback':     'Usage: dynamo rollback [--pretty]\n  Restore previous version from backup.',
+  'check-update': 'Usage: dynamo check-update [--format json]\n  Check for available Dynamo updates. Shows current vs latest version.',
+  'update':       'Usage: dynamo update [--pretty]\n  Update Dynamo to the latest version. Creates backup, pulls code, runs migrations, verifies health. Auto-rolls back on failure.',
   'search':       'Usage: dynamo search <query> [--facts|--nodes] [--scope <scope>] [--format json|raw]\n  Search knowledge graph.',
   'remember':     'Usage: dynamo remember <content> [--scope <scope>] [--format json|raw]\n  Store a memory.',
   'recall':       'Usage: dynamo recall [--scope <scope>] [--format json|raw]\n  Retrieve episodes from a scope.',
@@ -191,6 +195,32 @@ async function main() {
 
     case 'rollback':
       await require(path.join(__dirname, '..', 'switchboard', 'install.cjs')).rollback(restArgs, pretty);
+      break;
+
+    case 'check-update': {
+      const updateCheck = require(path.join(__dirname, '..', 'switchboard', 'update-check.cjs'));
+      const result = await updateCheck.checkUpdate();
+      const format = extractFlag(restArgs, '--format') || null;
+
+      if (format === 'json') {
+        output({ command: 'check-update', ...result });
+      } else {
+        // Human-readable inline status to stderr
+        if (result.error) {
+          process.stderr.write(result.error + '\n');
+        } else if (result.update_available) {
+          process.stderr.write('Dynamo ' + result.current + ' -> ' + result.latest + ' available. Run "dynamo update" to upgrade.\n');
+        } else {
+          process.stderr.write('Dynamo ' + result.current + ' is up to date.\n');
+        }
+        // Exit cleanly (no output() call -- already wrote to stderr)
+        // For non-JSON mode, just exit 0 without JSON stdout
+      }
+      break;
+    }
+
+    case 'update':
+      await require(path.join(__dirname, '..', 'switchboard', 'update.cjs')).update(restArgs, pretty);
       break;
 
     // --- Memory Commands ---
