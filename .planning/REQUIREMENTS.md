@@ -12,7 +12,7 @@ Requirements for Foundation and Infrastructure Refactor. Each maps to roadmap ph
 - [ ] **ARCH-01**: Codebase organized into six-subsystem directory structure (`subsystems/`, `cc/`, `lib/`)
 - [x] **ARCH-02**: All dual-layout resolution paths centralized into single resolver module in `lib/`
 - [x] **ARCH-03**: Static circular dependency detection test validates all require() chains across subsystems
-- [ ] **ARCH-04**: Unified layout mapping module serves as single source of truth for sync, install, and deploy paths
+- [x] **ARCH-04**: Unified layout mapping module serves as single source of truth for sync, install, and deploy paths
 - [ ] **ARCH-05**: Sync system operates correctly with new six-subsystem directory layout
 - [ ] **ARCH-06**: Install and deploy pipeline operates correctly with new layout (settings.json references `cc/hooks/`)
 - [ ] **ARCH-07**: All existing tests pass after restructure (374+ green)
@@ -70,7 +70,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-01 | Phase 19 | Pending |
 | ARCH-02 | Phase 18 | Complete |
 | ARCH-03 | Phase 18 | Complete |
-| ARCH-04 | Phase 19 | Pending |
+| ARCH-04 | Phase 19 | Complete |
 | ARCH-05 | Phase 19 | Pending |
 | ARCH-06 | Phase 19 | Pending |
 | ARCH-07 | Phase 19 | Pending |

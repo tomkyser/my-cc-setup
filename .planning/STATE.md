@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 19 context gathered
-last_updated: "2026-03-19T22:58:58.752Z"
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-03-20T01:11:45.309Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 5
+  completed_plans: 3
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Phase 18 — restructure-prerequisites
+**Current focus:** Phase 19 — six-subsystem-directory-restructure
 
 ## Current Position
 
-Phase: 18 (restructure-prerequisites) — COMPLETE
-Plan: 2 of 2 (all complete)
+Phase: 19 (six-subsystem-directory-restructure) — EXECUTING
+Plan: 2 of 3
 
 ### Prior Milestones
 
@@ -67,6 +67,9 @@ Recent decisions affecting current work:
 - [18-02]: Dual-layout bootstrap for dynamo/ root files -- conditional require since deployed layout flattens dynamo/ to root
 - [18-02]: install.cjs Step 6 changed from deleting lib/ to verifying lib/ (lib/ is now required shared substrate)
 - [18-02]: SYNC_PAIRS expanded from 3 to 4 entries for lib/ deployment
+- [Phase 19-01]: core.cjs bootstrap simplified to require('./resolve.cjs') since both now in lib/
+- [Phase 19-01]: detectLayout() left unchanged for prep wave -- deployed marker works for existing installs
+- [Phase 19-01]: layout.cjs uses pre-migration paths; updated to target paths in Plan 02
 
 ### Blockers/Concerns
 
@@ -74,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T22:58:58.750Z
-Stopped at: Phase 19 context gathered
-Resume file: .planning/phases/19-six-subsystem-directory-restructure/19-CONTEXT.md
+Last session: 2026-03-20T01:11:45.306Z
+Stopped at: Completed 19-01-PLAN.md
+Resume file: None
