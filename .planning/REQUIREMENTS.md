@@ -43,9 +43,9 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 
 ### Hook Architecture (MGMT-05)
 
-- [ ] **HOOK-01**: Dispatcher routes events to Reverie handlers or classic Ledger handlers based on `reverie.mode` config value
-- [ ] **HOOK-02**: SubagentStart and SubagentStop events registered in settings-hooks.json with inner-voice agent name matcher
-- [ ] **HOOK-03**: Seven Reverie handler modules exist (SessionStart, UserPromptSubmit, PostToolUse, PreCompact, Stop, SubagentStart, SubagentStop) — thin wrappers delegating to inner-voice.cjs
+- [x] **HOOK-01**: Dispatcher routes events to Reverie handlers or classic Ledger handlers based on `reverie.mode` config value
+- [x] **HOOK-02**: SubagentStart and SubagentStop events registered in settings-hooks.json with inner-voice agent name matcher
+- [x] **HOOK-03**: Seven Reverie handler modules exist (SessionStart, UserPromptSubmit, PostToolUse, PreCompact, Stop, SubagentStart, SubagentStop) — thin wrappers delegating to inner-voice.cjs
 
 ### Feature Flags & Injection Control (MGMT-10)
 
@@ -120,9 +120,9 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | COST-04 | -- | Deferred (no cost data; spawn counts via `dynamo voice status`) |
 | OPS-MON-01 | Phase 23 | Complete |
 | OPS-MON-02 | Phase 23 | Complete |
-| HOOK-01 | Phase 23 | Pending |
-| HOOK-02 | Phase 23 | Pending |
-| HOOK-03 | Phase 23 | Pending |
+| HOOK-01 | Phase 23 | Complete |
+| HOOK-02 | Phase 23 | Complete |
+| HOOK-03 | Phase 23 | Complete |
 | FLAG-01 | Phase 23 | Complete |
 | FLAG-02 | Phase 25 | Pending |
 | FLAG-03 | Phase 23 | Complete |
