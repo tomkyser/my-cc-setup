@@ -7,7 +7,7 @@
 - ✅ **v1.2 Dynamo Foundation** -- Phases 8-11 (shipped 2026-03-18)
 - ✅ **v1.2.1 Stabilization and Polish** -- Phases 12-17 (shipped 2026-03-19)
 - ✅ **v1.3-M1 Foundation and Infrastructure Refactor** -- Phases 18-22 (shipped 2026-03-20)
-- 📋 **v1.3-M2 Core Intelligence** -- Phases TBD (planned)
+- 📋 **v1.3-M2 Core Intelligence** -- Phases 23-26 (planned)
 
 ## Phases
 
@@ -65,9 +65,68 @@
 
 ### 📋 v1.3-M2 Core Intelligence (Planned)
 
-*Phases not yet defined. Run `/gsd:new-milestone` to begin.*
+**Milestone Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces Haiku curation with context-aware, personality-driven injection. Hybrid architecture: CJS command hooks for hot path + custom subagents for deliberation.
+
+**Phase Numbering:**
+- Integer phases (23, 24, 25, 26): Planned milestone work
+- Decimal phases (e.g., 23.1): Urgent insertions (marked with INSERTED)
+
+- [ ] **Phase 23: Foundation and Routing** - Data structures, cost tracking, feature flag, dispatcher dual-mode routing, and stub handlers
+- [ ] **Phase 24: Cognitive Pipeline** - Core orchestration, dual-path routing, curation migration, all 7 handlers, subagent integration, and state bridge
+- [ ] **Phase 25: Graduated Rollout** - Hybrid mode A/B comparison, threshold calibration, activation seeding, and voice management CLI
+- [ ] **Phase 26: Operational Completion** - Bare CLI shim, cost CLI, CHANGELOG workflow, and install pipeline updates for Reverie
+
+## Phase Details
+
+### Phase 23: Foundation and Routing
+**Goal**: Reverie subsystem has its foundational data structures, cost tracking infrastructure, feature flag system, and a working dispatcher that routes events to stub handlers based on mode -- without changing any existing behavior
+**Depends on**: Phase 22 (M1 complete)
+**Requirements**: IV-01, IV-02, IV-03, IV-04, IV-10, IV-12, COST-01, COST-02, COST-03, FLAG-01, FLAG-03, HOOK-01, HOOK-02, HOOK-03
+**Success Criteria** (what must be TRUE):
+  1. `dynamo config set reverie.mode classic` and `dynamo config get reverie.mode` round-trip correctly; mode defaults to `classic` on fresh install
+  2. With mode set to `classic`, all existing hook behavior is identical to v1.3-M1 -- no user-visible change from the feature flag or routing modification
+  3. With mode set to `cortex`, dispatcher routes events to Reverie stub handlers that produce the same output as classic Ledger handlers (pass-through stubs)
+  4. Inner Voice state file loads from disk, persists atomically, and recovers gracefully from corruption (truncated/invalid JSON resets to fresh defaults)
+  5. `activation.cjs` computes entity extraction, activation decay, 1-hop spreading, domain frame classification, and sublimation scoring -- all validated by unit tests with sub-5ms entity extraction and sub-1ms classification benchmarks
+**Plans**: TBD
+
+### Phase 24: Cognitive Pipeline
+**Goal**: The Inner Voice processes every hook event through a cognitive pipeline -- extracting entities, updating activation maps, selecting hot or deliberation path, formatting injections within token budgets, and communicating with the deliberation subagent via a crash-safe state bridge
+**Depends on**: Phase 23
+**Requirements**: IV-05, IV-06, IV-07, IV-08, IV-09, IV-11, PATH-01, PATH-02, PATH-03, PATH-04, PATH-05, PATH-06
+**Success Criteria** (what must be TRUE):
+  1. Hot path completes under 500ms end-to-end (state load through injection formatting through state persist) with per-step timing instrumentation visible in debug output; 400ms abort threshold prevents overruns
+  2. Path selection (hot/deliberation/skip) is deterministic based on activation signals -- no LLM call required for the routing decision itself
+  3. Deliberation subagent (`cc/agents/inner-voice.md`) spawns on semantic shift or low-confidence signals for Max subscription users; API plan users fall back to direct Anthropic API call
+  4. State bridge writes deliberation results via SubagentStop with correlation ID and 60s TTL; next UserPromptSubmit atomically consumes the result via `fs.renameSync`; stale or crashed results are detected and discarded
+  5. Injection formatting respects token limits (500 session start, 150 mid-session, 50 urgent) and uses adversarial counter-prompting templates
+**Plans**: TBD
+
+### Phase 25: Graduated Rollout
+**Goal**: The Inner Voice proves it equals or exceeds classic curation quality through a hybrid comparison mode before any user switches to cortex mode, and users can inspect and manage Inner Voice state
+**Depends on**: Phase 24
+**Requirements**: FLAG-02, FLAG-04
+**Success Criteria** (what must be TRUE):
+  1. In hybrid mode, both classic and Reverie pipelines run on each event; classic output is injected as normal while Reverie output is logged for comparison but not shown to the user
+  2. `dynamo voice status` shows current Inner Voice state (activation map size, injection mode, confidence, last injection reason); `dynamo voice explain` shows rationale for the last injection decision; `dynamo voice reset` clears state to fresh defaults
+  3. Switching between classic, hybrid, and cortex modes via `dynamo config set reverie.mode` takes effect on the next hook event with no restart required
+**Plans**: TBD
+
+### Phase 26: Operational Completion
+**Goal**: M2 deliverable is complete with bare CLI access, cost visibility, update notes workflow, and install pipeline that deploys all new Reverie files
+**Depends on**: Phase 25
+**Requirements**: COST-04, OPS-01, OPS-02, OPS-03
+**Success Criteria** (what must be TRUE):
+  1. Running `dynamo` from any terminal (without `node` prefix or full path) invokes the CLI via a symlink shim at `~/.claude/bin/dynamo`; `DYNAMO_DEV=1` overrides to the repo version
+  2. `dynamo cost today` and `dynamo cost month` display operation counts and costs; `dynamo cost budget` shows remaining daily budget and enforcement status
+  3. CHANGELOG.md exists with well-written update notes; `dynamo check-update` and `dynamo update` display relevant changelog entries
+  4. `dynamo install` and `dynamo sync` deploy all new Reverie files, the `cc/agents/` directory, and `cc/prompts/` templates alongside existing subsystem files
+**Plans**: TBD
 
 ## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 23 -> 24 -> 25 -> 26
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
@@ -93,3 +152,7 @@
 | 20. Management Hardening | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
 | 21. SQLite Session Index | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
 | 22. M1 Verification and Cleanup | v1.3-M1 | 4/4 | Complete | 2026-03-20 |
+| 23. Foundation and Routing | v1.3-M2 | 0/TBD | Not started | - |
+| 24. Cognitive Pipeline | v1.3-M2 | 0/TBD | Not started | - |
+| 25. Graduated Rollout | v1.3-M2 | 0/TBD | Not started | - |
+| 26. Operational Completion | v1.3-M2 | 0/TBD | Not started | - |

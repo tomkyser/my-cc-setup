@@ -91,17 +91,46 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| IV-01 | Phase 23 | Pending |
+| IV-02 | Phase 23 | Pending |
+| IV-03 | Phase 23 | Pending |
+| IV-04 | Phase 23 | Pending |
+| IV-05 | Phase 24 | Pending |
+| IV-06 | Phase 24 | Pending |
+| IV-07 | Phase 24 | Pending |
+| IV-08 | Phase 24 | Pending |
+| IV-09 | Phase 24 | Pending |
+| IV-10 | Phase 23 | Pending |
+| IV-11 | Phase 24 | Pending |
+| IV-12 | Phase 23 | Pending |
+| PATH-01 | Phase 24 | Pending |
+| PATH-02 | Phase 24 | Pending |
+| PATH-03 | Phase 24 | Pending |
+| PATH-04 | Phase 24 | Pending |
+| PATH-05 | Phase 24 | Pending |
+| PATH-06 | Phase 24 | Pending |
+| COST-01 | Phase 23 | Pending |
+| COST-02 | Phase 23 | Pending |
+| COST-03 | Phase 23 | Pending |
+| COST-04 | Phase 26 | Pending |
+| HOOK-01 | Phase 23 | Pending |
+| HOOK-02 | Phase 23 | Pending |
+| HOOK-03 | Phase 23 | Pending |
+| FLAG-01 | Phase 23 | Pending |
+| FLAG-02 | Phase 25 | Pending |
+| FLAG-03 | Phase 23 | Pending |
+| FLAG-04 | Phase 25 | Pending |
+| OPS-01 | Phase 26 | Pending |
+| OPS-02 | Phase 26 | Pending |
+| OPS-03 | Phase 26 | Pending |
 
 **Coverage:**
 - v1.3-M2 requirements: 30 total
-- Mapped to phases: 0
-- Unmapped: 30 ⚠️
+- Mapped to phases: 30
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-20*
-*Last updated: 2026-03-20 after initial definition*
+*Last updated: 2026-03-20 after roadmap creation*
