@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-03-20T16:22:50.335Z"
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-03-20T16:28:35.328Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 22 (m1-verification-and-cleanup) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 
 ### Prior Milestones
 
@@ -89,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase 21-02]: Migration step renames sessions.json to sessions.json.migrated (backup, not deletion)
 - [Phase 22]: Test dispatcher via exported functions for most checks, child_process for stdin behavior
 - [Phase 22]: Use file-existence checks (not mtime-based diffTrees) for sync pair verification after copyTree
+- [Phase 22]: Remove all re-exports except MCPClient -- SCOPE moved to direct imports from scope.cjs
+- [Phase 22]: core<->sessions allowlist entry removed since cycle no longer exists after re-export cleanup
 
 ### Blockers/Concerns
 
@@ -96,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T16:22:50.333Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-03-20T16:28:35.326Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
