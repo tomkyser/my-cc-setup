@@ -63,7 +63,7 @@
 
 </details>
 
-### 📋 v1.3-M2 Core Intelligence (Planned)
+### v1.3-M2 Core Intelligence (Planned)
 
 **Milestone Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces Haiku curation with context-aware, personality-driven injection. Hybrid architecture: CJS command hooks for hot path + custom subagents for deliberation.
 
@@ -88,7 +88,11 @@
   3. With mode set to `cortex`, dispatcher routes events to Reverie stub handlers that produce the same output as classic Ledger handlers (pass-through stubs)
   4. Inner Voice state file loads from disk, persists atomically, and recovers gracefully from corruption (truncated/invalid JSON resets to fresh defaults)
   5. `activation.cjs` computes entity extraction, activation decay, 1-hop spreading, domain frame classification, and sublimation scoring -- all validated by unit tests with sub-5ms entity extraction and sub-1ms classification benchmarks
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 23-01-PLAN.md -- Config module (lib/config.cjs), state module (subsystems/reverie/state.cjs), and CLI router integration
+- [ ] 23-02-PLAN.md -- Activation computation engine (entity extraction, spreading activation, decay, classification, sublimation scoring, spawn tracking)
+- [ ] 23-03-PLAN.md -- 7 Reverie handler stubs, dispatcher dual-mode routing, and SubagentStart/SubagentStop registration
 
 ### Phase 24: Cognitive Pipeline
 **Goal**: The Inner Voice processes every hook event through a cognitive pipeline -- extracting entities, updating activation maps, selecting hot or deliberation path, formatting injections within token budgets, and communicating with the deliberation subagent via a crash-safe state bridge
@@ -151,7 +155,7 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26
 | 20. Management Hardening | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
 | 21. SQLite Session Index | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
 | 22. M1 Verification and Cleanup | v1.3-M1 | 4/4 | Complete | 2026-03-20 |
-| 23. Foundation and Routing | v1.3-M2 | 0/TBD | Not started | - |
+| 23. Foundation and Routing | v1.3-M2 | 0/3 | Planned | - |
 | 24. Cognitive Pipeline | v1.3-M2 | 0/TBD | Not started | - |
 | 25. Graduated Rollout | v1.3-M2 | 0/TBD | Not started | - |
 | 26. Operational Completion | v1.3-M2 | 0/TBD | Not started | - |
