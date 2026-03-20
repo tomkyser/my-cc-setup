@@ -27,7 +27,7 @@ created: 2026-03-20
 
 ## Sampling Rate
 
-- **After every task commit:** Run `node --test dynamo/tests/ledger/sessions.test.cjs dynamo/tests/terminus/session-store.test.cjs`
+- **After every task commit:** Run `node --test dynamo/tests/ledger/sessions.test.cjs dynamo/tests/switchboard/session-store.test.cjs`
 - **After every plan wave:** Run `node --test dynamo/tests/**/*.test.cjs`
 - **Before `/gsd:verify-work`:** Full suite must be green
 - **Max feedback latency:** 10 seconds
@@ -38,7 +38,7 @@ created: 2026-03-20
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 21-01-01 | 01 | 1 | DATA-01 | unit | `node --test dynamo/tests/terminus/session-store.test.cjs` | ❌ W0 | ⬜ pending |
+| 21-01-01 | 01 | 1 | DATA-01 | unit | `node --test dynamo/tests/switchboard/session-store.test.cjs` | ❌ W0 | ⬜ pending |
 | 21-01-02 | 01 | 1 | DATA-02 | unit | `node --test dynamo/tests/ledger/sessions.test.cjs` | ✅ | ⬜ pending |
 | 21-02-01 | 02 | 2 | DATA-03 | integration | `node --test dynamo/tests/switchboard/install.test.cjs` | ✅ | ⬜ pending |
 | 21-02-02 | 02 | 2 | DATA-04 | unit | `node --test dynamo/tests/ledger/sessions.test.cjs` | ✅ | ⬜ pending |
@@ -49,7 +49,7 @@ created: 2026-03-20
 
 ## Wave 0 Requirements
 
-- [ ] `dynamo/tests/terminus/session-store.test.cjs` — tests for new session-store.cjs module (SQLite init, schema, CRUD, WAL mode, migration)
+- [ ] `dynamo/tests/switchboard/session-store.test.cjs` — tests for new session-store.cjs module (SQLite init, schema, CRUD, WAL mode, migration)
 - [ ] Existing `dynamo/tests/ledger/sessions.test.cjs` — must continue passing unchanged against SQLite backend
 
 *Existing test infrastructure covers the framework and fixtures.*
