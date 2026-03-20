@@ -379,7 +379,42 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Retire Python', status: 'WARN', detail: e.message });
   }
 
-  // Step 8: Post-install health check
+  // Step 8: Migrate sessions from JSON to SQLite
+  try {
+    const sessionStore = require(resolve('terminus', 'session-store.cjs'));
+    if (sessionStore.isAvailable()) {
+      const jsonPath = path.join(GRAPHITI_DIR, 'sessions.json');
+      const migratedPath = jsonPath + '.migrated';
+      if (fs.existsSync(jsonPath) && !fs.existsSync(migratedPath)) {
+        const result = sessionStore.migrateFromJson(jsonPath, sessionStore.DEFAULT_DB_PATH);
+        if (result.status === 'ok') {
+          // Rename original to .migrated (backup, not deletion)
+          fs.renameSync(jsonPath, migratedPath);
+          steps.push({
+            name: 'Migrate sessions',
+            status: 'OK',
+            detail: result.migrated + ' sessions migrated to SQLite, ' + result.skipped + ' skipped. Original renamed to sessions.json.migrated'
+          });
+        } else {
+          steps.push({
+            name: 'Migrate sessions',
+            status: 'WARN',
+            detail: 'Migration returned status: ' + result.status + (result.error ? ' (' + result.error + ')' : '')
+          });
+        }
+      } else if (fs.existsSync(migratedPath)) {
+        steps.push({ name: 'Migrate sessions', status: 'OK', detail: 'Already migrated (sessions.json.migrated exists)' });
+      } else {
+        steps.push({ name: 'Migrate sessions', status: 'OK', detail: 'No sessions.json to migrate' });
+      }
+    } else {
+      steps.push({ name: 'Migrate sessions', status: 'WARN', detail: 'node:sqlite unavailable -- using JSON fallback' });
+    }
+  } catch (e) {
+    steps.push({ name: 'Migrate sessions', status: 'WARN', detail: 'Migration error: ' + e.message });
+  }
+
+  // Step 9: Post-install health check
   let hcResult = null;
   try {
     const hc = require(resolve('terminus', 'health-check.cjs'));

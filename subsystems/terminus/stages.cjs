@@ -16,24 +16,25 @@ const COMPOSE_FILE = path.join(GRAPHITI_DIR, 'docker-compose.yml');
 const SETTINGS_PATH = path.join(os.homedir(), '.claude', 'settings.json');
 
 const STAGE_NAMES = [
-  'Docker',
-  'Neo4j',
-  'Graphiti API',
-  'MCP Session',
-  'Env Vars',
-  '.env File',
-  'Hook Registrations',
-  'Hook Files',
-  'CJS Modules',
-  'MCP Tool Call',
-  'Search Round-trip',
-  'Episode Write',
-  'Canary Write/Read',
-  'Node.js Version'
+  'Docker',           // 0
+  'Neo4j',            // 1
+  'Graphiti API',     // 2
+  'MCP Session',      // 3
+  'Env Vars',         // 4
+  '.env File',        // 5
+  'Hook Registrations', // 6
+  'Hook Files',       // 7
+  'CJS Modules',      // 8
+  'MCP Tool Call',    // 9
+  'Search Round-trip', // 10
+  'Episode Write',    // 11
+  'Canary Write/Read', // 12
+  'Node.js Version',  // 13
+  'Session Storage'   // 14
 ];
 
-// Indices of the 7 health-check stages
-const HEALTH_STAGES = [0, 1, 2, 3, 4, 12, 13];
+// Indices of the 8 health-check stages
+const HEALTH_STAGES = [0, 1, 2, 3, 4, 12, 13, 14];
 
 // --- Helpers ---
 
@@ -514,6 +515,20 @@ async function stageNodeVersion(options = {}) {
   }
 }
 
+// --- Stage 15: Session Storage ---
+
+async function stageSessionStorage(options = {}) {
+  try {
+    const sessionStore = require(resolve('terminus', 'session-store.cjs'));
+    if (sessionStore.isAvailable()) {
+      return ok('SQLite backend active (sessions.db)');
+    }
+    return warn('JSON fallback active (node:sqlite unavailable)');
+  } catch (e) {
+    return warn('Storage detection failed: ' + e.message);
+  }
+}
+
 // --- Exports ---
 
 module.exports = {
@@ -531,6 +546,7 @@ module.exports = {
   stageEpisodeWrite,
   stageCanaryWriteRead,
   stageNodeVersion,
+  stageSessionStorage,
   STAGE_NAMES,
   HEALTH_STAGES
 };

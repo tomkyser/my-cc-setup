@@ -6,7 +6,7 @@ const assert = require('node:assert');
 const path = require('path');
 
 // We test the orchestrator by mocking stage functions.
-// The health-check module imports stages.cjs and calls the 6 health-check stage functions.
+// The health-check module imports stages.cjs and calls the 8 health-check stage functions.
 // We mock the stages module to control return values.
 
 const healthCheckPath = path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'health-check.cjs');
@@ -15,6 +15,43 @@ const healthCheckPath = path.join(__dirname, '..', '..', '..', 'subsystems', 'te
 function okResult(detail) { return { status: 'OK', detail: detail || 'ok', raw: '' }; }
 function failResult(detail) { return { status: 'FAIL', detail: detail || 'failed', raw: '' }; }
 function warnResult(detail) { return { status: 'WARN', detail: detail || 'warning', raw: '' }; }
+
+// Helper: save and restore all 8 stage functions for a test block
+function saveStages(stagesModule) {
+  return {
+    stageDocker: stagesModule.stageDocker,
+    stageNeo4j: stagesModule.stageNeo4j,
+    stageGraphitiApi: stagesModule.stageGraphitiApi,
+    stageMcpSession: stagesModule.stageMcpSession,
+    stageEnvVars: stagesModule.stageEnvVars,
+    stageCanaryWriteRead: stagesModule.stageCanaryWriteRead,
+    stageNodeVersion: stagesModule.stageNodeVersion,
+    stageSessionStorage: stagesModule.stageSessionStorage
+  };
+}
+
+function restoreStages(stagesModule, saved) {
+  stagesModule.stageDocker = saved.stageDocker;
+  stagesModule.stageNeo4j = saved.stageNeo4j;
+  stagesModule.stageGraphitiApi = saved.stageGraphitiApi;
+  stagesModule.stageMcpSession = saved.stageMcpSession;
+  stagesModule.stageEnvVars = saved.stageEnvVars;
+  stagesModule.stageCanaryWriteRead = saved.stageCanaryWriteRead;
+  stagesModule.stageNodeVersion = saved.stageNodeVersion;
+  stagesModule.stageSessionStorage = saved.stageSessionStorage;
+}
+
+function mockAllOk(stagesModule, overrides) {
+  stagesModule.stageDocker = async () => okResult('Docker OK');
+  stagesModule.stageNeo4j = async () => okResult('Neo4j OK');
+  stagesModule.stageGraphitiApi = async () => okResult('API OK');
+  stagesModule.stageMcpSession = async () => okResult('MCP OK');
+  stagesModule.stageEnvVars = async () => okResult('Env OK');
+  stagesModule.stageCanaryWriteRead = async () => okResult('Canary OK');
+  stagesModule.stageNodeVersion = async () => okResult('Node.js OK');
+  stagesModule.stageSessionStorage = async () => okResult('Storage OK');
+  if (overrides) Object.assign(stagesModule, overrides);
+}
 
 describe('health-check module', () => {
   let healthCheck;
@@ -40,22 +77,8 @@ describe('health-check module', () => {
 
   describe('result shape', () => {
     it('returns { command, timestamp, stages, summary }', async () => {
-      // Mock all stages to return OK
-      const origDocker = stagesModule.stageDocker;
-      const origNeo4j = stagesModule.stageNeo4j;
-      const origGraphiti = stagesModule.stageGraphitiApi;
-      const origMcp = stagesModule.stageMcpSession;
-      const origEnv = stagesModule.stageEnvVars;
-      const origCanary = stagesModule.stageCanaryWriteRead;
-      const origNodeVersion = stagesModule.stageNodeVersion;
-
-      stagesModule.stageDocker = async () => okResult('Docker OK');
-      stagesModule.stageNeo4j = async () => okResult('Neo4j OK');
-      stagesModule.stageGraphitiApi = async () => okResult('API OK');
-      stagesModule.stageMcpSession = async () => okResult('MCP OK');
-      stagesModule.stageEnvVars = async () => okResult('Env OK');
-      stagesModule.stageCanaryWriteRead = async () => okResult('Canary OK');
-      stagesModule.stageNodeVersion = async () => okResult('Node.js OK');
+      const saved = saveStages(stagesModule);
+      mockAllOk(stagesModule);
 
       try {
         const result = await healthCheck.run([], false, true);
@@ -67,131 +90,59 @@ describe('health-check module', () => {
         assert.strictEqual(typeof result.summary.total, 'number');
         assert.strictEqual(typeof result.summary.ok, 'boolean');
       } finally {
-        stagesModule.stageDocker = origDocker;
-        stagesModule.stageNeo4j = origNeo4j;
-        stagesModule.stageGraphitiApi = origGraphiti;
-        stagesModule.stageMcpSession = origMcp;
-        stagesModule.stageEnvVars = origEnv;
-        stagesModule.stageCanaryWriteRead = origCanary;
-        stagesModule.stageNodeVersion = origNodeVersion;
+        restoreStages(stagesModule, saved);
       }
     });
 
-    it('has exactly 7 stage entries', async () => {
-      const origDocker = stagesModule.stageDocker;
-      const origNeo4j = stagesModule.stageNeo4j;
-      const origGraphiti = stagesModule.stageGraphitiApi;
-      const origMcp = stagesModule.stageMcpSession;
-      const origEnv = stagesModule.stageEnvVars;
-      const origCanary = stagesModule.stageCanaryWriteRead;
-      const origNodeVersion = stagesModule.stageNodeVersion;
-
-      stagesModule.stageDocker = async () => okResult();
-      stagesModule.stageNeo4j = async () => okResult();
-      stagesModule.stageGraphitiApi = async () => okResult();
-      stagesModule.stageMcpSession = async () => okResult();
-      stagesModule.stageEnvVars = async () => okResult();
-      stagesModule.stageCanaryWriteRead = async () => okResult();
-      stagesModule.stageNodeVersion = async () => okResult();
+    it('has exactly 8 stage entries', async () => {
+      const saved = saveStages(stagesModule);
+      mockAllOk(stagesModule);
 
       try {
         const result = await healthCheck.run([], false, true);
-        assert.strictEqual(result.stages.length, 7);
+        assert.strictEqual(result.stages.length, 8);
       } finally {
-        stagesModule.stageDocker = origDocker;
-        stagesModule.stageNeo4j = origNeo4j;
-        stagesModule.stageGraphitiApi = origGraphiti;
-        stagesModule.stageMcpSession = origMcp;
-        stagesModule.stageEnvVars = origEnv;
-        stagesModule.stageCanaryWriteRead = origCanary;
-        stagesModule.stageNodeVersion = origNodeVersion;
+        restoreStages(stagesModule, saved);
       }
     });
   });
 
   describe('all stages pass', () => {
     it('summary.ok is true when all stages return OK', async () => {
-      const origDocker = stagesModule.stageDocker;
-      const origNeo4j = stagesModule.stageNeo4j;
-      const origGraphiti = stagesModule.stageGraphitiApi;
-      const origMcp = stagesModule.stageMcpSession;
-      const origEnv = stagesModule.stageEnvVars;
-      const origCanary = stagesModule.stageCanaryWriteRead;
-      const origNodeVersion = stagesModule.stageNodeVersion;
-
-      stagesModule.stageDocker = async () => okResult();
-      stagesModule.stageNeo4j = async () => okResult();
-      stagesModule.stageGraphitiApi = async () => okResult();
-      stagesModule.stageMcpSession = async () => okResult();
-      stagesModule.stageEnvVars = async () => okResult();
-      stagesModule.stageCanaryWriteRead = async () => okResult();
-      stagesModule.stageNodeVersion = async () => okResult();
+      const saved = saveStages(stagesModule);
+      mockAllOk(stagesModule);
 
       try {
         const result = await healthCheck.run([], false, true);
         assert.strictEqual(result.summary.ok, true);
         assert.strictEqual(result.summary.passed, result.summary.total);
       } finally {
-        stagesModule.stageDocker = origDocker;
-        stagesModule.stageNeo4j = origNeo4j;
-        stagesModule.stageGraphitiApi = origGraphiti;
-        stagesModule.stageMcpSession = origMcp;
-        stagesModule.stageEnvVars = origEnv;
-        stagesModule.stageCanaryWriteRead = origCanary;
-        stagesModule.stageNodeVersion = origNodeVersion;
+        restoreStages(stagesModule, saved);
       }
     });
 
     it('WARN stages still count as passed', async () => {
-      const origDocker = stagesModule.stageDocker;
-      const origNeo4j = stagesModule.stageNeo4j;
-      const origGraphiti = stagesModule.stageGraphitiApi;
-      const origMcp = stagesModule.stageMcpSession;
-      const origEnv = stagesModule.stageEnvVars;
-      const origCanary = stagesModule.stageCanaryWriteRead;
-      const origNodeVersion = stagesModule.stageNodeVersion;
-
-      stagesModule.stageDocker = async () => okResult();
-      stagesModule.stageNeo4j = async () => okResult();
-      stagesModule.stageGraphitiApi = async () => okResult();
-      stagesModule.stageMcpSession = async () => okResult();
-      stagesModule.stageEnvVars = async () => warnResult('OPENROUTER_API_KEY missing');
-      stagesModule.stageCanaryWriteRead = async () => okResult();
-      stagesModule.stageNodeVersion = async () => okResult();
+      const saved = saveStages(stagesModule);
+      mockAllOk(stagesModule, {
+        stageEnvVars: async () => warnResult('OPENROUTER_API_KEY missing')
+      });
 
       try {
         const result = await healthCheck.run([], false, true);
         assert.strictEqual(result.summary.ok, true);
-        assert.strictEqual(result.summary.passed, 7);
+        assert.strictEqual(result.summary.passed, 8);
       } finally {
-        stagesModule.stageDocker = origDocker;
-        stagesModule.stageNeo4j = origNeo4j;
-        stagesModule.stageGraphitiApi = origGraphiti;
-        stagesModule.stageMcpSession = origMcp;
-        stagesModule.stageEnvVars = origEnv;
-        stagesModule.stageCanaryWriteRead = origCanary;
-        stagesModule.stageNodeVersion = origNodeVersion;
+        restoreStages(stagesModule, saved);
       }
     });
   });
 
   describe('cascading skip - Docker failure', () => {
-    it('when Docker fails, stages 2-4 and 6 are SKIP, stages 5 and 7 still run', async () => {
-      const origDocker = stagesModule.stageDocker;
-      const origNeo4j = stagesModule.stageNeo4j;
-      const origGraphiti = stagesModule.stageGraphitiApi;
-      const origMcp = stagesModule.stageMcpSession;
-      const origEnv = stagesModule.stageEnvVars;
-      const origCanary = stagesModule.stageCanaryWriteRead;
-      const origNodeVersion = stagesModule.stageNodeVersion;
-
-      stagesModule.stageDocker = async () => failResult('No containers');
-      stagesModule.stageNeo4j = async () => okResult('should not be called');
-      stagesModule.stageGraphitiApi = async () => okResult('should not be called');
-      stagesModule.stageMcpSession = async () => okResult('should not be called');
-      stagesModule.stageEnvVars = async () => okResult('Env vars set');
-      stagesModule.stageCanaryWriteRead = async () => okResult('should not be called');
-      stagesModule.stageNodeVersion = async () => okResult('Node.js OK');
+    it('when Docker fails, stages 2-4 and 6 are SKIP, stages 5, 7, and 8 still run', async () => {
+      const saved = saveStages(stagesModule);
+      mockAllOk(stagesModule, {
+        stageDocker: async () => failResult('No containers')
+      });
 
       try {
         const result = await healthCheck.run([], false, true);
@@ -213,37 +164,25 @@ describe('health-check module', () => {
         // Stage 7 (Node.js Version): OK (runs independently like Env Vars)
         assert.strictEqual(result.stages[6].status, 'OK');
 
+        // Stage 8 (Session Storage): OK (runs independently)
+        assert.strictEqual(result.stages[7].status, 'OK');
+
         // Summary: ok is false
         assert.strictEqual(result.summary.ok, false);
       } finally {
-        stagesModule.stageDocker = origDocker;
-        stagesModule.stageNeo4j = origNeo4j;
-        stagesModule.stageGraphitiApi = origGraphiti;
-        stagesModule.stageMcpSession = origMcp;
-        stagesModule.stageEnvVars = origEnv;
-        stagesModule.stageCanaryWriteRead = origCanary;
-        stagesModule.stageNodeVersion = origNodeVersion;
+        restoreStages(stagesModule, saved);
       }
     });
   });
 
   describe('cascading skip - Neo4j failure', () => {
-    it('when Neo4j fails but Docker OK, stages 3-4 and 6 SKIP, stages 1, 5 and 7 show real results', async () => {
-      const origDocker = stagesModule.stageDocker;
-      const origNeo4j = stagesModule.stageNeo4j;
-      const origGraphiti = stagesModule.stageGraphitiApi;
-      const origMcp = stagesModule.stageMcpSession;
-      const origEnv = stagesModule.stageEnvVars;
-      const origCanary = stagesModule.stageCanaryWriteRead;
-      const origNodeVersion = stagesModule.stageNodeVersion;
-
-      stagesModule.stageDocker = async () => okResult('Docker running');
-      stagesModule.stageNeo4j = async () => failResult('Neo4j down');
-      stagesModule.stageGraphitiApi = async () => okResult('should not be called');
-      stagesModule.stageMcpSession = async () => okResult('should not be called');
-      stagesModule.stageEnvVars = async () => okResult('Env set');
-      stagesModule.stageCanaryWriteRead = async () => okResult('should not be called');
-      stagesModule.stageNodeVersion = async () => okResult('Node.js OK');
+    it('when Neo4j fails but Docker OK, stages 3-4 and 6 SKIP, stages 1, 5, 7, and 8 show real results', async () => {
+      const saved = saveStages(stagesModule);
+      mockAllOk(stagesModule, {
+        stageDocker: async () => okResult('Docker running'),
+        stageNeo4j: async () => failResult('Neo4j down'),
+        stageEnvVars: async () => okResult('Env set')
+      });
 
       try {
         const result = await healthCheck.run([], false, true);
@@ -261,14 +200,10 @@ describe('health-check module', () => {
         assert.strictEqual(result.stages[5].status, 'SKIP');
         // Stage 7 (Node.js Version): OK (runs independently)
         assert.strictEqual(result.stages[6].status, 'OK');
+        // Stage 8 (Session Storage): OK (runs independently)
+        assert.strictEqual(result.stages[7].status, 'OK');
       } finally {
-        stagesModule.stageDocker = origDocker;
-        stagesModule.stageNeo4j = origNeo4j;
-        stagesModule.stageGraphitiApi = origGraphiti;
-        stagesModule.stageMcpSession = origMcp;
-        stagesModule.stageEnvVars = origEnv;
-        stagesModule.stageCanaryWriteRead = origCanary;
-        stagesModule.stageNodeVersion = origNodeVersion;
+        restoreStages(stagesModule, saved);
       }
     });
   });
@@ -276,72 +211,40 @@ describe('health-check module', () => {
   describe('verbose flag', () => {
     it('--verbose flag is passed through to stage options', async () => {
       let capturedOptions = {};
-
-      const origDocker = stagesModule.stageDocker;
-      const origNeo4j = stagesModule.stageNeo4j;
-      const origGraphiti = stagesModule.stageGraphitiApi;
-      const origMcp = stagesModule.stageMcpSession;
-      const origEnv = stagesModule.stageEnvVars;
-      const origCanary = stagesModule.stageCanaryWriteRead;
-      const origNodeVersion = stagesModule.stageNodeVersion;
-
-      stagesModule.stageDocker = async (opts) => { capturedOptions = opts; return okResult(); };
-      stagesModule.stageNeo4j = async () => okResult();
-      stagesModule.stageGraphitiApi = async () => okResult();
-      stagesModule.stageMcpSession = async () => okResult();
-      stagesModule.stageEnvVars = async () => okResult();
-      stagesModule.stageCanaryWriteRead = async () => okResult();
-      stagesModule.stageNodeVersion = async () => okResult();
+      const saved = saveStages(stagesModule);
+      mockAllOk(stagesModule, {
+        stageDocker: async (opts) => { capturedOptions = opts; return okResult(); }
+      });
 
       try {
         await healthCheck.run(['--verbose'], false, true);
         assert.strictEqual(capturedOptions.verbose, true);
       } finally {
-        stagesModule.stageDocker = origDocker;
-        stagesModule.stageNeo4j = origNeo4j;
-        stagesModule.stageGraphitiApi = origGraphiti;
-        stagesModule.stageMcpSession = origMcp;
-        stagesModule.stageEnvVars = origEnv;
-        stagesModule.stageCanaryWriteRead = origCanary;
-        stagesModule.stageNodeVersion = origNodeVersion;
+        restoreStages(stagesModule, saved);
       }
     });
   });
 
   describe('summary counts', () => {
     it('passed counts non-SKIP stages with OK or WARN; total counts non-SKIP stages', async () => {
-      const origDocker = stagesModule.stageDocker;
-      const origNeo4j = stagesModule.stageNeo4j;
-      const origGraphiti = stagesModule.stageGraphitiApi;
-      const origMcp = stagesModule.stageMcpSession;
-      const origEnv = stagesModule.stageEnvVars;
-      const origCanary = stagesModule.stageCanaryWriteRead;
-      const origNodeVersion = stagesModule.stageNodeVersion;
-
-      // Docker FAIL -> skip Neo4j, Graphiti, MCP, Canary. Env and Node.js Version run OK.
-      stagesModule.stageDocker = async () => failResult('fail');
-      stagesModule.stageNeo4j = async () => okResult();
-      stagesModule.stageGraphitiApi = async () => okResult();
-      stagesModule.stageMcpSession = async () => okResult();
-      stagesModule.stageEnvVars = async () => okResult('env ok');
-      stagesModule.stageCanaryWriteRead = async () => okResult();
-      stagesModule.stageNodeVersion = async () => okResult('Node.js OK');
+      const saved = saveStages(stagesModule);
+      // Docker FAIL -> skip Neo4j, Graphiti, MCP, Canary. Env, Node.js Version, and Session Storage run OK.
+      mockAllOk(stagesModule, {
+        stageDocker: async () => failResult('fail'),
+        stageEnvVars: async () => okResult('env ok'),
+        stageNodeVersion: async () => okResult('Node.js OK'),
+        stageSessionStorage: async () => okResult('Storage OK')
+      });
 
       try {
         const result = await healthCheck.run([], false, true);
-        // Non-SKIP stages: Docker (FAIL), Env Vars (OK), Node.js Version (OK) = 3 total
-        // Passed: Env Vars (OK) + Node.js Version (OK) = 2
-        assert.strictEqual(result.summary.total, 3);
-        assert.strictEqual(result.summary.passed, 2);
+        // Non-SKIP stages: Docker (FAIL), Env Vars (OK), Node.js Version (OK), Session Storage (OK) = 4 total
+        // Passed: Env Vars (OK) + Node.js Version (OK) + Session Storage (OK) = 3
+        assert.strictEqual(result.summary.total, 4);
+        assert.strictEqual(result.summary.passed, 3);
         assert.strictEqual(result.summary.ok, false);
       } finally {
-        stagesModule.stageDocker = origDocker;
-        stagesModule.stageNeo4j = origNeo4j;
-        stagesModule.stageGraphitiApi = origGraphiti;
-        stagesModule.stageMcpSession = origMcp;
-        stagesModule.stageEnvVars = origEnv;
-        stagesModule.stageCanaryWriteRead = origCanary;
-        stagesModule.stageNodeVersion = origNodeVersion;
+        restoreStages(stagesModule, saved);
       }
     });
   });
@@ -350,34 +253,38 @@ describe('health-check module', () => {
     it('Node.js Version stage runs independently (no dependencies)', async () => {
       // Mock all stages: Docker FAIL, all others OK
       // Node.js Version (index 6) should still run and return OK
-      const origDocker = stagesModule.stageDocker;
-      const origNeo4j = stagesModule.stageNeo4j;
-      const origGraphiti = stagesModule.stageGraphitiApi;
-      const origMcp = stagesModule.stageMcpSession;
-      const origEnv = stagesModule.stageEnvVars;
-      const origCanary = stagesModule.stageCanaryWriteRead;
-      const origNodeVersion = stagesModule.stageNodeVersion;
-
-      stagesModule.stageDocker = async () => failResult('No containers');
-      stagesModule.stageNeo4j = async () => okResult();
-      stagesModule.stageGraphitiApi = async () => okResult();
-      stagesModule.stageMcpSession = async () => okResult();
-      stagesModule.stageEnvVars = async () => okResult();
-      stagesModule.stageCanaryWriteRead = async () => okResult();
-      stagesModule.stageNodeVersion = async () => okResult('Node.js OK');
+      const saved = saveStages(stagesModule);
+      mockAllOk(stagesModule, {
+        stageDocker: async () => failResult('No containers'),
+        stageNodeVersion: async () => okResult('Node.js OK')
+      });
 
       try {
         const result = await healthCheck.run([], false, true);
         assert.strictEqual(result.stages[6].status, 'OK');
         assert.strictEqual(result.stages[6].name, 'Node.js Version');
       } finally {
-        stagesModule.stageDocker = origDocker;
-        stagesModule.stageNeo4j = origNeo4j;
-        stagesModule.stageGraphitiApi = origGraphiti;
-        stagesModule.stageMcpSession = origMcp;
-        stagesModule.stageEnvVars = origEnv;
-        stagesModule.stageCanaryWriteRead = origCanary;
-        stagesModule.stageNodeVersion = origNodeVersion;
+        restoreStages(stagesModule, saved);
+      }
+    });
+  });
+
+  describe('Session Storage stage', () => {
+    it('Session Storage stage runs independently (no dependencies)', async () => {
+      // Mock all stages: Docker FAIL, all others OK
+      // Session Storage (index 7) should still run and return OK
+      const saved = saveStages(stagesModule);
+      mockAllOk(stagesModule, {
+        stageDocker: async () => failResult('No containers'),
+        stageSessionStorage: async () => okResult('SQLite backend active')
+      });
+
+      try {
+        const result = await healthCheck.run([], false, true);
+        assert.strictEqual(result.stages[7].status, 'OK');
+        assert.strictEqual(result.stages[7].name, 'Session Storage');
+      } finally {
+        restoreStages(stagesModule, saved);
       }
     });
   });

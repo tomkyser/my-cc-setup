@@ -11,25 +11,26 @@ const { formatHealthReport } = require(resolve('lib', 'pretty.cjs'));
 
 const {
   stageDocker, stageNeo4j, stageGraphitiApi, stageMcpSession,
-  stageEnvVars, stageCanaryWriteRead, stageNodeVersion,
+  stageEnvVars, stageCanaryWriteRead, stageNodeVersion, stageSessionStorage,
   HEALTH_STAGES, STAGE_NAMES
 } = stages;
 
-// Health-check stage definitions (7 stages, ordered by HEALTH_STAGES indices).
+// Health-check stage definitions (8 stages, ordered by HEALTH_STAGES indices).
 // Each entry has: fn (stage function), name, dependsOn (indices within this array that must pass).
-// Env Vars (index 4) and Node.js Version (index 6) have no dependencies -- they always run.
+// Env Vars (index 4), Node.js Version (index 6), and Session Storage (index 7) have no dependencies -- they always run.
 const HEALTH_STAGE_DEFS = [
-  { fn: 'stageDocker',         name: STAGE_NAMES[HEALTH_STAGES[0]], dependsOn: [] },         // 0: Docker
-  { fn: 'stageNeo4j',          name: STAGE_NAMES[HEALTH_STAGES[1]], dependsOn: [0] },        // 1: Neo4j
-  { fn: 'stageGraphitiApi',    name: STAGE_NAMES[HEALTH_STAGES[2]], dependsOn: [0, 1] },     // 2: Graphiti API
-  { fn: 'stageMcpSession',     name: STAGE_NAMES[HEALTH_STAGES[3]], dependsOn: [0, 1, 2] },  // 3: MCP Session
-  { fn: 'stageEnvVars',        name: STAGE_NAMES[HEALTH_STAGES[4]], dependsOn: [] },          // 4: Env Vars
+  { fn: 'stageDocker',          name: STAGE_NAMES[HEALTH_STAGES[0]], dependsOn: [] },         // 0: Docker
+  { fn: 'stageNeo4j',           name: STAGE_NAMES[HEALTH_STAGES[1]], dependsOn: [0] },        // 1: Neo4j
+  { fn: 'stageGraphitiApi',     name: STAGE_NAMES[HEALTH_STAGES[2]], dependsOn: [0, 1] },     // 2: Graphiti API
+  { fn: 'stageMcpSession',      name: STAGE_NAMES[HEALTH_STAGES[3]], dependsOn: [0, 1, 2] },  // 3: MCP Session
+  { fn: 'stageEnvVars',         name: STAGE_NAMES[HEALTH_STAGES[4]], dependsOn: [] },          // 4: Env Vars
   { fn: 'stageCanaryWriteRead', name: STAGE_NAMES[HEALTH_STAGES[5]], dependsOn: [0, 1, 2, 3] }, // 5: Canary
-  { fn: 'stageNodeVersion',    name: STAGE_NAMES[HEALTH_STAGES[6]], dependsOn: [] }           // 6: Node.js Version
+  { fn: 'stageNodeVersion',     name: STAGE_NAMES[HEALTH_STAGES[6]], dependsOn: [] },          // 6: Node.js Version
+  { fn: 'stageSessionStorage',  name: STAGE_NAMES[HEALTH_STAGES[7]], dependsOn: [] }           // 7: Session Storage
 ];
 
 /**
- * Run the 7-stage health check with cascading skip logic.
+ * Run the 8-stage health check with cascading skip logic.
  *
  * @param {string[]} args - CLI args (supports --verbose, --pretty)
  * @param {boolean} pretty - Pretty output flag (also checks args)
