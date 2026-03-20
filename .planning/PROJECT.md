@@ -34,6 +34,8 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 
 v1.2.1 closed all stabilization gaps. v1.3 architecture specification is complete: 6-subsystem model defined (Dynamo, Switchboard, Ledger, Assay, Terminus, Reverie), all subsystem specs written, Dynamo PRD authored, abstract Inner Voice concept documented, and master roadmap refactored to milestoned iterations. The platform adapter pattern (`cc/` directory) isolates Claude Code specifics. The hybrid architecture (CJS command hooks for hot path + custom subagent for deliberation) is specified.
 
+Phase 19 complete — codebase restructured from 3-directory layout (dynamo/ledger/switchboard) to six-subsystem architecture: `subsystems/{switchboard,assay,ledger,terminus,reverie}/`, `cc/hooks/`, `cc/prompts/`, `lib/`. `lib/layout.cjs` serves as single source of truth for all path references. Resolver simplified to unified layout (no more dual-layout detection). All operational pipelines (sync, install, deploy) updated. 405 tests passing, zero regressions.
+
 ## Requirements
 
 ### Validated
@@ -67,6 +69,11 @@ v1.2.1 closed all stabilization gaps. v1.3 architecture specification is complet
 - ✓ STAB-05: Update/upgrade system — Validated in Phase 15: Update System
 - ✓ ARCH-02: Centralized dual-layout resolver — Validated in Phase 18: Restructure Prerequisites
 - ✓ ARCH-03: Circular dependency detection — Validated in Phase 18: Restructure Prerequisites
+- ✓ ARCH-01: Six-subsystem directory structure — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ ARCH-04: Unified layout mapping module (lib/layout.cjs) — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ ARCH-05: Sync system operates with new layout — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ ARCH-06: Install/deploy pipeline operates with new layout — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ ARCH-07: All existing tests pass after restructure — Validated in Phase 19: Six-Subsystem Directory Restructure
 
 ### Active
 
@@ -96,8 +103,9 @@ Phase 15 complete — Self-updating system: `dynamo check-update` (GitHub Releas
 Phase 16 complete — Tech debt cleanup: all 6 v1.2.1 audit gaps closed (CLI reference tables updated, stale MCP permissions removed, CLI router dual-path resolution for deployed layout).
 Phase 17 complete — Deploy pipeline fixes: hook dispatcher dual-layout resolution, MCP deregistration from installer, CLAUDE.md template deployment, stale lib/ cleanup, regression tests updated, Neo4j port corrected. All 374 tests green, deployed and human-verified.
 Phase 18 complete — Restructure prerequisites: centralized dual-layout resolver (`lib/resolve.cjs`) with logical name API for 8 subsystems, dependency graph cycle detector (`lib/dep-graph.cjs`), all 23 production files migrated from ad-hoc resolution patterns, deploy pipeline updated for `lib/`. Validated in Phase 18: ARCH-02 (centralized resolver), ARCH-03 (circular dep detection). 397 tests passing.
-Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
-Total project: ~9,500 LOC CJS, 397 tests passing, across 18 phases and 47 plans.
+Phase 19 complete — Six-subsystem directory restructure: 27 production files moved via `git mv` from 3-dir to 6-subsystem layout (`subsystems/`, `cc/`, `lib/`). `lib/layout.cjs` extracted as unified layout source of truth. Resolver simplified (no dual-layout detection). SYNC_PAIRS, install.cjs, settings-hooks.json all updated. 405 tests passing, zero regressions. Validated: ARCH-01, ARCH-04, ARCH-05, ARCH-06, ARCH-07.
+Tech stack: Node/CJS (subsystems/, cc/, lib/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
+Total project: ~9,500 LOC CJS, 405 tests passing, across 19 phases and 50 plans.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
 v1.2.1 shipped with all 10 STAB requirements complete.
 v1.3 architecture specification complete (260319-fzc task, 5 plans across 4 waves):
@@ -496,4 +504,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-19 after Phase 18 completion*
+*Last updated: 2026-03-20 after Phase 19 completion*
