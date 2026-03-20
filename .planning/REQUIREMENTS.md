@@ -26,7 +26,7 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 
 - [x] **PATH-01**: Deterministic path selection (hot/deliberation/skip) based on signal thresholds without LLM call — the path decision itself is always cheap
 - [x] **PATH-02**: Hot path executes under 500ms with per-step timing instrumentation via performance.now() and a 400ms abort threshold
-- [ ] **PATH-03**: Deliberation path spawns custom `inner-voice` subagent (Sonnet model, read-only tools, permissionMode: dontAsk) for Max subscription users
+- [x] **PATH-03**: Deliberation path spawns custom `inner-voice` subagent (Sonnet model, read-only tools, permissionMode: dontAsk) for Max subscription users
 - [x] **PATH-04**: Deliberation path degrades gracefully to hot-path-only when subagent spawn fails or daily cap reached
 - [x] **PATH-05**: State bridge pattern uses SubagentStop file write with correlation ID and 60s TTL, consumed atomically by next UserPromptSubmit via fs.renameSync
 - [x] **PATH-06**: Rate limit detection sets runtime flag on spawn failure or daily cap; system degrades to hot-path-only until cleared
@@ -110,7 +110,7 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | IV-12 | Phase 23 | Complete |
 | PATH-01 | Phase 24 | Complete |
 | PATH-02 | Phase 24 | Complete |
-| PATH-03 | Phase 24 | Pending |
+| PATH-03 | Phase 24 | Complete |
 | PATH-04 | Phase 24 | Complete |
 | PATH-05 | Phase 24 | Complete |
 | PATH-06 | Phase 24 | Complete |

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 24-03-PLAN.md
-last_updated: "2026-03-20T22:26:35.680Z"
+stopped_at: Completed 24-04-PLAN.md
+last_updated: "2026-03-20T22:33:38.336Z"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -65,6 +65,8 @@ v1.3-M1 decisions archived to milestones/v1.3-M1-ROADMAP.md.
 - [Phase 24]: Adversarial framing uses 'From your experience' and 'As you described it' qualifiers in template injection output
 - [Phase 24]: Deep-copy state at pipeline entry prevents mutation between steps or on error paths
 - [Phase 24]: checkThresholdCrossings checks activation level (not sublimation score) for consistency with activation.cjs contract
+- [Phase 24]: SubagentStop parses JSON output from subagent for self-model updates, predictions, and session names -- raw text fallback
+- [Phase 24]: SubagentStart builds deliberation-type-specific instructions via switch on processing.deliberation_type
 
 ### Blockers/Concerns
 
@@ -72,6 +74,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20T22:26:35.678Z
-Stopped at: Completed 24-03-PLAN.md
+Last session: 2026-03-20T22:33:38.334Z
+Stopped at: Completed 24-04-PLAN.md
 Resume file: None
