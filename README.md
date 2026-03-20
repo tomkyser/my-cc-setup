@@ -13,85 +13,57 @@ A Claude Code power-user platform for persistent memory and self-management, bui
 
 ## Architecture
 
+Dynamo comprises six subsystems: **Dynamo** (system wrapper -- CLI router, shared resources, API surface), **Switchboard** (install/sync/update lifecycle), **Ledger** (data construction -- episode creation, write operations), **Assay** (data access -- search, session queries), **Terminus** (data infrastructure -- MCP transport, Docker stack, health/diagnostics, SQLite session storage), and **Reverie** (Inner Voice -- stub for M2).
+
 ```mermaid
 graph TB
-    CC[Claude Code] -->|hooks stdin/JSON| DH[dynamo-hooks.cjs<br/>Hook Dispatcher]
+    CC[Claude Code] -->|hooks stdin/JSON| DH[cc/hooks/dynamo-hooks.cjs<br/>Hook Dispatcher]
     CC -->|CLI invocation| DR[dynamo.cjs<br/>CLI Router]
 
-    DH -->|route by event| LH[Ledger Hooks<br/>5 handlers]
-    DR -->|memory commands| LM[Ledger Modules<br/>search, episodes, curation]
-    DR -->|ops commands| SW[Switchboard<br/>health, sync, install, diagnose]
+    DH -->|route by event| LH[subsystems/ledger/<br/>5 Hook Handlers]
+    DR -->|memory commands| AS[subsystems/assay/<br/>Search, Sessions]
+    DR -->|ops commands| SW[subsystems/switchboard/<br/>Install, Sync, Update]
+    DR -->|infra commands| TM[subsystems/terminus/<br/>Health, Diagnose, Stack]
 
-    LH --> MC[MCP Client<br/>JSON-RPC/SSE]
-    LM --> MC
+    LH --> MC[terminus/mcp-client.cjs<br/>JSON-RPC/SSE]
+    AS --> MC
+    TM --> MC
 
-    LH -->|curation| OR[OpenRouter<br/>Haiku 4.5]
-    LM -->|curation| OR
-
-    MC -->|HTTP| GM[Graphiti MCP Server<br/>:8100]
-    GM --> N4[Neo4j 5.26<br/>:7475/:7687]
-
-    subgraph Dynamo
-        DH
-        DR
+    subgraph "lib/ Shared Substrate"
+        CORE[core.cjs] --- RESOLVE[resolve.cjs]
+        CORE --- LAYOUT[layout.cjs]
+        CORE --- SCOPE[scope.cjs]
     end
 
-    subgraph Ledger
-        LH
-        LM
-        MC
-    end
-
-    subgraph Switchboard
-        SW
-    end
-
-    subgraph Docker
-        GM
-        N4
-    end
+    DR --> CORE
+    DH --> CORE
 ```
 
 ### Directory Structure
 
 ```
-dynamo/                 # Orchestration layer
-  dynamo.cjs            # CLI router (25 commands)
-  core.cjs              # Shared substrate
-  config.json           # Runtime config
-  VERSION               # Semantic version
-  hooks/
-    dynamo-hooks.cjs    # Single hook dispatcher (5 events)
-  prompts/              # Curation prompt templates
-  tests/                # All tests (272+)
-
-ledger/                 # Memory subsystem
-  mcp-client.cjs        # MCPClient + SSE parsing
-  scope.cjs             # Scope constants and validation
-  search.cjs            # Combined/fact/node search
-  episodes.cjs          # Episode add/extract
-  curation.cjs          # Haiku curation pipeline
-  sessions.cjs          # Session management
-  hooks/                # 5 hook handlers
-  graphiti/             # Docker infrastructure
-    docker-compose.yml
-    config.yaml
-    start-graphiti.sh
-    stop-graphiti.sh
-
-switchboard/            # Operations subsystem
-  install.cjs           # CJS installer
-  sync.cjs              # Bidirectional sync
-  health-check.cjs      # 6-stage health check
-  diagnose.cjs          # 13-stage diagnostics
-  verify-memory.cjs     # Pipeline verification
-  stack.cjs             # Docker start/stop
-  stages.cjs            # Shared diagnostic stages
-  pretty.cjs            # Human-readable formatters
-
-claude-config/          # Integration templates
-  CLAUDE.md.template    # Memory system rules
-  settings-hooks.json   # Hook definitions
+dynamo/
+  dynamo.cjs                  # CLI router (25 commands)
+  dynamo/                     # Meta (config.json, VERSION, migrations/)
+  cc/
+    hooks/dynamo-hooks.cjs    # Hook dispatcher (5 events, input validation, boundary markers)
+    prompts/                  # Curation prompt templates
+    settings-hooks.json       # Hook registration template
+    CLAUDE.md.template        # CLAUDE.md deployment template
+  lib/
+    core.cjs                  # Shared utilities, env loading, config
+    resolve.cjs               # Centralized path resolver
+    layout.cjs                # Layout paths and sync pair definitions (ARCH-04)
+    scope.cjs                 # Scope validation (SCOPE, validateGroupId)
+    pretty.cjs                # Output formatting
+    dep-graph.cjs             # Dependency graph analysis
+  subsystems/switchboard/     # Install, sync, update, update-check
+  subsystems/assay/           # Search, sessions (read operations)
+  subsystems/ledger/          # Curation, episodes, 5 hook handlers (write operations)
+  subsystems/terminus/        # Health-check, diagnose, MCP client, stages, session-store,
+                              #   stack, migrate, verify-memory
+  subsystems/reverie/         # Stub (.gitkeep) -- Inner Voice (M2)
+  dynamo/tests/               # 28 test files, 515 tests
 ```
 
 ## Installation
@@ -106,32 +78,36 @@ cd dynamo
 ### 2. Create your `.env`
 
 ```bash
-cp ledger/graphiti/.env.example ledger/graphiti/.env
+cp .env.example ~/.claude/graphiti/.env
 # Add your OpenRouter API key:
 #   OPENROUTER_API_KEY=sk-or-...
 ```
 
-The `.env` file lives at `ledger/graphiti/.env` in the repo and deploys to `~/.claude/graphiti/.env`.
+The `.env` file deploys to `~/.claude/graphiti/.env`.
 
 ### 3. Run the installer
 
 ```bash
-node dynamo/dynamo.cjs install
+node dynamo.cjs install
 ```
 
-The installer performs 6 steps:
+The installer performs 10 steps:
 
-1. **Copy files** -- `dynamo/`, `ledger/`, `switchboard/` trees to `~/.claude/dynamo/`
-2. **Generate config** -- creates `config.json` from `.env` values
-3. **Merge settings** -- adds hook definitions to `~/.claude/settings.json` (backs up first)
-4. **Register MCP** -- registers Graphiti MCP server via `claude mcp add`
-5. **Retire Python** -- moves legacy Python/Bash files to `~/.claude/graphiti-legacy/`
-6. **Health check** -- verifies the deployment
+1. **Check dependencies** -- verifies Node.js >= 22
+2. **Copy files** -- deploys `subsystems/`, `cc/`, `lib/`, and root files to `~/.claude/dynamo/`
+3. **Generate config** -- creates `config.json` from `.env` values
+4. **Merge settings** -- adds hook definitions to `~/.claude/settings.json` (backs up first)
+5. **Deregister MCP** -- removes direct Graphiti MCP (all access through Dynamo CLI)
+6. **Deploy CLAUDE.md** -- copies template to `~/.claude/CLAUDE.md`
+7. **Verify lib/** -- confirms shared substrate deployed
+8. **Retire Python** -- moves legacy Python/Bash files to `~/.claude/graphiti-legacy/`
+9. **Migrate sessions** -- converts `sessions.json` to SQLite (one-time, idempotent)
+10. **Health check** -- verifies the deployment (8 stages)
 
 ### 4. Start the Docker stack
 
 ```bash
-node dynamo/dynamo.cjs start
+node dynamo.cjs start
 ```
 
 ### 5. Restart Claude Code
@@ -143,25 +119,21 @@ Hooks and CLI activate on a fresh session.
 ```
 ~/.claude/dynamo/             # Deployed by installer
   dynamo.cjs                  # CLI entry point
-  core.cjs                    # Shared substrate
-  config.json                 # Generated from .env values
-  VERSION                     # Current version
-  hooks/
-    dynamo-hooks.cjs          # Single dispatcher for all hooks
-  prompts/                    # Curation templates
-  ledger/                     # Memory modules
-    mcp-client.cjs
-    scope.cjs
-    search.cjs
-    episodes.cjs
-    curation.cjs
-    sessions.cjs
-    hooks/                    # Hook handlers
-  switchboard/                # Operations modules
-    install.cjs
-    sync.cjs
-    health-check.cjs
-    ...
+  dynamo/                     # Meta (config.json, VERSION, migrations/)
+  cc/
+    hooks/dynamo-hooks.cjs    # Hook dispatcher
+    prompts/                  # Curation templates
+  lib/
+    core.cjs                  # Shared substrate
+    resolve.cjs               # Path resolver
+    layout.cjs                # Layout paths
+    scope.cjs                 # Scope validation
+    pretty.cjs                # Formatters
+  subsystems/switchboard/     # Install, sync, update
+  subsystems/assay/           # Search, sessions
+  subsystems/ledger/          # Curation, episodes, hooks/
+  subsystems/terminus/        # Health, diagnose, MCP, session-store
+  subsystems/reverie/         # Stub (M2)
 
 ~/.claude/graphiti/           # Graphiti infrastructure
   docker-compose.yml
@@ -169,7 +141,8 @@ Hooks and CLI activate on a fresh session.
   .env                        # API keys (never committed)
   start-graphiti.sh
   stop-graphiti.sh
-  sessions.json               # Session index
+  sessions.db                 # SQLite session database
+  sessions.json               # JSON backup (backward compat)
 
 ~/.claude/CLAUDE.md           # Deployed from template
 ~/.claude/settings.json       # Hooks merged into this
@@ -221,7 +194,7 @@ All commands are invoked via `node ~/.claude/dynamo/dynamo.cjs <command>` (or `n
 
 | Command | Description |
 |---------|-------------|
-| `dynamo health-check` | Run 6-stage health check (Docker, Neo4j, API, MCP, env, canary) |
+| `dynamo health-check` | Run 8-stage health check (Docker, Neo4j, API, MCP, env, canary, Node.js, session storage) |
 | `dynamo diagnose` | Run all 13 diagnostic stages (deep system inspection) |
 | `dynamo verify-memory` | Run 6 pipeline checks (write, read, scope isolation, sessions) |
 | `dynamo test` | Run the Dynamo test suite |
@@ -450,20 +423,25 @@ Tests write, read, scope isolation, and session operations end-to-end.
 
 ### Workflow
 
-1. Edit source files in the repo (`dynamo/`, `ledger/`, `switchboard/`)
+1. Edit source files in the repo (`subsystems/`, `cc/`, `lib/`, `dynamo.cjs`)
 2. Sync to live deployment: `dynamo sync repo-to-live`
 3. Test: `dynamo test`
 4. Restart Claude Code to pick up hook changes
 
 ### Sync Pairs
 
-The sync system maps 3 repo directories to deployed locations:
+The sync system maps 8 repo directories to deployed locations (defined in `lib/layout.cjs`):
 
-| Repo Directory | Deployed Location | Excludes |
-|---------------|-------------------|----------|
-| `dynamo/` | `~/.claude/dynamo/` | tests |
-| `ledger/` | `~/.claude/dynamo/ledger/` | -- |
-| `switchboard/` | `~/.claude/dynamo/switchboard/` | -- |
+| Repo Directory | Deployed Location | Label |
+|---------------|-------------------|-------|
+| `./` (root files only) | `~/.claude/dynamo/` | root |
+| `dynamo/` | `~/.claude/dynamo/dynamo/` | dynamo-meta |
+| `subsystems/switchboard/` | `~/.claude/dynamo/subsystems/switchboard/` | switchboard |
+| `subsystems/assay/` | `~/.claude/dynamo/subsystems/assay/` | assay |
+| `subsystems/ledger/` | `~/.claude/dynamo/subsystems/ledger/` | ledger |
+| `subsystems/terminus/` | `~/.claude/dynamo/subsystems/terminus/` | terminus |
+| `cc/` | `~/.claude/dynamo/cc/` | cc |
+| `lib/` | `~/.claude/dynamo/lib/` | lib |
 
 ```bash
 # Preview changes before syncing
@@ -504,7 +482,7 @@ effective = enabled || devMode              (dev mode bypasses global off)
 dynamo test
 
 # Via node directly
-node --test dynamo/tests/*.test.cjs dynamo/tests/ledger/*.test.cjs dynamo/tests/switchboard/*.test.cjs
+node --test dynamo/tests/*.test.cjs dynamo/tests/**/*.test.cjs
 ```
 
 All tests use `tmpdir` for isolation -- no shared state, no side effects on the live deployment.
@@ -522,7 +500,7 @@ All tests use `tmpdir` for isolation -- no shared state, no side effects on the 
 | Two-phase auto-naming via Haiku | Cost-efficient (~$0.001/call) with graceful degradation | Good |
 | Foreground hook execution with 5s timeout | Error capture requires foreground; fast timeout prevents blocking | Good |
 | Rebrand to Dynamo/Ledger/Switchboard | Separate memory from management for independent evolution | Good -- clean architecture |
-| CJS rewrite over Python/Bash | GSD-pattern CJS is proven, modular, testable; unifies tech stack | Good -- 272 tests, feature parity |
+| CJS rewrite over Python/Bash | GSD-pattern CJS is proven, modular, testable; unifies tech stack | Good -- 515 tests, feature parity |
 | Feature parity before new features | Stable foundation first, new capabilities in v1.3+ | Good -- foundation solid |
 | Content-based sync (Buffer.compare) | More accurate than mtime-only conflict detection | Good |
 | Options-based test isolation | Stage/module functions accept overrides for test isolation | Good -- all tests use tmpdir |
