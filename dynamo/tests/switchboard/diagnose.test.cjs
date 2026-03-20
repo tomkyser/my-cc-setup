@@ -5,7 +5,7 @@ const { describe, it, before, after, beforeEach, afterEach } = require('node:tes
 const assert = require('node:assert');
 const path = require('path');
 
-const diagnosePath = path.join(__dirname, '..', '..', '..', 'switchboard', 'diagnose.cjs');
+const diagnosePath = path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'diagnose.cjs');
 
 // Helper: create mock stage results
 function okResult(detail) { return { status: 'OK', detail: detail || 'ok', raw: '' }; }
@@ -16,7 +16,7 @@ describe('diagnose module', () => {
   let stagesModule;
 
   before(() => {
-    const stagesPath = path.join(__dirname, '..', '..', '..', 'switchboard', 'stages.cjs');
+    const stagesPath = path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stages.cjs');
     stagesModule = require(stagesPath);
     diagnose = require(diagnosePath);
   });

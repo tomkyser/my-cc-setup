@@ -5,12 +5,12 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const resolve = require('../lib/resolve.cjs');
+const resolve = require('../../lib/resolve.cjs');
 const { DYNAMO_DIR, output, error } = require(resolve('lib', 'core.cjs'));
 
 // --- Constants ---
 
-const REPO_ROOT = path.join(__dirname, '..');  // repo root from switchboard/
+const REPO_ROOT = path.join(__dirname, '..', '..');  // repo root from subsystems/switchboard/
 const LIVE_DIR = path.join(os.homedir(), '.claude', 'dynamo');
 const SYNC_STAMP = path.join(REPO_ROOT, '.last-sync');
 
@@ -22,13 +22,9 @@ const SYNC_EXCLUDES = [
 
 const GLOB_EXCLUDES = ['*.pyc'];  // pattern-based excludes
 
-// 3-directory sync pairs: repo source dir -> live destination dir
-const SYNC_PAIRS = [
-  { repo: path.join(REPO_ROOT, 'dynamo'), live: LIVE_DIR, label: 'dynamo', excludes: [...SYNC_EXCLUDES, 'tests'] },
-  { repo: path.join(REPO_ROOT, 'ledger'), live: path.join(LIVE_DIR, 'ledger'), label: 'ledger', excludes: SYNC_EXCLUDES },
-  { repo: path.join(REPO_ROOT, 'switchboard'), live: path.join(LIVE_DIR, 'switchboard'), label: 'switchboard', excludes: SYNC_EXCLUDES },
-  { repo: path.join(REPO_ROOT, 'lib'), live: path.join(LIVE_DIR, 'lib'), label: 'lib', excludes: SYNC_EXCLUDES },
-];
+// Six-subsystem sync pairs from layout.cjs (single source of truth)
+const { getSyncPairs } = require('../../lib/layout.cjs');
+const SYNC_PAIRS = getSyncPairs(REPO_ROOT, LIVE_DIR);
 
 // --- Helpers ---
 

@@ -6,7 +6,7 @@ const assert = require('node:assert');
 const path = require('path');
 
 const { searchFacts, searchNodes, combinedSearch } = require(
-  path.join(__dirname, '..', '..', '..', 'ledger', 'search.cjs')
+  path.join(__dirname, '..', '..', '..', 'subsystems', 'assay', 'search.cjs')
 );
 
 // --- Exports ---

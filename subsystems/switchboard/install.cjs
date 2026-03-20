@@ -6,19 +6,19 @@ const fs = require('fs');
 const os = require('os');
 const { execSync } = require('child_process');
 
-const resolve = require('../lib/resolve.cjs');
+const resolve = require('../../lib/resolve.cjs');
 const { DYNAMO_DIR, output, error, loadEnv, safeReadFile } = require(resolve('lib', 'core.cjs'));
 const { formatInstallReport } = require(resolve('lib', 'pretty.cjs'));
 
 // --- Constants ---
 
-const REPO_ROOT = path.join(__dirname, '..');               // repo root from switchboard/
+const REPO_ROOT = path.join(__dirname, '..', '..');          // repo root from subsystems/switchboard/
 const LIVE_DIR = path.join(os.homedir(), '.claude', 'dynamo');
 const GRAPHITI_DIR = path.join(os.homedir(), '.claude', 'graphiti');
 const LEGACY_DIR = path.join(os.homedir(), '.claude', 'graphiti-legacy');
 const SETTINGS_PATH = path.join(os.homedir(), '.claude', 'settings.json');
 const SETTINGS_BACKUP = SETTINGS_PATH + '.bak';  // ~/.claude/settings.json.bak
-const HOOKS_TEMPLATE = path.join(REPO_ROOT, 'claude-config', 'settings-hooks.json');
+const HOOKS_TEMPLATE = path.join(REPO_ROOT, 'cc', 'settings-hooks.json');
 const INSTALL_EXCLUDES = ['tests', '.last-sync', '.git', '.DS_Store', 'node_modules'];
 
 // --- Helper: copyTree ---
@@ -284,15 +284,19 @@ async function run(args = [], pretty = false, _returnOnly = false) {
   const usePretty = pretty || args.includes('--pretty');
   const steps = [];
 
-  // Step 1: Copy files (3 source dirs -> deployed layout)
+  // Step 1: Copy files (six-subsystem layout -> deployed layout)
   try {
     let fileCount = 0;
-    // Copy dynamo/* -> LIVE_DIR/* (core.cjs, dynamo.cjs, hooks/, prompts/, config.json, VERSION)
-    fileCount += copyTree(path.join(REPO_ROOT, 'dynamo'), LIVE_DIR, [...INSTALL_EXCLUDES, 'tests']);
-    // Copy ledger/* -> LIVE_DIR/ledger/*
-    fileCount += copyTree(path.join(REPO_ROOT, 'ledger'), path.join(LIVE_DIR, 'ledger'), INSTALL_EXCLUDES);
-    // Copy switchboard/* -> LIVE_DIR/switchboard/*
-    fileCount += copyTree(path.join(REPO_ROOT, 'switchboard'), path.join(LIVE_DIR, 'switchboard'), INSTALL_EXCLUDES);
+    // Copy root-level dynamo.cjs
+    fs.mkdirSync(LIVE_DIR, { recursive: true });
+    fs.copyFileSync(path.join(REPO_ROOT, 'dynamo.cjs'), path.join(LIVE_DIR, 'dynamo.cjs'));
+    fileCount++;
+    // Copy dynamo/ meta (VERSION, migrations -- config.json excluded, generated separately)
+    fileCount += copyTree(path.join(REPO_ROOT, 'dynamo'), path.join(LIVE_DIR, 'dynamo'), [...INSTALL_EXCLUDES, 'tests']);
+    // Copy subsystems/* -> LIVE_DIR/subsystems/*
+    fileCount += copyTree(path.join(REPO_ROOT, 'subsystems'), path.join(LIVE_DIR, 'subsystems'), INSTALL_EXCLUDES);
+    // Copy cc/* -> LIVE_DIR/cc/*
+    fileCount += copyTree(path.join(REPO_ROOT, 'cc'), path.join(LIVE_DIR, 'cc'), INSTALL_EXCLUDES);
     // Copy lib/* -> LIVE_DIR/lib/*
     fileCount += copyTree(path.join(REPO_ROOT, 'lib'), path.join(LIVE_DIR, 'lib'), INSTALL_EXCLUDES);
     steps.push({ name: 'Copy files', status: 'OK', detail: fileCount + ' files copied to ' + LIVE_DIR });
@@ -330,7 +334,7 @@ async function run(args = [], pretty = false, _returnOnly = false) {
 
   // Step 5: Deploy CLAUDE.md template
   try {
-    const templatePath = path.join(REPO_ROOT, 'claude-config', 'CLAUDE.md.template');
+    const templatePath = path.join(REPO_ROOT, 'cc', 'CLAUDE.md.template');
     const claudeMdPath = path.join(os.homedir(), '.claude', 'CLAUDE.md');
     if (fs.existsSync(templatePath)) {
       fs.copyFileSync(templatePath, claudeMdPath);
@@ -365,7 +369,7 @@ async function run(args = [], pretty = false, _returnOnly = false) {
   // Step 8: Post-install health check
   let hcResult = null;
   try {
-    const hc = require(path.join(__dirname, 'health-check.cjs'));
+    const hc = require(resolve('terminus', 'health-check.cjs'));
     hcResult = await hc.run([], false, true);
     const hcOk = hcResult && hcResult.summary && hcResult.summary.ok;
     steps.push({ name: 'Health check', status: hcOk ? 'OK' : 'WARN', detail: hcOk ? 'All checks passed' : 'Some checks failed' });

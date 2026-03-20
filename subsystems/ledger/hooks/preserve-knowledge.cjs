@@ -4,10 +4,10 @@
 const path = require('path');
 const fs = require('fs');
 
-const resolve = require('../../lib/resolve.cjs');
+const resolve = require('../../../lib/resolve.cjs');
 const { healthGuard, logError } = require(resolve('lib', 'core.cjs'));
-const { summarizeText } = require(path.join(__dirname, '..', 'curation.cjs'));
-const { addEpisode } = require(path.join(__dirname, '..', 'episodes.cjs'));
+const { summarizeText } = require(resolve('ledger', 'curation.cjs'));
+const { addEpisode } = require(resolve('ledger', 'episodes.cjs'));
 
 /**
  * PreCompact handler -- extract and preserve key knowledge before context compaction.

@@ -5,12 +5,8 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-// Bootstrap resolver: dynamo/ files deploy to root of ~/.claude/dynamo/ (depth 0 in deployed, depth 1 in repo)
-const resolve = require(
-  require('fs').existsSync(require('path').join(__dirname, 'lib', 'resolve.cjs'))
-    ? './lib/resolve.cjs'     // deployed layout: dynamo.cjs is at ~/.claude/dynamo/dynamo.cjs
-    : '../lib/resolve.cjs'    // repo layout: dynamo.cjs is at <repo>/dynamo/dynamo.cjs
-);
+// Bootstrap resolver: dynamo.cjs lives at repo root (and deployed root)
+const resolve = require('./lib/resolve.cjs');
 const { output, error, safeReadFile, isEnabled } = require(resolve('lib', 'core.cjs'));
 
 // --- Flag/arg helpers for memory commands ---
@@ -140,7 +136,7 @@ const COMMAND_HELP = {
 // --- Version ---
 
 function showVersion() {
-  const versionFile = path.join(__dirname, 'VERSION');
+  const versionFile = path.join(__dirname, 'dynamo', 'VERSION');
   const version = safeReadFile(versionFile) || 'unknown';
   output({ command: 'version', version: version.trim() });
 }
@@ -172,15 +168,15 @@ async function main() {
 
   switch (command) {
     case 'health-check':
-      await require(resolve('switchboard', 'health-check.cjs')).run(restArgs, pretty);
+      await require(resolve('terminus', 'health-check.cjs')).run(restArgs, pretty);
       break;
 
     case 'diagnose':
-      await require(resolve('switchboard', 'diagnose.cjs')).run(restArgs, pretty);
+      await require(resolve('terminus', 'diagnose.cjs')).run(restArgs, pretty);
       break;
 
     case 'verify-memory':
-      await require(resolve('switchboard', 'verify-memory.cjs')).run(restArgs, pretty);
+      await require(resolve('terminus', 'verify-memory.cjs')).run(restArgs, pretty);
       break;
 
     case 'sync':
@@ -188,11 +184,11 @@ async function main() {
       break;
 
     case 'start':
-      await require(resolve('switchboard', 'stack.cjs')).start(restArgs, pretty);
+      await require(resolve('terminus', 'stack.cjs')).start(restArgs, pretty);
       break;
 
     case 'stop':
-      await require(resolve('switchboard', 'stack.cjs')).stop(restArgs, pretty);
+      await require(resolve('terminus', 'stack.cjs')).stop(restArgs, pretty);
       break;
 
     case 'install':
@@ -237,7 +233,7 @@ async function main() {
       if (!query) { error('Usage: dynamo search <query> [--facts|--nodes] [--scope <scope>] [--format json|raw]'); return; }
       const scopeArg = extractFlag(restArgs, '--scope') || 'global';
       const format = extractFlag(restArgs, '--format') || 'text';
-      const search = require(resolve('ledger', 'search.cjs'));
+      const search = require(resolve('assay', 'search.cjs'));
       let result;
       if (restArgs.includes('--nodes')) {
         result = await search.searchNodes(query, scopeArg);
@@ -383,7 +379,7 @@ async function main() {
     }
 
     case 'session': {
-      const sessions = require(resolve('ledger', 'sessions.cjs'));
+      const sessions = require(resolve('assay', 'sessions.cjs'));
       const subCmd = restArgs[0];
       switch (subCmd) {
         case 'list':
@@ -408,7 +404,7 @@ async function main() {
 
     case 'test': {
       const { execSync } = require('child_process');
-      const testDir = path.join(__dirname, 'tests');
+      const testDir = path.join(__dirname, 'dynamo', 'tests');
       const cmd = 'node --test ' + path.join(testDir, '*.test.cjs') + ' ' + path.join(testDir, 'ledger', '*.test.cjs') + ' ' + path.join(testDir, 'switchboard', '*.test.cjs');
       execSync(cmd, { stdio: 'inherit' });
       break;

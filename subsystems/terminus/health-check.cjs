@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const stages = require(path.join(__dirname, 'stages.cjs'));
 
-const resolve = require('../lib/resolve.cjs');
+const resolve = require('../../lib/resolve.cjs');
 const { output, error } = require(resolve('lib', 'core.cjs'));
 const { formatHealthReport } = require(resolve('lib', 'pretty.cjs'));
 

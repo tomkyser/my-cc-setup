@@ -4,9 +4,9 @@
 const path = require('path');
 const fs = require('fs');
 
-const resolve = require('../../lib/resolve.cjs');
+const resolve = require('../../../lib/resolve.cjs');
 const { healthGuard, logError } = require(resolve('lib', 'core.cjs'));
-const { addEpisode } = require(path.join(__dirname, '..', 'episodes.cjs'));
+const { addEpisode } = require(resolve('ledger', 'episodes.cjs'));
 
 /**
  * PostToolUse handler -- capture file change episodes in Graphiti.

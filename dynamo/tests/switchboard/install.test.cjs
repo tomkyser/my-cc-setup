@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const INSTALL_PATH = path.join(__dirname, '..', '..', '..', 'switchboard', 'install.cjs');
+const INSTALL_PATH = path.join(__dirname, '..', '..', '..', 'subsystems', 'switchboard', 'install.cjs');
 
 // All tests use temp directories -- never touch real ~/.claude/
 function makeTmpDir(prefix) {
@@ -81,11 +81,12 @@ describe('install.cjs', () => {
     assert.ok(!content.includes('REPO_DIR'), 'should not use old REPO_DIR constant');
   });
 
-  it('copies from 3 source directories (dynamo, ledger, switchboard)', () => {
+  it('copies from six-subsystem layout (subsystems, cc, lib, dynamo)', () => {
     const content = fs.readFileSync(INSTALL_PATH, 'utf8');
-    assert.ok(content.includes("path.join(REPO_ROOT, 'dynamo')"), 'should copy from dynamo/');
-    assert.ok(content.includes("path.join(REPO_ROOT, 'ledger')"), 'should copy from ledger/');
-    assert.ok(content.includes("path.join(REPO_ROOT, 'switchboard')"), 'should copy from switchboard/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'subsystems')"), 'should copy from subsystems/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'cc')"), 'should copy from cc/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'lib')"), 'should copy from lib/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'dynamo.cjs')"), 'should copy dynamo.cjs from root');
   });
 
   it('deploys CLAUDE.md template during install', () => {

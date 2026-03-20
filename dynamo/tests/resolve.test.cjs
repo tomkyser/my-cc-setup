@@ -14,20 +14,11 @@ describe('lib/resolve.cjs', () => {
     resolve._reset();
   });
 
-  describe('layout detection', () => {
-    it('detects repo layout when core.cjs is not at root level', () => {
-      // In the repo, core.cjs lives at lib/core.cjs, not at root
-      // So detectLayout should return 'repo'
-      const layout = resolve._detectLayout();
-      assert.equal(layout, 'repo');
-    });
-  });
-
-  describe('resolve repo paths', () => {
-    it('resolves ledger/search.cjs to absolute path ending in ledger/search.cjs', () => {
-      const result = resolve('ledger', 'search.cjs');
+  describe('resolve paths (six-subsystem layout)', () => {
+    it('resolves assay/search.cjs to absolute path in subsystems/assay/', () => {
+      const result = resolve('assay', 'search.cjs');
       assert.ok(path.isAbsolute(result), 'should be absolute path');
-      assert.ok(result.endsWith(path.join('ledger', 'search.cjs')), `path should end with ledger/search.cjs, got: ${result}`);
+      assert.ok(result.endsWith(path.join('subsystems', 'assay', 'search.cjs')), `path should end with subsystems/assay/search.cjs, got: ${result}`);
       assert.ok(fs.existsSync(result), 'resolved path should exist');
     });
 
@@ -52,10 +43,17 @@ describe('lib/resolve.cjs', () => {
       assert.ok(fs.existsSync(result), 'resolved path should exist');
     });
 
-    it('resolves switchboard/sync.cjs to absolute path ending in switchboard/sync.cjs', () => {
+    it('resolves switchboard/sync.cjs to absolute path in subsystems/switchboard/', () => {
       const result = resolve('switchboard', 'sync.cjs');
       assert.ok(path.isAbsolute(result), 'should be absolute path');
-      assert.ok(result.endsWith(path.join('switchboard', 'sync.cjs')), `path should end with switchboard/sync.cjs, got: ${result}`);
+      assert.ok(result.endsWith(path.join('subsystems', 'switchboard', 'sync.cjs')), `path should end with subsystems/switchboard/sync.cjs, got: ${result}`);
+      assert.ok(fs.existsSync(result), 'resolved path should exist');
+    });
+
+    it('resolves terminus/mcp-client.cjs to absolute path in subsystems/terminus/', () => {
+      const result = resolve('terminus', 'mcp-client.cjs');
+      assert.ok(path.isAbsolute(result), 'should be absolute path');
+      assert.ok(result.endsWith(path.join('subsystems', 'terminus', 'mcp-client.cjs')), `path should end with subsystems/terminus/mcp-client.cjs, got: ${result}`);
       assert.ok(fs.existsSync(result), 'resolved path should exist');
     });
 
@@ -94,23 +92,19 @@ describe('lib/resolve.cjs', () => {
   });
 
   describe('cache reset', () => {
-    it('re-detects layout after _reset()', () => {
+    it('resolves correctly after _reset()', () => {
       // Call resolve to populate cache
       resolve('lib', 'core.cjs');
-      const layout1 = resolve._detectLayout();
-      assert.equal(layout1, 'repo');
 
-      // Reset and verify layout is re-detected (not stale)
+      // Reset and verify resolution still works (cache cleared, re-populated)
       resolve._reset();
-      const layout2 = resolve._detectLayout();
-      assert.equal(layout2, 'repo');
+      const result = resolve('lib', 'core.cjs');
+      assert.ok(fs.existsSync(result), 'should resolve after reset');
     });
   });
 
-  describe('future subsystem names', () => {
-    it('throws not-found (not unknown-subsystem) for known future subsystem assay', () => {
-      // 'assay' is a known subsystem name, but the directory does not exist yet
-      // Should throw "not found" (because file doesn't exist), NOT "unknown subsystem"
+  describe('subsystem names', () => {
+    it('throws not-found (not unknown-subsystem) for known subsystem with nonexistent file', () => {
       assert.throws(
         () => resolve('assay', 'foo.cjs'),
         (err) => {
@@ -124,16 +118,10 @@ describe('lib/resolve.cjs', () => {
   });
 
   describe('directory resolution', () => {
-    it('resolves ledger/hooks directory path when directory exists', () => {
-      // fs.existsSync works for directories too
-      const hooksDir = path.join(REPO_ROOT, 'ledger', 'hooks');
-      if (!fs.existsSync(hooksDir)) {
-        // Skip if hooks dir doesn't exist in this repo layout
-        return;
-      }
+    it('resolves ledger/hooks directory path', () => {
       const result = resolve('ledger', 'hooks');
       assert.ok(path.isAbsolute(result), 'should be absolute path');
-      assert.ok(result.endsWith(path.join('ledger', 'hooks')), `path should end with ledger/hooks, got: ${result}`);
+      assert.ok(result.endsWith(path.join('subsystems', 'ledger', 'hooks')), `path should end with subsystems/ledger/hooks, got: ${result}`);
       assert.ok(fs.existsSync(result), 'resolved path should exist');
     });
   });

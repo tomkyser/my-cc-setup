@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const verifyMemoryPath = path.join(__dirname, '..', '..', '..', 'switchboard', 'verify-memory.cjs');
+const verifyMemoryPath = path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'verify-memory.cjs');
 
 describe('verify-memory module', () => {
   let verifyMemory;

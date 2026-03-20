@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const { execSync } = require('child_process');
 
-const resolve = require('../lib/resolve.cjs');
+const resolve = require('../../lib/resolve.cjs');
 const { output, error, fetchWithTimeout } = require(resolve('lib', 'core.cjs'));
 
 // --- Constants ---

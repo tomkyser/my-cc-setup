@@ -4,7 +4,7 @@
 const path = require('path');
 const fs = require('fs');
 
-const resolve = require('../lib/resolve.cjs');
+const resolve = require('../../lib/resolve.cjs');
 
 // --- Semver comparison (self-contained; no cross-switchboard imports per codebase convention) ---
 
@@ -42,7 +42,7 @@ const MIGRATION_PATTERN = /^(\d+\.\d+\.\d+)-to-(\d+\.\d+\.\d+)\.cjs$/;
  * @returns {Array<{from: string, to: string, path: string}>} Sorted migration descriptors
  */
 function discoverMigrations(fromVersion, toVersion, migrationsDir) {
-  migrationsDir = migrationsDir || path.join(__dirname, '..', 'dynamo', 'migrations');
+  migrationsDir = migrationsDir || path.join(__dirname, '..', '..', 'dynamo', 'migrations');
 
   if (!fs.existsSync(migrationsDir)) {
     return [];

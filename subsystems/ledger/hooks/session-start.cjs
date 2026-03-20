@@ -4,11 +4,11 @@
 const path = require('path');
 const fs = require('fs');
 
-const resolve = require('../../lib/resolve.cjs');
+const resolve = require('../../../lib/resolve.cjs');
 const { healthGuard, logError } = require(resolve('lib', 'core.cjs'));
-const { combinedSearch } = require(path.join(__dirname, '..', 'search.cjs'));
-const { curateResults } = require(path.join(__dirname, '..', 'curation.cjs'));
-const { MCPClient } = require(path.join(__dirname, '..', 'mcp-client.cjs'));
+const { combinedSearch } = require(resolve('assay', 'search.cjs'));
+const { curateResults } = require(resolve('ledger', 'curation.cjs'));
+const { MCPClient } = require(resolve('terminus', 'mcp-client.cjs'));
 
 /**
  * SessionStart handler -- bootstrap session with Graphiti memory context.

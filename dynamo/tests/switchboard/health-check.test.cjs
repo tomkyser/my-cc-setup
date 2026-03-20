@@ -9,7 +9,7 @@ const path = require('path');
 // The health-check module imports stages.cjs and calls the 6 health-check stage functions.
 // We mock the stages module to control return values.
 
-const healthCheckPath = path.join(__dirname, '..', '..', '..', 'switchboard', 'health-check.cjs');
+const healthCheckPath = path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'health-check.cjs');
 
 // Helper: create mock stage results
 function okResult(detail) { return { status: 'OK', detail: detail || 'ok', raw: '' }; }
@@ -25,7 +25,7 @@ describe('health-check module', () => {
 
   before(() => {
     // Load the stages module so we can mock its functions
-    const stagesPath = path.join(__dirname, '..', '..', '..', 'switchboard', 'stages.cjs');
+    const stagesPath = path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stages.cjs');
     stagesModule = require(stagesPath);
 
     // Load health-check module (it requires stages.cjs internally)

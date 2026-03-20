@@ -5,12 +5,12 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const resolve = require('../../lib/resolve.cjs');
+const resolve = require('../../../lib/resolve.cjs');
 const { logError } = require(resolve('lib', 'core.cjs'));
 const { SCOPE } = require(resolve('lib', 'scope.cjs'));
-const { summarizeText, generateSessionName } = require(path.join(__dirname, '..', 'curation.cjs'));
-const { addEpisode } = require(path.join(__dirname, '..', 'episodes.cjs'));
-const { indexSession, generateAndApplyName } = require(path.join(__dirname, '..', 'sessions.cjs'));
+const { summarizeText, generateSessionName } = require(resolve('ledger', 'curation.cjs'));
+const { addEpisode } = require(resolve('ledger', 'episodes.cjs'));
+const { indexSession, generateAndApplyName } = require(resolve('assay', 'sessions.cjs'));
 
 /**
  * Stop handler -- summarize session and store in Graphiti.

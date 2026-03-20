@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const sync = require(path.join(__dirname, '..', '..', '..', 'switchboard', 'sync.cjs'));
+const sync = require(path.join(__dirname, '..', '..', '..', 'subsystems', 'switchboard', 'sync.cjs'));
 
 // --- Test helpers ---
 
@@ -231,22 +231,26 @@ describe('sync module exports', () => {
     assert.strictEqual(typeof sync.deleteFiles, 'function');
   });
 
-  it('exports SYNC_PAIRS with 4 directory pairs', () => {
+  it('exports SYNC_PAIRS with 8 directory pairs (six-subsystem layout)', () => {
     assert.ok(Array.isArray(sync.SYNC_PAIRS), 'SYNC_PAIRS should be an array');
-    assert.strictEqual(sync.SYNC_PAIRS.length, 4, 'should have 4 sync pairs');
+    assert.strictEqual(sync.SYNC_PAIRS.length, 8, 'should have 8 sync pairs');
     const labels = sync.SYNC_PAIRS.map(p => p.label);
-    assert.ok(labels.includes('dynamo'), 'should have dynamo pair');
-    assert.ok(labels.includes('ledger'), 'should have ledger pair');
+    assert.ok(labels.includes('root'), 'should have root pair');
+    assert.ok(labels.includes('dynamo-meta'), 'should have dynamo-meta pair');
     assert.ok(labels.includes('switchboard'), 'should have switchboard pair');
+    assert.ok(labels.includes('assay'), 'should have assay pair');
+    assert.ok(labels.includes('ledger'), 'should have ledger pair');
+    assert.ok(labels.includes('terminus'), 'should have terminus pair');
+    assert.ok(labels.includes('cc'), 'should have cc pair');
     assert.ok(labels.includes('lib'), 'should have lib pair');
   });
 });
 
-// --- 3-directory layout tests ---
+// --- Six-subsystem layout tests ---
 
-describe('sync 3-directory layout', () => {
-  it('uses REPO_ROOT constant (renamed from REPO_DIR)', () => {
-    const syncPath = path.join(__dirname, '..', '..', '..', 'switchboard', 'sync.cjs');
+describe('sync six-subsystem layout', () => {
+  it('uses REPO_ROOT constant', () => {
+    const syncPath = path.join(__dirname, '..', '..', '..', 'subsystems', 'switchboard', 'sync.cjs');
     const content = fs.readFileSync(syncPath, 'utf8');
     assert.ok(content.includes('REPO_ROOT'), 'should use REPO_ROOT constant');
     assert.ok(!content.includes('REPO_DIR'), 'should not use old REPO_DIR constant');
@@ -261,8 +265,8 @@ describe('sync 3-directory layout', () => {
     }
   });
 
-  it('dynamo pair excludes tests directory', () => {
-    const dynamoPair = sync.SYNC_PAIRS.find(p => p.label === 'dynamo');
-    assert.ok(dynamoPair.excludes.includes('tests'), 'dynamo pair should exclude tests');
+  it('dynamo-meta pair excludes tests directory', () => {
+    const dynamoPair = sync.SYNC_PAIRS.find(p => p.label === 'dynamo-meta');
+    assert.ok(dynamoPair.excludes.includes('tests'), 'dynamo-meta pair should exclude tests');
   });
 });

@@ -7,12 +7,12 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const DYNAMO_DIR = path.join(os.homedir(), '.claude', 'dynamo');
-const DISPATCHER = path.join(DYNAMO_DIR, 'hooks', 'dynamo-hooks.cjs');
+// Use repo paths for testing (deployed layout mirrors repo after install)
+const REPO_ROOT = path.join(__dirname, '..', '..', '..');
+const DISPATCHER = path.join(REPO_ROOT, 'cc', 'hooks', 'dynamo-hooks.cjs');
 
-// Handlers: deployed layout (ledger/hooks/)
-const HANDLERS_DIR_NEW = path.join(DYNAMO_DIR, 'ledger', 'hooks');
-const HANDLERS_DIR = HANDLERS_DIR_NEW;
+// Handlers: repo layout (subsystems/ledger/hooks/)
+const HANDLERS_DIR = path.join(REPO_ROOT, 'subsystems', 'ledger', 'hooks');
 
 describe('Dispatcher structure', () => {
   it('dispatcher file exists', () => {

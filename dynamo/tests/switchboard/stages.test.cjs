@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const stagesPath = path.join(__dirname, '..', '..', '..', 'switchboard', 'stages.cjs');
+const stagesPath = path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stages.cjs');
 
 describe('stages module', () => {
   let stages;

@@ -4,10 +4,10 @@
 const path = require('path');
 const fs = require('fs');
 
-const resolve = require('../lib/resolve.cjs');
+const resolve = require('../../lib/resolve.cjs');
 const { logError } = require(resolve('lib', 'core.cjs'));
-const { MCPClient } = require(path.join(__dirname, 'mcp-client.cjs'));
-const { extractContent } = require(path.join(__dirname, 'episodes.cjs'));
+const { MCPClient } = require(resolve('terminus', 'mcp-client.cjs'));
+const { extractContent } = require(resolve('ledger', 'episodes.cjs'));
 
 /**
  * Search Graphiti for facts (relationships between entities).

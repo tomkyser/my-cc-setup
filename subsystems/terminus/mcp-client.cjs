@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 
-const resolve = require('../lib/resolve.cjs');
+const resolve = require('../../lib/resolve.cjs');
 const { fetchWithTimeout, loadConfig } = require(resolve('lib', 'core.cjs'));
 
 const MCP_DEFAULTS = {

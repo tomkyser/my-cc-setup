@@ -6,7 +6,7 @@ const assert = require('node:assert');
 const path = require('path');
 
 const { callHaiku, curateResults, summarizeText, generateSessionName } = require(
-  path.join(__dirname, '..', '..', '..', 'ledger', 'curation.cjs')
+  path.join(__dirname, '..', '..', '..', 'subsystems', 'ledger', 'curation.cjs')
 );
 
 // --- Environment save/restore ---

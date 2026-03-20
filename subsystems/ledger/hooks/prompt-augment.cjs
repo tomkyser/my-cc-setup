@@ -5,11 +5,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const resolve = require('../../lib/resolve.cjs');
+const resolve = require('../../../lib/resolve.cjs');
 const { healthGuard, logError } = require(resolve('lib', 'core.cjs'));
-const { combinedSearch } = require(path.join(__dirname, '..', 'search.cjs'));
-const { curateResults, generateSessionName } = require(path.join(__dirname, '..', 'curation.cjs'));
-const { generateAndApplyName } = require(path.join(__dirname, '..', 'sessions.cjs'));
+const { combinedSearch } = require(resolve('assay', 'search.cjs'));
+const { curateResults, generateSessionName } = require(resolve('ledger', 'curation.cjs'));
+const { generateAndApplyName } = require(resolve('assay', 'sessions.cjs'));
 
 /**
  * UserPromptSubmit handler -- augment user prompts with relevant Graphiti memories.

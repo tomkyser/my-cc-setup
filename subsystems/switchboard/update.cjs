@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const { execSync } = require('child_process');
 
-const resolve = require('../lib/resolve.cjs');
+const resolve = require('../../lib/resolve.cjs');
 const { fetchWithTimeout, safeReadFile, output, error } = require(resolve('lib', 'core.cjs'));
 
 // --- Constants ---
@@ -96,7 +96,7 @@ function restoreSnapshot(options = {}) {
  * @returns {boolean}
  */
 function isDevMode(options = {}) {
-  const scriptDir = options.scriptDir || path.join(__dirname, '..');
+  const scriptDir = options.scriptDir || path.join(__dirname, '..', '..');
   try {
     const remote = execSync('git config --get remote.origin.url', {
       cwd: scriptDir,
@@ -201,7 +201,7 @@ async function update(args = [], pretty = false, options = {}, _returnOnly = fal
   try {
     // Step 3: Pull code
     if (isDevMode(options)) {
-      const repoRoot = options.repoRoot || path.join(__dirname, '..');
+      const repoRoot = options.repoRoot || path.join(__dirname, '..', '..');
       execSync('git pull origin master', {
         cwd: repoRoot,
         timeout: 30000,
@@ -218,7 +218,7 @@ async function update(args = [], pretty = false, options = {}, _returnOnly = fal
     }
 
     // Step 4: Run migrations
-    const { runMigrations } = require(path.join(__dirname, 'migrate.cjs'));
+    const { runMigrations } = require(resolve('terminus', 'migrate.cjs'));
     const migResult = await runMigrations(check.current, check.latest, {
       migrationsDir: options.migrationsDir,
       configPath: options.configPath,
@@ -242,7 +242,7 @@ async function update(args = [], pretty = false, options = {}, _returnOnly = fal
     steps.push({ name: 'Install', status: 'OK' });
 
     // Step 6: Health check
-    const healthCheck = require(path.join(__dirname, 'health-check.cjs'));
+    const healthCheck = require(resolve('terminus', 'health-check.cjs'));
     const hcResult = await healthCheck.run([], false, true);
     if (!hcResult.summary.ok) {
       throw new Error('Health check failed after update');
