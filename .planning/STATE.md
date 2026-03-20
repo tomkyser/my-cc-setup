@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 25 context gathered
-last_updated: "2026-03-20T23:10:42.404Z"
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-03-20T23:37:26.887Z"
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 11
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Phase 24 — cognitive-pipeline
+**Current focus:** Phase 25 — cutover-and-completion
 
 ## Current Position
 
-Phase: 25
-Plan: Not started
+Phase: 25 (cutover-and-completion) — EXECUTING
+Plan: 2 of 4
 
 ### Prior Milestones
 
@@ -67,6 +67,8 @@ v1.3-M1 decisions archived to milestones/v1.3-M1-ROADMAP.md.
 - [Phase 24]: checkThresholdCrossings checks activation level (not sublimation score) for consistency with activation.cjs contract
 - [Phase 24]: SubagentStop parses JSON output from subagent for self-model updates, predictions, and session names -- raw text fallback
 - [Phase 24]: SubagentStart builds deliberation-type-specific instructions via switch on processing.deliberation_type
+- [Phase 25]: Copy shim (not symlink) so it survives repo moves
+- [Phase 25]: .repo-path dotfile written during install enables DYNAMO_DEV=1 to find repo
 
 ### Blockers/Concerns
 
@@ -74,6 +76,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20T23:10:42.402Z
-Stopped at: Phase 25 context gathered
-Resume file: .planning/phases/25-cutover-and-completion/25-CONTEXT.md
+Last session: 2026-03-20T23:37:26.885Z
+Stopped at: Completed 25-02-PLAN.md
+Resume file: None
