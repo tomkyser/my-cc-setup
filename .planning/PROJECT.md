@@ -523,4 +523,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-20 after Phase 22 completion (v1.3-M1 shipped)*
+*Last updated: 2026-03-20 after v1.3-M1 milestone completion*

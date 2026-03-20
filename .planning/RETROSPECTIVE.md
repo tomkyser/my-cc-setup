@@ -2,6 +2,52 @@
 
 *A living document updated after each milestone. Lessons feed forward into future planning.*
 
+## Milestone: v1.3-M1 — Foundation and Infrastructure Refactor
+
+**Shipped:** 2026-03-20
+**Phases:** 5 | **Plans:** 13 | **Commits:** ~75 | **Production LOC:** ~5,335 CJS | **Tests:** 515
+
+### What Was Built
+- Centralized path resolver (`lib/resolve.cjs`) with logical name API for 8 subsystems and DFS circular dependency detector (`lib/dep-graph.cjs`)
+- Six-subsystem directory restructure: 27 files moved via `git mv` from `dynamo/`/`ledger/`/`switchboard/` to `subsystems/`, `cc/`, `lib/` with unified `lib/layout.cjs`
+- Management hardening: Node.js >= 22 version check (health-check stage 7, install Step 0), hook dispatcher input validation (type/length/event checks), `<dynamo-memory-context>` boundary markers
+- SQLite session storage (`subsystems/terminus/session-store.cjs`): `node:sqlite` DatabaseSync, dual-write JSON compat, transparent fallback, install migration (314 sessions)
+- M1 verification suite: 36-test tmpdir sandbox, real fresh install (45 files, 8/8 health stages), core.cjs re-export audit (7 removed)
+
+### What Worked
+- Prerequisite-first ordering: Phase 18 (resolver, dep-graph) before Phase 19 (restructure) meant zero path breakage during the 27-file migration
+- Unified layout mapping (`lib/layout.cjs`) as single source of truth eliminated scattered path constants — sync, install, resolver all derive from one module
+- SQLite placed last (Phase 21) after infrastructure was stable, reducing integration risk
+- Phase 22 verification caught the `loadPrompt` path bug (cc/prompts vs prompts) and stale regression test paths — would have shipped broken without it
+- Milestone audit caught 2 tech debt items (help text + backfill wiring) that were resolved before archival
+
+### What Was Inefficient
+- Phase 19 required 3 plans for what was conceptually one migration — prep wave could have been folded into the main migration with careful ordering
+- Re-export shims created in Phase 19 (to maintain backward compatibility) were immediately removed in Phase 22 — could have skipped the shim step entirely
+- SYNC_PAIRS count changed from 4→7→8 across plans as edge cases were discovered — upfront mapping would have avoided the churn
+
+### Patterns Established
+- Centralized resolver pattern: `resolve('subsystem-name')` returns absolute path for any subsystem in any layout
+- Layout-as-data: `lib/layout.cjs` exports `getLayoutPaths()`, `getSyncPairs()`, `SUBSYSTEM_DIRS` — all path knowledge lives here
+- Connection map per dbPath: SQLite connections keyed by file path for complete test isolation
+- Boundary markers: `<dynamo-memory-context>` wraps all hook injection output to contain prompt bleed
+- Input validation at dispatcher entry: reject malformed/unknown events before any handler runs
+
+### Key Lessons
+1. Prerequisites phases pay for themselves — Phase 18's resolver investment made Phase 19's 27-file migration mechanical rather than error-prone
+2. "Layout as single source of truth" should be established early in any restructure — it eliminates an entire class of sync/install/deploy bugs
+3. Dual-write patterns (SQLite + JSON) provide safe migration paths but add ongoing maintenance cost — plan to remove the legacy path in a future milestone
+4. End-to-end verification phases (Phase 22) consistently find integration bugs that per-phase verification misses — make them standard for infrastructure milestones
+5. Re-export shims for backward compatibility during migration are often unnecessary if you can do a single-pass migration — avoid creating debt you'll immediately pay down
+
+### Cost Observations
+- Model mix: opus (executor, planner, researcher), sonnet (verifier, plan-checker, Nyquist auditor)
+- 5 phases completed across 2 days of wall time (2026-03-19 to 2026-03-20)
+- 13 plans executed with ~75 commits
+- Milestone audit confirmed zero gaps — cleanest audit to date
+
+---
+
 ## Milestone: v1.2.1 — Stabilization and Polish
 
 **Shipped:** 2026-03-19
@@ -187,6 +233,7 @@
 | v1.1 | 34 | 4 | 8 | 0 | Added diagnostic-first approach and verification tools |
 | v1.2 | 29 | 4 | 12 | 272 | CJS rewrite with TDD, full feature parity |
 | v1.2.1 | 104 | 6 | 17 | 374 | Stabilization: restructure, toggle, docs, update system, deploy hardening |
+| v1.3-M1 | ~75 | 5 | 13 | 515 | Six-subsystem architecture, centralized resolver, SQLite sessions, management hardening |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -197,3 +244,5 @@
 5. Options-based dependency injection enables complete test isolation without mocking frameworks
 6. Milestone audits before archival consistently find integration gaps — make them mandatory
 7. Dual-layout path resolution patterns are reusable across modules — establish once, apply everywhere
+8. Prerequisite phases (resolver, layout mapping) before large restructures prevent cascading path breakage
+9. "Layout as single source of truth" eliminates an entire class of sync/install/deploy bugs — establish early
