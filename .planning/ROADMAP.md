@@ -56,7 +56,7 @@
 **Milestone Goal:** Restructure the codebase to the six-subsystem architecture and establish infrastructure prerequisites for the intelligence layer.
 
 - [x] **Phase 18: Restructure Prerequisites** - Centralized path resolver, circular dependency detection, and layout mapping before any files move (completed 2026-03-19)
-- [ ] **Phase 19: Six-Subsystem Directory Restructure** - 5-wave migration from 3-dir to six-subsystem layout with sync/install/deploy validation
+- [ ] **Phase 19: Six-Subsystem Directory Restructure** - 3-wave migration from 3-dir to six-subsystem layout with sync/install/deploy validation
 - [ ] **Phase 20: Management Hardening** - Dependency verification and jailbreak protection for the hook system
 - [ ] **Phase 21: SQLite Session Index** - Replace sessions.json with SQLite-backed session storage via node:sqlite
 - [ ] **Phase 22: M1 Verification and Cleanup** - End-to-end validation of all M1 deliverables in deployed layout
@@ -73,8 +73,8 @@
   3. Running `node dynamo/tests/` confirms all 374+ existing tests pass with the new resolver in place (no behavioral regressions)
 **Plans**: 2 plans
 Plans:
-- [ ] 18-01-PLAN.md -- Create lib/ shared substrate with centralized resolver and dependency graph cycle detector
-- [ ] 18-02-PLAN.md -- Migrate all production files to centralized resolver and update deploy pipeline
+- [x] 18-01-PLAN.md -- Create lib/ shared substrate with centralized resolver and dependency graph cycle detector
+- [x] 18-02-PLAN.md -- Migrate all production files to centralized resolver and update deploy pipeline
 
 ### Phase 19: Six-Subsystem Directory Restructure
 **Goal**: Codebase organized into the target six-subsystem architecture with all operational pipelines (sync, install, deploy) working on the new layout
@@ -84,9 +84,13 @@ Plans:
   1. Directory tree matches the target layout: `subsystems/{switchboard,assay,ledger,terminus,reverie}/`, `cc/hooks/`, `lib/`, with Reverie as a stub directory
   2. `dynamo sync` correctly maps and synchronizes all subsystem directories between repo and `~/.claude/dynamo/` deployment
   3. `dynamo install` registers hooks from `cc/hooks/` in `settings.json` and the deployed layout matches expectations
-  4. All 374+ existing tests pass after the restructure (zero regressions)
+  4. All 398 existing tests pass after the restructure (zero regressions)
   5. A unified layout mapping module (`lib/layout.cjs`) serves as the single source of truth for all path references used by sync, install, and deploy
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 19-01-PLAN.md -- Prep wave: extract lib/layout.cjs and move core.cjs, scope.cjs, pretty.cjs into lib/
+- [ ] 19-02-PLAN.md -- Main migration: create six-subsystem directories and move all files with git mv
+- [ ] 19-03-PLAN.md -- Pipeline updates: rewrite SYNC_PAIRS, install.cjs, settings-hooks.json, and structural tests
 
 ### Phase 20: Management Hardening
 **Goal**: Self-contained dependency management and input sanitization protect the system from environment issues and prompt injection
@@ -144,8 +148,8 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 15. Update System | v1.2.1 | 4/4 | Complete | 2026-03-19 |
 | 16. Tech Debt Cleanup | v1.2.1 | 1/1 | Complete | 2026-03-19 |
 | 17. Deploy Pipeline Fixes | v1.2.1 | 3/3 | Complete | 2026-03-19 |
-| 18. Restructure Prerequisites | 2/2 | Complete    | 2026-03-19 | - |
-| 19. Six-Subsystem Directory Restructure | v1.3-M1 | 0/TBD | Not started | - |
+| 18. Restructure Prerequisites | v1.3-M1 | 2/2 | Complete | 2026-03-19 |
+| 19. Six-Subsystem Directory Restructure | v1.3-M1 | 0/3 | Not started | - |
 | 20. Management Hardening | v1.3-M1 | 0/TBD | Not started | - |
 | 21. SQLite Session Index | v1.3-M1 | 0/TBD | Not started | - |
 | 22. M1 Verification and Cleanup | v1.3-M1 | 0/TBD | Not started | - |
