@@ -98,7 +98,8 @@ describe('processUserPrompt', () => {
       'reverie': { level: 0.8, sources: ['direct_mention'], last_activated: new Date().toISOString(), convergence_count: 2 }
     };
     state._sublimation_threshold = 0.1; // Low threshold so entities cross it
-    const promptData = { prompt: 'Working on the dynamo reverie module integration' };
+    // Use engineering-heavy prompt for high frame_confidence (>0.7) so selectPath returns 'hot'
+    const promptData = { prompt: 'implement the dynamo reverie module function to export and build the code for deployment test' };
     const result = innerVoice.processUserPrompt(promptData, state, null, {});
     assert.ok(result.injection !== null && result.injection !== undefined,
       'injection should be returned when entities cross threshold');
