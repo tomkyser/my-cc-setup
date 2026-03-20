@@ -74,6 +74,9 @@ Phase 19 complete — codebase restructured from 3-directory layout (dynamo/ledg
 - ✓ ARCH-05: Sync system operates with new layout — Validated in Phase 19: Six-Subsystem Directory Restructure
 - ✓ ARCH-06: Install/deploy pipeline operates with new layout — Validated in Phase 19: Six-Subsystem Directory Restructure
 - ✓ ARCH-07: All existing tests pass after restructure — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ MGMT-01: Install and health-check verify Node.js version and Graphiti status — Validated in Phase 20: Management Hardening
+- ✓ MGMT-08a: Hook dispatcher validates JSON structure and enforces field length limits — Validated in Phase 20: Management Hardening
+- ✓ MGMT-08b: additionalContext injection includes boundary markers against prompt injection — Validated in Phase 20: Management Hardening
 
 ### Active
 
@@ -104,8 +107,9 @@ Phase 16 complete — Tech debt cleanup: all 6 v1.2.1 audit gaps closed (CLI ref
 Phase 17 complete — Deploy pipeline fixes: hook dispatcher dual-layout resolution, MCP deregistration from installer, CLAUDE.md template deployment, stale lib/ cleanup, regression tests updated, Neo4j port corrected. All 374 tests green, deployed and human-verified.
 Phase 18 complete — Restructure prerequisites: centralized dual-layout resolver (`lib/resolve.cjs`) with logical name API for 8 subsystems, dependency graph cycle detector (`lib/dep-graph.cjs`), all 23 production files migrated from ad-hoc resolution patterns, deploy pipeline updated for `lib/`. Validated in Phase 18: ARCH-02 (centralized resolver), ARCH-03 (circular dep detection). 397 tests passing.
 Phase 19 complete — Six-subsystem directory restructure: 27 production files moved via `git mv` from 3-dir to 6-subsystem layout (`subsystems/`, `cc/`, `lib/`). `lib/layout.cjs` extracted as unified layout source of truth. Resolver simplified (no dual-layout detection). SYNC_PAIRS, install.cjs, settings-hooks.json all updated. 405 tests passing, zero regressions. Validated: ARCH-01, ARCH-04, ARCH-05, ARCH-06, ARCH-07.
+Phase 20 complete — Management hardening: Node.js >= 22 version check in health-check (7th stage) and install (Step 0, WARN-only). Hook dispatcher input validation with field type checks and length limits (MGMT-08a). Stdout boundary markers (`<dynamo-memory-context>`) wrap all hook injection output (MGMT-08b). 35 new dispatcher tests. Validated: MGMT-01, MGMT-08a, MGMT-08b.
 Tech stack: Node/CJS (subsystems/, cc/, lib/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
-Total project: ~9,500 LOC CJS, 405 tests passing, across 19 phases and 50 plans.
+Total project: ~9,800 LOC CJS, 447 tests passing, across 20 phases and 52 plans.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
 v1.2.1 shipped with all 10 STAB requirements complete.
 v1.3 architecture specification complete (260319-fzc task, 5 plans across 4 waves):
@@ -504,4 +508,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-20 after Phase 19 completion*
+*Last updated: 2026-03-20 after Phase 20 completion*
