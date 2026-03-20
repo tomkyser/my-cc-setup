@@ -7,7 +7,7 @@
 - ✅ **v1.2 Dynamo Foundation** -- Phases 8-11 (shipped 2026-03-18)
 - ✅ **v1.2.1 Stabilization and Polish** -- Phases 12-17 (shipped 2026-03-19)
 - ✅ **v1.3-M1 Foundation and Infrastructure Refactor** -- Phases 18-22 (shipped 2026-03-20)
-- 📋 **v1.3-M2 Core Intelligence** -- Phases 23-26 (planned)
+- 📋 **v1.3-M2 Core Intelligence** -- Phases 23-25 (planned)
 
 ## Phases
 
@@ -111,30 +111,22 @@ Plans:
 - [x] 24-03-PLAN.md -- Pipeline orchestrator (inner-voice.cjs) with per-hook cognitive pipelines, state bridge, and hot-path timing instrumentation
 - [x] 24-04-PLAN.md -- All 7 handler rewrites replacing pass-through stubs with cognitive pipeline delegation
 
-### Phase 25: Graduated Rollout
-**Goal**: The Inner Voice proves it equals or exceeds classic curation quality through a hybrid comparison mode before any user switches to cortex mode, and users can inspect and manage Inner Voice state
+### Phase 25: Cutover & Completion
+**Goal**: Classic mode removed entirely, Reverie is the only pipeline, voice CLI commands provide Inner Voice visibility, bare CLI access works without node prefix, update notes workflow integrated, and install pipeline deploys all new Reverie files
 **Depends on**: Phase 24
-**Requirements**: FLAG-02, FLAG-04
+**Requirements**: FLAG-02, FLAG-04, OPS-01, OPS-02, OPS-03
 **Success Criteria** (what must be TRUE):
-  1. In hybrid mode, both classic and Reverie pipelines run on each event; classic output is injected as normal while Reverie output is logged for comparison but not shown to the user
-  2. `dynamo voice status` shows current Inner Voice state (activation map size, injection mode, confidence, last injection reason); `dynamo voice explain` shows rationale for the last injection decision; `dynamo voice reset` clears state to fresh defaults
-  3. Switching between classic, hybrid, and cortex modes via `dynamo config set reverie.mode` takes effect on the next hook event with no restart required
-**Plans**: TBD
-
-### Phase 26: Operational Completion
-**Goal**: M2 deliverable is complete with bare CLI access, update notes workflow, and install pipeline that deploys all new Reverie files
-**Depends on**: Phase 25
-**Requirements**: OPS-01, OPS-02, OPS-03
-**Success Criteria** (what must be TRUE):
-  1. Running `dynamo` from any terminal (without `node` prefix or full path) invokes the CLI via a symlink shim at `~/.claude/bin/dynamo`; `DYNAMO_DEV=1` overrides to the repo version
-  2. CHANGELOG.md exists with well-written update notes; `dynamo check-update` and `dynamo update` display relevant changelog entries
-  3. `dynamo install` and `dynamo sync` deploy all new Reverie files, the `cc/agents/` directory, and `cc/prompts/` templates alongside existing subsystem files
+  1. Classic Ledger curation path removed: `reverie.mode` config key eliminated, dispatcher always routes to Reverie handlers, `ledger/curation.cjs` callHaiku removed, OpenRouter dependency removed, original 5 cc/prompts/ templates deleted
+  2. `dynamo voice status` shows full Inner Voice state dump (all entities with scores, domain frame, predictions, self-model, injection history); `dynamo voice explain` shows rationale for the last injection decision; `dynamo voice reset` clears self-model, predictions, and injection history while preserving activation map
+  3. Running `dynamo` from any terminal (without `node` prefix or full path) invokes the CLI via a symlink shim; `DYNAMO_DEV=1` overrides to the repo version
+  4. CHANGELOG.md exists with well-written update notes generated from git; `dynamo check-update` and `dynamo update` display relevant changelog entries
+  5. `dynamo install` and `dynamo sync` deploy all new Reverie files, `cc/agents/`, and `cc/prompts/iv-*` templates; install actively cleans up removed classic-mode files from existing deployments
 **Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 23 -> 24 -> 25 -> 26
+Phases execute in numeric order: 23 -> 24 -> 25
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
@@ -162,5 +154,4 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26
 | 22. M1 Verification and Cleanup | v1.3-M1 | 4/4 | Complete | 2026-03-20 |
 | 23. Foundation and Routing | v1.3-M2 | 3/3 | Complete    | 2026-03-20 |
 | 24. Cognitive Pipeline | v1.3-M2 | 4/4 | Complete    | 2026-03-20 |
-| 25. Graduated Rollout | v1.3-M2 | 0/TBD | Not started | - |
-| 26. Operational Completion | v1.3-M2 | 0/TBD | Not started | - |
+| 25. Cutover & Completion | v1.3-M2 | 0/TBD | Not started | - |

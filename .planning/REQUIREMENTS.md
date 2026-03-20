@@ -127,9 +127,9 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | FLAG-02 | Phase 25 | Pending |
 | FLAG-03 | Phase 23 | Complete |
 | FLAG-04 | Phase 25 | Pending |
-| OPS-01 | Phase 26 | Pending |
-| OPS-02 | Phase 26 | Pending |
-| OPS-03 | Phase 26 | Pending |
+| OPS-01 | Phase 25 | Pending |
+| OPS-02 | Phase 25 | Pending |
+| OPS-03 | Phase 25 | Pending |
 
 **Coverage:**
 - v1.3-M2 requirements: 28 active (COST-01, COST-02, COST-04 deferred; COST-03 revised to OPS-MON-01; OPS-MON-02 added)
