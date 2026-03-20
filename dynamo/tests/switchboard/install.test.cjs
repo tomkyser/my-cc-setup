@@ -104,6 +104,31 @@ describe('install.cjs', () => {
     const content = fs.readFileSync(INSTALL_PATH, 'utf8');
     assert.ok(content.includes('enabled: true'), 'should include enabled:true in generated config');
   });
+
+  it('has dependency check step reference in source', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    assert.ok(content.includes("'Check dependencies'"), 'should have Check dependencies step');
+  });
+
+  it('dependency check step appears before Copy files step', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    const depIdx = content.indexOf("'Check dependencies'");
+    const copyIdx = content.indexOf("'Copy files'");
+    assert.ok(depIdx !== -1, 'Check dependencies must exist');
+    assert.ok(copyIdx !== -1, 'Copy files must exist');
+    assert.ok(depIdx < copyIdx, 'Check dependencies must appear before Copy files');
+  });
+
+  it('dependency check uses WARN not FAIL on version mismatch', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    // Find the dependency check block (between "Check dependencies" and "Copy files")
+    const depIdx = content.indexOf("'Check dependencies'");
+    const copyIdx = content.indexOf("'Copy files'");
+    const depBlock = content.slice(depIdx, copyIdx);
+    // The catch/else block should use WARN, not FAIL
+    assert.ok(depBlock.includes("status: 'WARN'"), 'dependency check should use WARN on failure');
+    assert.ok(!depBlock.includes("status: 'FAIL'"), 'dependency check must not use FAIL');
+  });
 });
 
 describe('copyTree helper', () => {

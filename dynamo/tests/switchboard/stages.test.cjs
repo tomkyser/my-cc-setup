@@ -17,14 +17,14 @@ describe('stages module', () => {
   });
 
   describe('module exports', () => {
-    it('exports exactly 15 keys (13 functions + STAGE_NAMES + HEALTH_STAGES)', () => {
+    it('exports exactly 16 keys (14 functions + STAGE_NAMES + HEALTH_STAGES)', () => {
       const keys = Object.keys(stages);
-      assert.strictEqual(keys.length, 15, `Expected 15 exports, got ${keys.length}: ${keys.join(', ')}`);
+      assert.strictEqual(keys.length, 16, `Expected 16 exports, got ${keys.length}: ${keys.join(', ')}`);
     });
 
-    it('exports STAGE_NAMES as an array of 13 strings', () => {
+    it('exports STAGE_NAMES as an array of 14 strings', () => {
       assert.ok(Array.isArray(stages.STAGE_NAMES));
-      assert.strictEqual(stages.STAGE_NAMES.length, 13);
+      assert.strictEqual(stages.STAGE_NAMES.length, 14);
       for (const name of stages.STAGE_NAMES) {
         assert.strictEqual(typeof name, 'string');
       }
@@ -32,15 +32,15 @@ describe('stages module', () => {
 
     it('exports HEALTH_STAGES as an array of indices', () => {
       assert.ok(Array.isArray(stages.HEALTH_STAGES));
-      assert.deepStrictEqual(stages.HEALTH_STAGES, [0, 1, 2, 3, 4, 12]);
+      assert.deepStrictEqual(stages.HEALTH_STAGES, [0, 1, 2, 3, 4, 12, 13]);
     });
 
-    it('exports all 13 stage functions', () => {
+    it('exports all 14 stage functions', () => {
       const expectedFunctions = [
         'stageDocker', 'stageNeo4j', 'stageGraphitiApi', 'stageMcpSession',
         'stageEnvVars', 'stageEnvFile', 'stageHookRegistrations', 'stageHookFiles',
         'stageCjsModules', 'stageMcpToolCall', 'stageSearchRoundtrip',
-        'stageEpisodeWrite', 'stageCanaryWriteRead'
+        'stageEpisodeWrite', 'stageCanaryWriteRead', 'stageNodeVersion'
       ];
       for (const name of expectedFunctions) {
         assert.strictEqual(typeof stages[name], 'function', `${name} should be a function`);
@@ -54,7 +54,7 @@ describe('stages module', () => {
         'stageDocker', 'stageNeo4j', 'stageGraphitiApi', 'stageMcpSession',
         'stageEnvVars', 'stageEnvFile', 'stageHookRegistrations', 'stageHookFiles',
         'stageCjsModules', 'stageMcpToolCall', 'stageSearchRoundtrip',
-        'stageEpisodeWrite', 'stageCanaryWriteRead'
+        'stageEpisodeWrite', 'stageCanaryWriteRead', 'stageNodeVersion'
       ];
 
       for (const name of stageFns) {
@@ -256,6 +256,27 @@ describe('stages module', () => {
       const result = await stages.stageCjsModules({ dynamoDir: tmpDir });
       assert.strictEqual(result.status, 'FAIL');
       assert.ok(result.detail.includes('bad.cjs'));
+    });
+  });
+
+  describe('stageNodeVersion', () => {
+    it('returns OK for current Node.js (which is >= 22)', async () => {
+      const result = await stages.stageNodeVersion();
+      assert.strictEqual(result.status, 'OK');
+      assert.ok(result.detail.includes('Node.js'), 'detail should mention Node.js');
+      assert.ok(result.detail.includes('meets minimum'), 'detail should confirm minimum met');
+    });
+
+    it('returns FAIL when minMajor exceeds current version', async () => {
+      const result = await stages.stageNodeVersion({ minMajor: 999 });
+      assert.strictEqual(result.status, 'FAIL');
+      assert.ok(result.detail.includes('below minimum'), 'detail should state below minimum');
+      assert.ok(result.detail.includes('nodejs.org'), 'detail should include remediation URL');
+    });
+
+    it('accepts options.minMajor override', async () => {
+      const result = await stages.stageNodeVersion({ minMajor: 1 });
+      assert.strictEqual(result.status, 'OK');
     });
   });
 
