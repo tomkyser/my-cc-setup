@@ -283,7 +283,8 @@ describe('Dual-Path Module', () => {
       };
       const result = formatHotPathInjection(crossed, state);
       assert.ok(result !== null, 'Should return non-null');
-      const hasFraming = result.includes('from your experience') || result.includes('as you described it');
+      const lower = result.toLowerCase();
+      const hasFraming = lower.includes('from your experience') || lower.includes('as you described it');
       assert.ok(hasFraming, `Should contain adversarial framing, got: "${result}"`);
     });
 
