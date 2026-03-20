@@ -88,9 +88,9 @@ Plans:
   5. A unified layout mapping module (`lib/layout.cjs`) serves as the single source of truth for all path references used by sync, install, and deploy
 **Plans**: 3 plans
 Plans:
-- [ ] 19-01-PLAN.md -- Prep wave: extract lib/layout.cjs and move core.cjs, scope.cjs, pretty.cjs into lib/
-- [ ] 19-02-PLAN.md -- Main migration: create six-subsystem directories and move all files with git mv
-- [ ] 19-03-PLAN.md -- Pipeline updates: rewrite SYNC_PAIRS, install.cjs, settings-hooks.json, and structural tests
+- [x] 19-01-PLAN.md -- Prep wave: extract lib/layout.cjs and move core.cjs, scope.cjs, pretty.cjs into lib/
+- [x] 19-02-PLAN.md -- Main migration: create six-subsystem directories and move all files with git mv
+- [x] 19-03-PLAN.md -- Pipeline updates: rewrite SYNC_PAIRS, install.cjs, settings-hooks.json, and structural tests
 
 ### Phase 20: Management Hardening
 **Goal**: Self-contained dependency management and input sanitization protect the system from environment issues and prompt injection
@@ -100,7 +100,10 @@ Plans:
   1. `dynamo install` and `dynamo health-check` verify Node.js minimum version and report Graphiti dependency status (Docker container reachable, API responding)
   2. The hook dispatcher rejects malformed JSON input and enforces field length limits, logging violations to `hook-errors.log`
   3. `additionalContext` content injected into hooks is wrapped in boundary markers that prevent prompt content from bleeding into system instructions
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 20-01-PLAN.md -- Add Node.js version verification to health-check and install pipelines
+- [ ] 20-02-PLAN.md -- Add input validation and prompt injection boundary protection to hook dispatcher
 
 ### Phase 21: SQLite Session Index
 **Goal**: Session data lives in an indexed SQLite database with identical query interface and safe migration from the existing JSON file
@@ -149,7 +152,7 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 16. Tech Debt Cleanup | v1.2.1 | 1/1 | Complete | 2026-03-19 |
 | 17. Deploy Pipeline Fixes | v1.2.1 | 3/3 | Complete | 2026-03-19 |
 | 18. Restructure Prerequisites | v1.3-M1 | 2/2 | Complete | 2026-03-19 |
-| 19. Six-Subsystem Directory Restructure | 3/3 | Complete    | 2026-03-20 | - |
-| 20. Management Hardening | v1.3-M1 | 0/TBD | Not started | - |
+| 19. Six-Subsystem Directory Restructure | v1.3-M1 | 3/3 | Complete | 2026-03-20 |
+| 20. Management Hardening | v1.3-M1 | 0/2 | Not started | - |
 | 21. SQLite Session Index | v1.3-M1 | 0/TBD | Not started | - |
 | 22. M1 Verification and Cleanup | v1.3-M1 | 0/TBD | Not started | - |
