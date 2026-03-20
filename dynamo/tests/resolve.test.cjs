@@ -16,7 +16,7 @@ describe('lib/resolve.cjs', () => {
 
   describe('layout detection', () => {
     it('detects repo layout when core.cjs is not at root level', () => {
-      // In the repo, core.cjs lives at dynamo/core.cjs, not at root
+      // In the repo, core.cjs lives at lib/core.cjs, not at root
       // So detectLayout should return 'repo'
       const layout = resolve._detectLayout();
       assert.equal(layout, 'repo');
@@ -31,10 +31,24 @@ describe('lib/resolve.cjs', () => {
       assert.ok(fs.existsSync(result), 'resolved path should exist');
     });
 
-    it('resolves dynamo/core.cjs to absolute path ending in dynamo/core.cjs', () => {
-      const result = resolve('dynamo', 'core.cjs');
+    it('resolves lib/core.cjs to absolute path ending in lib/core.cjs', () => {
+      const result = resolve('lib', 'core.cjs');
       assert.ok(path.isAbsolute(result), 'should be absolute path');
-      assert.ok(result.endsWith(path.join('dynamo', 'core.cjs')), `path should end with dynamo/core.cjs, got: ${result}`);
+      assert.ok(result.endsWith(path.join('lib', 'core.cjs')), `path should end with lib/core.cjs, got: ${result}`);
+      assert.ok(fs.existsSync(result), 'resolved path should exist');
+    });
+
+    it('resolves lib/scope.cjs to absolute path ending in lib/scope.cjs', () => {
+      const result = resolve('lib', 'scope.cjs');
+      assert.ok(path.isAbsolute(result), 'should be absolute path');
+      assert.ok(result.endsWith(path.join('lib', 'scope.cjs')), `path should end with lib/scope.cjs, got: ${result}`);
+      assert.ok(fs.existsSync(result), 'resolved path should exist');
+    });
+
+    it('resolves lib/pretty.cjs to absolute path ending in lib/pretty.cjs', () => {
+      const result = resolve('lib', 'pretty.cjs');
+      assert.ok(path.isAbsolute(result), 'should be absolute path');
+      assert.ok(result.endsWith(path.join('lib', 'pretty.cjs')), `path should end with lib/pretty.cjs, got: ${result}`);
       assert.ok(fs.existsSync(result), 'resolved path should exist');
     });
 
@@ -82,7 +96,7 @@ describe('lib/resolve.cjs', () => {
   describe('cache reset', () => {
     it('re-detects layout after _reset()', () => {
       // Call resolve to populate cache
-      resolve('dynamo', 'core.cjs');
+      resolve('lib', 'core.cjs');
       const layout1 = resolve._detectLayout();
       assert.equal(layout1, 'repo');
 

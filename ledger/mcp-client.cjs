@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 
 const resolve = require('../lib/resolve.cjs');
-const { fetchWithTimeout, loadConfig } = require(resolve('dynamo', 'core.cjs'));
+const { fetchWithTimeout, loadConfig } = require(resolve('lib', 'core.cjs'));
 
 const MCP_DEFAULTS = {
   url: 'http://localhost:8100/mcp',

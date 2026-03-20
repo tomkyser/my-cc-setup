@@ -7,7 +7,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const resolve = require('../lib/resolve.cjs');
-const { fetchWithTimeout, safeReadFile, output, error } = require(resolve('dynamo', 'core.cjs'));
+const { fetchWithTimeout, safeReadFile, output, error } = require(resolve('lib', 'core.cjs'));
 
 // --- Constants ---
 

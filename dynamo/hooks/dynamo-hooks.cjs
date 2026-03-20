@@ -9,7 +9,7 @@ const resolve = require(
     ? '../lib/resolve.cjs'    // deployed layout: hooks/ is at ~/.claude/dynamo/hooks/
     : '../../lib/resolve.cjs' // repo layout: hooks/ is at <repo>/dynamo/hooks/
 );
-const { loadEnv, detectProject, logError, SCOPE } = require(resolve('dynamo', 'core.cjs'));
+const { loadEnv, detectProject, logError, SCOPE } = require(resolve('lib', 'core.cjs'));
 
 // Load .env early (API keys needed by handlers)
 loadEnv();
@@ -23,7 +23,7 @@ process.stdin.on('end', async () => {
   clearTimeout(stdinTimeout);
 
   // Toggle gate: exit silently if Dynamo is disabled
-  const { isEnabled } = require(resolve('dynamo', 'core.cjs'));
+  const { isEnabled } = require(resolve('lib', 'core.cjs'));
   if (!isEnabled()) {
     process.exit(0);  // Silent exit -- no error, no output
   }

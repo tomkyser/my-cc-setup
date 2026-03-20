@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const resolve = require('../lib/resolve.cjs');
-const { fetchWithTimeout, safeReadFile } = require(resolve('dynamo', 'core.cjs'));
+const { fetchWithTimeout, safeReadFile } = require(resolve('lib', 'core.cjs'));
 
 const GITHUB_API = 'https://api.github.com/repos/tomkyser/dynamo/releases/latest';
 const VERSION_PATH = path.join(__dirname, '..', 'dynamo', 'VERSION');

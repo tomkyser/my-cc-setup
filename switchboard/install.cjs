@@ -7,8 +7,8 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const resolve = require('../lib/resolve.cjs');
-const { DYNAMO_DIR, output, error, loadEnv, safeReadFile } = require(resolve('dynamo', 'core.cjs'));
-const { formatInstallReport } = require(path.join(__dirname, 'pretty.cjs'));
+const { DYNAMO_DIR, output, error, loadEnv, safeReadFile } = require(resolve('lib', 'core.cjs'));
+const { formatInstallReport } = require(resolve('lib', 'pretty.cjs'));
 
 // --- Constants ---
 

@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const resolve = require('../lib/resolve.cjs');
-const { loadConfig, fetchWithTimeout, logError, loadPrompt } = require(resolve('dynamo', 'core.cjs'));
+const { loadConfig, fetchWithTimeout, logError, loadPrompt } = require(resolve('lib', 'core.cjs'));
 
 const config = loadConfig();
 

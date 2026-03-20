@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 
 const resolve = require('../lib/resolve.cjs');
-const { DYNAMO_DIR, output, error } = require(resolve('dynamo', 'core.cjs'));
+const { DYNAMO_DIR, output, error } = require(resolve('lib', 'core.cjs'));
 
 // --- Constants ---
 

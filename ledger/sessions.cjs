@@ -6,7 +6,7 @@ const path = require('path');
 const os = require('os');
 
 const resolve = require('../lib/resolve.cjs');
-const { logError } = require(resolve('dynamo', 'core.cjs'));
+const { logError } = require(resolve('lib', 'core.cjs'));
 
 // --- Constants ---
 

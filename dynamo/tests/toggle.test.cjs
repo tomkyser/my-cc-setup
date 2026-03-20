@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 
-const CORE_PATH = path.join(__dirname, '..', 'core.cjs');
+const CORE_PATH = path.join(__dirname, '..', '..', 'lib', 'core.cjs');
 const DYNAMO_PATH = path.join(__dirname, '..', 'dynamo.cjs');
 const HOOKS_PATH = path.join(__dirname, '..', 'hooks', 'dynamo-hooks.cjs');
 

@@ -5,14 +5,13 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { output, error, safeReadFile, isEnabled } = require(path.join(__dirname, 'core.cjs'));
-
 // Bootstrap resolver: dynamo/ files deploy to root of ~/.claude/dynamo/ (depth 0 in deployed, depth 1 in repo)
 const resolve = require(
   require('fs').existsSync(require('path').join(__dirname, 'lib', 'resolve.cjs'))
     ? './lib/resolve.cjs'     // deployed layout: dynamo.cjs is at ~/.claude/dynamo/dynamo.cjs
     : '../lib/resolve.cjs'    // repo layout: dynamo.cjs is at <repo>/dynamo/dynamo.cjs
 );
+const { output, error, safeReadFile, isEnabled } = require(resolve('lib', 'core.cjs'));
 
 // --- Flag/arg helpers for memory commands ---
 
@@ -275,7 +274,7 @@ async function main() {
       requireEnabled();
       const scopeArg = extractFlag(restArgs, '--scope') || 'global';
       const format = extractFlag(restArgs, '--format') || 'text';
-      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { MCPClient } = require(resolve('lib', 'core.cjs'));
       const { extractContent } = require(resolve('ledger', 'episodes.cjs'));
       const client = new MCPClient();
       const response = await client.callTool('get_episodes', { group_ids: [scopeArg] });
@@ -293,7 +292,7 @@ async function main() {
       const uuid = restArgs.find(a => !a.startsWith('--'));
       if (!uuid) { error('Usage: dynamo edge <uuid> [--format json|raw]'); return; }
       const format = extractFlag(restArgs, '--format') || 'text';
-      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { MCPClient } = require(resolve('lib', 'core.cjs'));
       const { extractContent } = require(resolve('ledger', 'episodes.cjs'));
       const client = new MCPClient();
       const response = await client.callTool('get_entity_edge', { uuid });
@@ -312,7 +311,7 @@ async function main() {
       const uuid = restArgs.find(a => !a.startsWith('--'));
       if (!uuid) { error('Usage: dynamo forget <uuid> [--edge] [--format json|raw]'); return; }
       const format = extractFlag(restArgs, '--format') || 'text';
-      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { MCPClient } = require(resolve('lib', 'core.cjs'));
       const { extractContent } = require(resolve('ledger', 'episodes.cjs'));
       const client = new MCPClient();
       const toolName = isEdge ? 'delete_entity_edge' : 'delete_episode';
@@ -335,7 +334,7 @@ async function main() {
       const scopeArg = extractFlag(restArgs, '--scope');
       if (!scopeArg) { error('Usage: dynamo clear --scope <scope> --confirm'); return; }
       const format = extractFlag(restArgs, '--format') || 'text';
-      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { MCPClient } = require(resolve('lib', 'core.cjs'));
       const { extractContent } = require(resolve('ledger', 'episodes.cjs'));
       const client = new MCPClient();
       const response = await client.callTool('clear_graph', { group_ids: [scopeArg] });
@@ -368,7 +367,7 @@ async function main() {
     }
 
     case 'status': {
-      const { isEnabled, loadConfig } = require(path.join(__dirname, 'core.cjs'));
+      const { isEnabled, loadConfig } = require(resolve('lib', 'core.cjs'));
       const cfg = loadConfig();
       const enabled = cfg.enabled !== false;
       const devMode = process.env.DYNAMO_DEV === '1';

@@ -5,7 +5,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const path = require('path');
 
-const { SCOPE, SCOPE_PATTERN, validateGroupId, sanitize } = require(path.join(__dirname, '..', '..', '..', 'ledger', 'scope.cjs'));
+const { SCOPE, SCOPE_PATTERN, validateGroupId, sanitize } = require(path.join(__dirname, '..', '..', '..', 'lib', 'scope.cjs'));
 
 describe('SCOPE', () => {
   it('SCOPE.global equals "global"', () => {

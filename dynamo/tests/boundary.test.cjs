@@ -70,9 +70,9 @@ describe('Import boundary enforcement', () => {
     }
   });
 
-  it('dynamo/core.cjs is allowed to import from ledger (orchestrator privilege)', () => {
-    const corePath = path.join(REPO_ROOT, 'dynamo', 'core.cjs');
-    assert.ok(fs.existsSync(corePath), 'dynamo/core.cjs must exist');
+  it('lib/core.cjs is allowed to import from ledger (orchestrator privilege)', () => {
+    const corePath = path.join(REPO_ROOT, 'lib', 'core.cjs');
+    assert.ok(fs.existsSync(corePath), 'lib/core.cjs must exist');
     // This test documents and validates the orchestrator exception
     const content = fs.readFileSync(corePath, 'utf8');
     assert.ok(content.includes('MCPClient'), 'core.cjs should re-export MCPClient');

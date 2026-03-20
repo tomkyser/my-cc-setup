@@ -14,12 +14,12 @@ const { buildGraph, detectCycles } = require(path.join(REPO_ROOT, 'lib', 'dep-gr
 const ALLOWLIST = [
   // core.cjs <-> mcp-client.cjs (fetchWithTimeout, loadConfig)
   [
-    path.join(REPO_ROOT, 'dynamo', 'core.cjs'),
+    path.join(REPO_ROOT, 'lib', 'core.cjs'),
     path.join(REPO_ROOT, 'ledger', 'mcp-client.cjs'),
   ],
   // core.cjs <-> sessions.cjs (logError)
   [
-    path.join(REPO_ROOT, 'dynamo', 'core.cjs'),
+    path.join(REPO_ROOT, 'lib', 'core.cjs'),
     path.join(REPO_ROOT, 'ledger', 'sessions.cjs'),
   ],
   // install.cjs <-> update.cjs (intra-switchboard: install calls update for migrations,

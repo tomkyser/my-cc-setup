@@ -7,7 +7,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 const resolve = require('../lib/resolve.cjs');
-const { DYNAMO_DIR, loadConfig, loadEnv, safeReadFile, fetchWithTimeout, MCPClient } = require(resolve('dynamo', 'core.cjs'));
+const { DYNAMO_DIR, loadConfig, loadEnv, safeReadFile, fetchWithTimeout, MCPClient } = require(resolve('lib', 'core.cjs'));
 
 // --- Constants ---
 

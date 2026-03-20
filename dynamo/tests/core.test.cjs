@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const core = require(path.join(__dirname, '..', 'core.cjs'));
+const core = require(path.join(__dirname, '..', '..', 'lib', 'core.cjs'));
 
 describe('DYNAMO_DIR', () => {
   it('ends with .claude/dynamo', () => {

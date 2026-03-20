@@ -7,8 +7,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const core = require(path.join(__dirname, '..', 'core.cjs'));
-const { SCOPE, validateGroupId } = require(path.join(__dirname, '..', '..', 'ledger', 'scope.cjs'));
+const core = require(path.join(__dirname, '..', '..', 'lib', 'core.cjs'));
+const { SCOPE, validateGroupId } = require(path.join(__dirname, '..', '..', 'lib', 'scope.cjs'));
 const { MCPClient, parseSSE } = require(path.join(__dirname, '..', '..', 'ledger', 'mcp-client.cjs'));
 
 const DYNAMO_DIR = path.join(os.homedir(), '.claude', 'dynamo');

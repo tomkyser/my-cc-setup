@@ -6,8 +6,8 @@ const fs = require('fs');
 const stages = require(path.join(__dirname, 'stages.cjs'));
 
 const resolve = require('../lib/resolve.cjs');
-const { output, error, MCPClient } = require(resolve('dynamo', 'core.cjs'));
-const { formatDiagnoseReport } = require(path.join(__dirname, 'pretty.cjs'));
+const { output, error, MCPClient } = require(resolve('lib', 'core.cjs'));
+const { formatDiagnoseReport } = require(resolve('lib', 'pretty.cjs'));
 
 const { STAGE_NAMES } = stages;
 

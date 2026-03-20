@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const resolve = require('../../lib/resolve.cjs');
-const { healthGuard, logError } = require(resolve('dynamo', 'core.cjs'));
+const { healthGuard, logError } = require(resolve('lib', 'core.cjs'));
 const { combinedSearch } = require(path.join(__dirname, '..', 'search.cjs'));
 const { curateResults } = require(path.join(__dirname, '..', 'curation.cjs'));
 const { MCPClient } = require(path.join(__dirname, '..', 'mcp-client.cjs'));
