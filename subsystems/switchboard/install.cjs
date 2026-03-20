@@ -273,6 +273,36 @@ function restorePython(graphitiDir, legacyDir) {
   }
 }
 
+// --- Helper: installShim ---
+
+/**
+ * Install the CLI shim to ~/.local/bin/dynamo and write .repo-path dotfile.
+ * Copies bin/dynamo from repo (not symlink -- survives repo moves).
+ * @param {object} [options={}] - Options for test isolation
+ * @param {string} [options.repoRoot] - Override repo root
+ * @param {string} [options.liveDir] - Override live directory
+ * @param {string} [options.shimDir] - Override shim directory
+ */
+function installShim(options = {}) {
+  const repoRoot = options.repoRoot || REPO_ROOT;
+  const liveDir = options.liveDir || LIVE_DIR;
+  const shimDir = options.shimDir || path.join(os.homedir(), '.local', 'bin');
+
+  // Write .repo-path dotfile to live directory (enables DYNAMO_DEV=1)
+  fs.mkdirSync(liveDir, { recursive: true });
+  const repoPathFile = path.join(liveDir, '.repo-path');
+  fs.writeFileSync(repoPathFile, repoRoot + '\n', 'utf8');
+
+  // Create shim directory if needed
+  fs.mkdirSync(shimDir, { recursive: true });
+
+  // Copy shim from repo (not symlink -- survives repo moves)
+  const shimSrc = path.join(repoRoot, 'bin', 'dynamo');
+  const shimPath = path.join(shimDir, 'dynamo');
+  fs.copyFileSync(shimSrc, shimPath);
+  fs.chmodSync(shimPath, 0o755);
+}
+
 // --- Main: run (install) ---
 
 /**
@@ -425,6 +455,14 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Health check', status: 'WARN', detail: e.message });
   }
 
+  // Step 10: Install CLI shim
+  try {
+    installShim();
+    steps.push({ name: 'CLI shim', status: 'OK', detail: 'Installed at ~/.local/bin/dynamo' });
+  } catch (e) {
+    steps.push({ name: 'CLI shim', status: 'WARN', detail: e.message });
+  }
+
   const completed = steps.filter(s => s.status === 'OK').length;
   const total = steps.length;
 
@@ -486,5 +524,6 @@ module.exports = {
   mergeSettings,
   retirePython,
   restoreSettings,
-  restorePython
+  restorePython,
+  installShim
 };
