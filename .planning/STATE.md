@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 21 context gathered
-last_updated: "2026-03-20T02:53:21.725Z"
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-03-20T03:14:05.390Z"
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 9
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Phase 20 — management-hardening
+**Current focus:** Phase 21 — sqlite-session-index
 
 ## Current Position
 
-Phase: 20 (management-hardening) — COMPLETE
+Phase: 21 (sqlite-session-index) — EXECUTING
 Plan: 2 of 2
 
 ### Prior Milestones
@@ -79,6 +79,10 @@ Recent decisions affecting current work:
 - [Phase 20-01]: stageNodeVersion appended at HEALTH_STAGE_DEFS index 6 with dependsOn: [] to avoid shifting existing indices
 - [Phase 20-01]: Install dependency check uses WARN (never FAIL) to avoid blocking emergency deployments
 - [Phase 20-01]: Node.js version check uses process.version parsing, not node:test smoke test
+- [Phase 21-01]: Functional API module (not class) for session-store.cjs -- matches codebase convention
+- [Phase 21-01]: Connection Map keyed by dbPath (not singleton) for test isolation
+- [Phase 21-01]: INSERT OR REPLACE for upsert, INSERT OR IGNORE for migration -- different intent semantics
+- [Phase 21-01]: getSession returns null (not undefined) matching existing viewSession contract
 
 ### Blockers/Concerns
 
@@ -86,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T02:53:21.723Z
-Stopped at: Phase 21 context gathered
-Resume file: .planning/phases/21-sqlite-session-index/21-CONTEXT.md
+Last session: 2026-03-20T03:14:05.387Z
+Stopped at: Completed 21-01-PLAN.md
+Resume file: None
