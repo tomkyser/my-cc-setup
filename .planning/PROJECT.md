@@ -23,14 +23,25 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 
 **Removed from scope:** MENH-06 (Transport flexibility) and MENH-07 (Model selection) -- Max subscription + Claude Code native subagents eliminates the need.
 
-## Next Milestone: v1.3-M2 Core Intelligence
+## Current Milestone: v1.3-M2 Core Intelligence
 
-**Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. See MASTER-ROADMAP.md for full details.
+**Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces Haiku curation with context-aware, personality-driven injection. Hybrid architecture: CJS command hooks for hot path + custom subagents for deliberation.
+
+**Target features:**
+- Inner Voice (basic) with 7 PRIMARY cognitive theories and semantic shift detection
+- Dual-path routing: hot path (<500ms, deterministic) and deliberation path (2-10s, subagent)
+- Cost monitoring with per-operation/day/month budget tracking and hard enforcement
+- Hooks as primary behavior mechanism (replacing static CLAUDE.md)
+- Modular injection control with `reverie.mode` feature flag for instant rollback
+- Intelligent memory backfill from past chat transcripts
+- Well-written update notes workflow (like GSD)
+- Bare `dynamo` CLI invocation without node/path prefix
+- Graphiti small_model support (PR #1156 if needed)
 
 ## Current State
 
 **Shipped:** v1.3-M1 Foundation and Infrastructure Refactor (2026-03-20)
-**Next milestone:** v1.3-M2 Core Intelligence
+**Current milestone:** v1.3-M2 Core Intelligence
 
 v1.3-M1 delivered the foundation for the intelligence layer across 5 phases (18-22): centralized path resolver (`lib/resolve.cjs`), unified layout mapping (`lib/layout.cjs`), six-subsystem directory restructure (`subsystems/`, `cc/`, `lib/`), management hardening (Node.js version check, input validation, boundary markers), and SQLite session storage (`subsystems/terminus/session-store.cjs`). All 14 M1 requirements validated end-to-end including a real fresh install to `~/.claude/dynamo/`. 515 tests, ~5,335 production LOC.
 

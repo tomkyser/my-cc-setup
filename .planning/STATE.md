@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.3-M2
 milestone_name: Core Intelligence
-status: planning
-stopped_at: Milestone v1.3-M1 archived
-last_updated: "2026-03-20T18:00:00.000Z"
+status: defining-requirements
+stopped_at: Milestone v1.3-M2 started
+last_updated: "2026-03-20T21:00:00.000Z"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -19,12 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Planning next milestone (v1.3-M2 Core Intelligence)
+**Current focus:** Defining requirements for v1.3-M2 Core Intelligence
 
 ## Current Position
 
-Phase: None (between milestones)
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-20 — Milestone v1.3-M2 started
 
 ### Prior Milestones
 
