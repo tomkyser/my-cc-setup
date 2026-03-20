@@ -32,7 +32,7 @@ const SYNC_PAIRS = getSyncPairs(REPO_ROOT, LIVE_DIR);
  * Recursively walk a directory tree, returning { relativePath: { mtime, size } }.
  * Skips entries matching name-based excludes and glob-pattern excludes.
  */
-function walkDir(dir, excludes, globExcludes, base) {
+function walkDir(dir, excludes, globExcludes, base, filesOnly) {
   base = base || dir;
   const files = {};
 
@@ -65,6 +65,7 @@ function walkDir(dir, excludes, globExcludes, base) {
     const fullPath = path.join(dir, name);
 
     if (entry.isDirectory()) {
+      if (filesOnly) continue;  // Skip subdirectories in filesOnly mode
       const subFiles = walkDir(fullPath, excludes, globExcludes, base);
       Object.assign(files, subFiles);
     } else if (entry.isFile()) {
@@ -198,8 +199,8 @@ function writeLastSync() {
 function walkAllPairs() {
   const results = [];
   for (const pair of SYNC_PAIRS) {
-    const repoFiles = walkDir(pair.repo, pair.excludes, GLOB_EXCLUDES);
-    const liveFiles = walkDir(pair.live, pair.excludes, GLOB_EXCLUDES);
+    const repoFiles = walkDir(pair.repo, pair.excludes, GLOB_EXCLUDES, undefined, pair.filesOnly);
+    const liveFiles = walkDir(pair.live, pair.excludes, GLOB_EXCLUDES, undefined, pair.filesOnly);
     results.push({ pair, repoFiles, liveFiles });
   }
   return results;
