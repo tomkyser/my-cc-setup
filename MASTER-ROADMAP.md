@@ -1,6 +1,6 @@
 # Dynamo Master Roadmap
 
-**Last updated:** 2026-03-19
+**Last updated:** 2026-03-20
 
 v1.3 is the target release. Milestones within v1.3 (numbered 1.3-M1 through 1.3-M7) are iterations building toward v1.3 GA. We do not plan beyond v1.3. The roadmap reflects Dynamo's six-subsystem architecture: **Dynamo** (system wrapper), **Switchboard** (dispatcher/ops), **Ledger** (data construction), **Assay** (data access), **Terminus** (data infrastructure), and **Reverie** (Inner Voice).
 
@@ -62,6 +62,9 @@ Each milestone gates the next: a milestone must prove its value before the next 
 ---
 
 ### 1.3-M1: Foundation and Infrastructure Refactor
+
+**Status: SHIPPED** (2026-03-20)
+> Shipped 2026-03-20. 5 phases (18-22), 12 plans, all 14 requirements validated. Tagged `v1.3-M1` on dev branch.
 
 **Goal:** Restructure the codebase to the six-subsystem architecture and establish the infrastructure prerequisites for the intelligence layer. Infrastructure ready for Reverie.
 
@@ -268,6 +271,6 @@ All requirements are assigned to a 1.3-M* milestone, marked as shipped, absorbed
 
 ---
 *Master Roadmap created: 2026-03-18*
-*Last updated: 2026-03-19 -- Refactored to v1.3 milestoned delivery (1.3-M1 through 1.3-M7)*
+*Last updated: 2026-03-20 -- v1.3-M1 shipped; milestoned delivery continues (1.3-M2 through 1.3-M7)*
 *Architecture: Six-subsystem model (Dynamo, Switchboard, Ledger, Assay, Terminus, Reverie)*
 *Source: DYNAMO-PRD.md, subsystem specifications, INNER-VOICE-SPEC.md, INNER-VOICE-SYNTHESIS-RESEARCH.md*

@@ -6,7 +6,7 @@
 - ✅ **v1.1 Fix Memory System** -- Phases 4-7 (shipped 2026-03-17)
 - ✅ **v1.2 Dynamo Foundation** -- Phases 8-11 (shipped 2026-03-18)
 - ✅ **v1.2.1 Stabilization and Polish** -- Phases 12-17 (shipped 2026-03-19)
-- [ ] **v1.3-M1 Foundation and Infrastructure Refactor** -- Phases 18-22
+- [x] **v1.3-M1 Foundation and Infrastructure Refactor** -- Phases 18-22 (shipped 2026-03-20)
 
 ## Phases
 
@@ -59,7 +59,7 @@
 - [x] **Phase 19: Six-Subsystem Directory Restructure** - 3-wave migration from 3-dir to six-subsystem layout with sync/install/deploy validation (completed 2026-03-20)
 - [x] **Phase 20: Management Hardening** - Dependency verification and jailbreak protection for the hook system (completed 2026-03-20)
 - [x] **Phase 21: SQLite Session Index** - Replace sessions.json with SQLite-backed session storage via node:sqlite (completed 2026-03-20)
-- [ ] **Phase 22: M1 Verification and Cleanup** - End-to-end validation of all M1 deliverables in deployed layout
+- [x] **Phase 22: M1 Verification and Cleanup** - End-to-end validation of all M1 deliverables in deployed layout (completed 2026-03-20)
 
 ## Phase Details
 
@@ -133,7 +133,7 @@ Plans:
 - [x] 22-01-PLAN.md -- Automated M1 verification (tmpdir sandbox, smoke tests, draft VERIFICATION.md)
 - [x] 22-02-PLAN.md -- Cleanup (core.cjs re-export audit, dead code removal, stale comment fixes)
 - [x] 22-03-PLAN.md -- Real install verification and VERIFICATION.md finalization
-- [ ] 22-04-PLAN.md -- Documentation refresh and milestone closure
+- [x] 22-04-PLAN.md -- Documentation refresh and milestone closure
 
 ## Progress
 
@@ -163,4 +163,4 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 19. Six-Subsystem Directory Restructure | v1.3-M1 | 3/3 | Complete | 2026-03-20 |
 | 20. Management Hardening | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
 | 21. SQLite Session Index | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
-| 22. M1 Verification and Cleanup | v1.3-M1 | 3/4 | In Progress|  |
+| 22. M1 Verification and Cleanup | v1.3-M1 | 4/4 | Complete | 2026-03-20 |
