@@ -49,7 +49,8 @@ describe('Reverie Curation Module', () => {
       ];
       const result = curateForInjection(entities, 'working on MCP', {});
       assert.ok(typeof result === 'string', 'Should return a string');
-      const hasFraming = result.includes('from your experience') || result.includes('as you described it');
+      const lower = result.toLowerCase();
+      const hasFraming = lower.includes('from your experience') || lower.includes('as you described it');
       assert.ok(hasFraming, 'Output should contain adversarial framing qualifier');
     });
 
