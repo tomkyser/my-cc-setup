@@ -42,6 +42,9 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 
 **Shipped:** v1.3-M1 Foundation and Infrastructure Refactor (2026-03-20)
 **Current milestone:** v1.3-M2 Core Intelligence
+**Active phase:** Phase 24 (Cognitive Pipeline) — Phase 23 complete
+
+Phase 23 (Foundation and Routing) delivered the Reverie subsystem foundation: config CLI module with dot-notation get/set/validate, Inner Voice state file with atomic persistence and corruption recovery, activation computation engine (entity extraction, spreading activation, domain classification, sublimation scoring, spawn budget tracking), 7 Reverie handler stubs with dual-mode dispatcher routing, and SubagentStart/SubagentStop event registration. 198 tests, ~500 production LOC. Validated in Phase 23: IV-01, IV-02, IV-03, IV-04, IV-10, IV-12, OPS-MON-01, OPS-MON-02, FLAG-01, FLAG-03, HOOK-01, HOOK-02, HOOK-03.
 
 v1.3-M1 delivered the foundation for the intelligence layer across 5 phases (18-22): centralized path resolver (`lib/resolve.cjs`), unified layout mapping (`lib/layout.cjs`), six-subsystem directory restructure (`subsystems/`, `cc/`, `lib/`), management hardening (Node.js version check, input validation, boundary markers), and SQLite session storage (`subsystems/terminus/session-store.cjs`). All 14 M1 requirements validated end-to-end including a real fresh install to `~/.claude/dynamo/`. 515 tests, ~5,335 production LOC.
 
@@ -534,4 +537,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-20 after v1.3-M1 milestone completion*
+*Last updated: 2026-03-20 after Phase 23 completion*
