@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: unknown
 stopped_at: Completed 25-04-PLAN.md
-last_updated: "2026-03-21T00:27:32.902Z"
+last_updated: "2026-03-21T01:50:09.919Z"
 progress:
   total_phases: 3
   completed_phases: 3
@@ -16,20 +16,20 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-20)
+See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Phase 25 — cutover-and-completion
+**Current focus:** Between milestones — v1.3-M2 complete, v1.3-M3 not yet started
 
 ## Current Position
 
-Phase: 25
-Plan: Not started
+Phase: None (between milestones)
+Plan: None
 
 ### Prior Milestones
 
-v1.0 (3 phases, 8 plans), v1.1 (4 phases, 8 plans), v1.2 (4 phases, 12 plans), v1.2.1 (6 phases, 17 plans), v1.3-M1 (5 phases, 13 plans) -- all shipped.
-Total prior: 22 phases, 58 plans completed.
+v1.0 (3 phases, 8 plans), v1.1 (4 phases, 8 plans), v1.2 (4 phases, 12 plans), v1.2.1 (6 phases, 17 plans), v1.3-M1 (5 phases, 13 plans), v1.3-M2 (3 phases, 11 plans) -- all shipped.
+Total: 25 phases, 69 plans completed.
 
 ### Quick Tasks Completed
 
@@ -52,28 +52,7 @@ Total prior: 22 phases, 58 plans completed.
 
 Decisions are logged in PROJECT.md Key Decisions table.
 v1.3-M1 decisions archived to milestones/v1.3-M1-ROADMAP.md.
-
-- [Phase 23]: Type coercion runs BEFORE validation in config set() for CLI string-to-type conversion
-- [Phase 23]: Reordered PATTERNS object so projectNames precedes classNames for correct entity type deduplication priority
-- [Phase 23]: Pass-through stubs delegate via resolve() lazy require for Phase 24 hot-swap
-- [Phase 23]: SubagentStart/SubagentStop use JSON_OUTPUT_EVENTS to skip boundary wrapping
-- [Phase 24-02]: Synchronous-only curation functions serve as both hot-path formatter and degradation fallback
-- [Phase 24-02]: Case-insensitive adversarial framing -- "From your experience" at line start counts as D-03 framing
-- [Phase 24-02]: truncateToTokenLimit prefers sentence boundaries over hard char cuts
-- [Phase 24]: selectPath priority chain: predictionsMatch(skip) > explicitRecall(deliberation) > rateLimited(hot) > semanticShift > lowConfidence > noInjection(skip) > default(hot)
-- [Phase 24]: Jaccard overlap with 0.3 threshold for semantic shift detection -- deterministic, sub-millisecond, no embeddings
-- [Phase 24]: Adversarial framing uses 'From your experience' and 'As you described it' qualifiers in template injection output
-- [Phase 24]: Deep-copy state at pipeline entry prevents mutation between steps or on error paths
-- [Phase 24]: checkThresholdCrossings checks activation level (not sublimation score) for consistency with activation.cjs contract
-- [Phase 24]: SubagentStop parses JSON output from subagent for self-model updates, predictions, and session names -- raw text fallback
-- [Phase 24]: SubagentStart builds deliberation-type-specific instructions via switch on processing.deliberation_type
-- [Phase 25]: Copy shim (not symlink) so it survives repo moves
-- [Phase 25]: .repo-path dotfile written during install enables DYNAMO_DEV=1 to find repo
-- [Phase 25]: Deleted Ledger hooks directory entirely rather than leaving as dead code -- aligns with user's clean break preference
-- [Phase 25]: Removed curation section from generateConfig -- new installs get clean config without OpenRouter artifacts
-- [Phase 25]: Voice commands output to stderr (human-readable only, no --format flag) matching developer tool use case
-- [Phase 25]: No voice history subcommand -- injection history already visible in voice status output
-- [Phase 25]: generateConfig curation removal already shipped in 25-01; cleanupClassicArtifacts uses options.liveDir for test isolation
+v1.3-M2 decisions archived to milestones/v1.3-M2-ROADMAP.md.
 
 ### Blockers/Concerns
 

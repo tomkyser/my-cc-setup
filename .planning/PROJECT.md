@@ -8,51 +8,40 @@ A Claude Code power-user platform for persistent memory and self-management. Dyn
 
 Every capability must be self-manageable by Claude Code (install, configure, update, troubleshoot) without requiring manual user intervention in config files.
 
-## Last Completed Milestone: v1.3-M1 Foundation and Infrastructure Refactor
+## Last Completed Milestone: v1.3-M2 Core Intelligence
 
-**Status:** Shipped 2026-03-20 (tagged `v1.3-M1` on dev branch)
-**Phases:** 18-22 (5 phases, 12 plans, 14 requirements validated)
+**Status:** Shipped 2026-03-21 (tagged `v1.3-M2` on dev branch)
+**Phases:** 23-25 (3 phases, 11 plans, 28 requirements validated)
 
 **Delivered:**
-- Directory restructure from 3-dir layout to six-subsystem architecture (`subsystems/`, `cc/`, `lib/`)
-- Centralized path resolver (`lib/resolve.cjs`) and layout mapping (`lib/layout.cjs`)
-- Dependency management (MGMT-01) -- Node.js version verification in health-check and install
-- Jailbreak protection (MGMT-08) -- input validation, field length limits, boundary markers in hook dispatcher
-- SQLite session index (MGMT-11) -- `node:sqlite` DatabaseSync, dual-write pattern, JSON fallback
-- End-to-end verification: 14/14 requirements pass, 515 tests, real fresh install validated
+- Reverie cognitive pipeline: activation engine, dual-path routing, template-based curation with adversarial counter-prompting
+- Central pipeline orchestrator (`inner-voice.cjs`) with 5 per-hook cognitive pipelines, 400ms abort, atomic state bridge
+- All 7 handlers replaced from classic Ledger stubs to full Reverie cognitive pipeline delegation
+- Classic mode removed entirely: `reverie.mode` eliminated, OpenRouter dependency purged, 12 dead files deleted
+- `dynamo voice status/explain/reset` CLI commands for Inner Voice state visibility
+- Bare CLI shim, CHANGELOG.md integrated into update commands, install pipeline with classic artifact cleanup
 
-**Removed from scope:** MENH-06 (Transport flexibility) and MENH-07 (Model selection) -- Max subscription + Claude Code native subagents eliminates the need.
+**Deferred to M3+:** Intelligent memory backfill (BKFL-01/02/03), Graphiti small_model (TERM-01)
 
-## Current Milestone: v1.3-M2 Core Intelligence
+## Next Milestone: v1.3-M3 Management and Visibility
 
-**Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces the classic curation pipeline with context-aware, personality-driven injection. Hybrid architecture: CJS command hooks for hot path + custom subagents for deliberation. All LLM operations use native Claude Code subagents (Max subscription) — no external API calls for Dynamo's own operations.
+**Goal:** Management hardening and operational visibility. Extend CLI with management commands, improve health and diagnostic tooling, and add initial UI visibility hooks.
 
-**Target features:**
-- Inner Voice (basic) with 7 PRIMARY cognitive theories and semantic shift detection
-- Dual-path routing: hot path (<500ms, deterministic) and deliberation path (2-10s, subagent)
-- Operational monitoring with subagent spawn tracking and rate limit awareness
-- Hooks as primary behavior mechanism (replacing static CLAUDE.md)
-- Modular injection control with `reverie.mode` feature flag for instant rollback
-- Intelligent memory backfill from past chat transcripts
-- Well-written update notes workflow (like GSD)
-- Bare `dynamo` CLI invocation without node/path prefix
-- Graphiti small_model support (PR #1156 if needed)
+**Target features (from MASTER-ROADMAP.md):**
+- MGMT-02/03: Management commands and operational tooling
+- UI-08: Initial UI visibility hooks
 
 ## Current State
 
-**Shipped:** v1.3-M1 Foundation and Infrastructure Refactor (2026-03-20)
-**Current milestone:** v1.3-M2 Core Intelligence — ALL PHASES COMPLETE
-**Active phase:** None — milestone ready for completion
+**Shipped:** v1.3-M2 Core Intelligence (2026-03-21)
+**Current milestone:** Between milestones — v1.3-M2 complete, v1.3-M3 not yet started
+**Active phase:** None
 
-Phase 25 (Cutover & Completion) removed classic Ledger curation entirely, making Reverie the only processing pipeline. Eliminated `reverie.mode` config key, OpenRouter dependency, 5 classic prompt templates, and all dead Ledger hook code. Added `dynamo voice status/explain/reset` CLI commands for Inner Voice visibility. Created bare CLI shim at `bin/dynamo` with symlink install. Wrote CHANGELOG.md integrated into update commands. Extended install/sync pipeline with Reverie sync pair and active classic artifact cleanup. 32 new voice tests, 525+ total tests. Validated in Phase 25: FLAG-02, FLAG-04, OPS-01, OPS-02, OPS-03.
+Dynamo now has a fully operational Inner Voice cognitive pipeline. The Reverie subsystem processes every hook event through entity extraction, activation mapping, dual-path routing (deterministic hot path <500ms + Sonnet deliberation subagent), and adversarial counter-prompted injection formatting. Classic Ledger curation has been completely removed — Reverie is the only processing pipeline.
 
-Phase 24 (Cognitive Pipeline) replaced all 7 pass-through Reverie handler stubs with full cognitive processing pipelines. Created 3 new core modules: `dual-path.cjs` (deterministic path selection, semantic shift detection, explicit recall, token estimation, hot-path formatting), `curation.cjs` (template-based injection formatting with adversarial counter-prompting, token limit enforcement), and `inner-voice.cjs` (pipeline orchestrator with per-hook processing, state bridge for deliberation results). Created inner-voice subagent definition at `cc/agents/inner-voice.md` and 5 prompt templates. 188 new tests (257 total reverie), 0 regressions. Validated in Phase 24: IV-05, IV-06, IV-07, IV-08, IV-09, IV-11, PATH-01, PATH-02, PATH-03, PATH-04, PATH-05, PATH-06.
+Key Reverie modules: `activation.cjs` (entity extraction, spreading activation, sublimation scoring), `dual-path.cjs` (path selection, semantic shift, recall detection), `curation.cjs` (template formatting, token limits), `inner-voice.cjs` (pipeline orchestrator, state bridge). Inner Voice subagent defined at `cc/agents/inner-voice.md` with 5 prompt templates. Voice CLI (`dynamo voice status/explain/reset`) provides runtime visibility. Bare `dynamo` CLI works via shell shim. CHANGELOG.md integrated into update workflow.
 
-Phase 23 (Foundation and Routing) delivered the Reverie subsystem foundation: config CLI module with dot-notation get/set/validate, Inner Voice state file with atomic persistence and corruption recovery, activation computation engine (entity extraction, spreading activation, domain classification, sublimation scoring, spawn budget tracking), 7 Reverie handler stubs with dual-mode dispatcher routing, and SubagentStart/SubagentStop event registration. 198 tests, ~500 production LOC. Validated in Phase 23: IV-01, IV-02, IV-03, IV-04, IV-10, IV-12, OPS-MON-01, OPS-MON-02, FLAG-01, FLAG-03, HOOK-01, HOOK-02, HOOK-03.
-
-v1.3-M1 delivered the foundation for the intelligence layer across 5 phases (18-22): centralized path resolver (`lib/resolve.cjs`), unified layout mapping (`lib/layout.cjs`), six-subsystem directory restructure (`subsystems/`, `cc/`, `lib/`), management hardening (Node.js version check, input validation, boundary markers), and SQLite session storage (`subsystems/terminus/session-store.cjs`). All 14 M1 requirements validated end-to-end including a real fresh install to `~/.claude/dynamo/`. 515 tests, ~5,335 production LOC.
-
-Prior milestones: v1.2.1 closed all stabilization gaps. v1.3 architecture specification complete: 6-subsystem model defined, all subsystem specs written, Dynamo PRD authored, abstract Inner Voice concept documented, master roadmap refactored to milestoned iterations. The platform adapter pattern (`cc/` directory) isolates Claude Code specifics. The hybrid architecture (CJS command hooks for hot path + custom subagent for deliberation) is specified.
+Prior milestones: v1.3-M1 shipped the six-subsystem architecture, centralized resolver, management hardening, and SQLite session storage. v1.2.1 stabilized with docs, toggles, and deploy hardening. v1.2 rewrote from Python/Bash to CJS. v1.1 fixed the memory system. v1.0 researched and ranked tools.
 
 ## Requirements
 
@@ -99,13 +88,19 @@ Prior milestones: v1.2.1 closed all stabilization gaps. v1.3 architecture specif
 - ✓ DATA-02: Session query functions maintain identical interface — Validated in Phase 21: SQLite Session Index
 - ✓ DATA-03: One-time migration converts sessions.json to SQLite database — Validated in Phase 21: SQLite Session Index
 - ✓ DATA-04: Graceful fallback to JSON file if node:sqlite unavailable — Validated in Phase 21: SQLite Session Index
+- ✓ IV-01 through IV-12: Inner Voice state, entity extraction, activation mapping, sublimation, injection formatting, self-model, curation migration, adversarial framing, semantic shift, domain classification, recall bypass, predictions — v1.3-M2
+- ✓ PATH-01 through PATH-06: Deterministic path selection, hot path <500ms, deliberation subagent, graceful degradation, state bridge, rate limit detection — v1.3-M2
+- ✓ OPS-MON-01/02: Subagent spawn tracking and rate limit detection — v1.3-M2
+- ✓ HOOK-01/02/03: Dispatcher dual-mode routing, subagent event registration, 7 Reverie handler modules — v1.3-M2
+- ✓ FLAG-01/02/03/04: Feature flag system, hybrid mode, config CLI, voice CLI commands — v1.3-M2
+- ✓ OPS-01/02/03: Bare CLI shim, CHANGELOG.md, install pipeline updates — v1.3-M2
 
 ### Active
 
 v1.3 requirements organized across 7 milestones (1.3-M1 through 1.3-M7). See MASTER-ROADMAP.md for full index. Key milestones:
 
-- **1.3-M1:** Foundation and Infrastructure Refactor (shipped 2026-03-20 -- directory restructure, MGMT-01, MGMT-08, MGMT-11)
-- **1.3-M2:** Core Intelligence (CORTEX-01/02/03, MGMT-05, MGMT-10)
+- **1.3-M1:** Foundation and Infrastructure Refactor (shipped 2026-03-20)
+- **1.3-M2:** Core Intelligence (shipped 2026-03-21)
 - **1.3-M3:** Management and Visibility (MGMT-02/03, UI-08)
 - **1.3-M4:** Advanced Intelligence (CORTEX-04/05/06, MENH-08, MGMT-06/07)
 - **1.3-M5:** Platform Expansion (MENH-03/04/05, CORTEX-07/08/09)
@@ -132,11 +127,9 @@ Phase 19 complete — Six-subsystem directory restructure: 27 production files m
 Phase 20 complete — Management hardening: Node.js >= 22 version check in health-check (7th stage) and install (Step 0, WARN-only). Hook dispatcher input validation with field type checks and length limits (MGMT-08a). Stdout boundary markers (`<dynamo-memory-context>`) wrap all hook injection output (MGMT-08b). 35 new dispatcher tests. Validated: MGMT-01, MGMT-08a, MGMT-08b.
 Phase 21 complete — SQLite session index: `subsystems/terminus/session-store.cjs` (232 LOC) provides SQLite-backed session storage via `node:sqlite` DatabaseSync. `sessions.cjs` delegates to SQLite when available, dual-writes JSON for backward compatibility, falls back transparently to JSON when `node:sqlite` unavailable. `dynamo install` migrates `sessions.json` to SQLite (idempotent, transaction-safe). Health-check reports storage backend type (8th stage). 30 new session-store tests. 479 total tests passing. Validated: DATA-01, DATA-02, DATA-03, DATA-04.
 Phase 22 complete -- M1 verification and cleanup: automated verification suite (36 tests in tmpdir sandbox covering all 14 requirements), core.cjs re-export audit (7 re-exports removed, only MCPClient retained), real fresh install verified (10/10 steps, 45 files deployed, 314 sessions migrated to SQLite), documentation refreshed (README, CLAUDE.md template, PROJECT.md, roadmaps, 7 codebase maps). v1.3-M1 tagged on dev branch.
-Phase 23 complete -- Foundation and Routing: Reverie config CLI, IV state file with atomic persistence, activation engine (entity extraction, spreading activation, sublimation scoring), 7 handler stubs with dual-mode dispatcher, SubagentStart/SubagentStop registration. 198 new tests, ~500 production LOC.
-Phase 24 complete -- Cognitive Pipeline: 3 new core modules (dual-path.cjs, curation.cjs, inner-voice.cjs), inner-voice subagent definition, 5 prompt templates, all 7 handler stubs replaced with full cognitive pipelines, state bridge for deliberation results. 188 new tests, 257 reverie tests total.
-Phase 25 complete -- Cutover & Completion: Classic Ledger curation removed entirely, Reverie is the only pipeline. reverie.mode config eliminated, OpenRouter dependency purged, 12 dead files deleted. Voice CLI (status/explain/reset) added. Bare CLI shim with DYNAMO_DEV override. CHANGELOG.md integrated into update commands. Install pipeline extended with Reverie sync pair and active classic artifact cleanup. 32 new voice tests, 525+ total tests.
+v1.3-M2 complete -- Core Intelligence: Reverie cognitive pipeline with activation engine, dual-path routing (hot <500ms + Sonnet deliberation subagent), adversarial counter-prompted curation, 7 handler rewrites, classic mode removal, voice CLI, bare CLI shim, CHANGELOG.md, install pipeline updates. 28 requirements validated.
 Tech stack: Node/CJS (subsystems/, cc/, lib/), Docker (Graphiti stack), SQLite (session storage via node:sqlite). No external API dependencies -- all LLM operations via native Claude Code subagents.
-Total project: ~6,800+ production LOC CJS, 525+ tests passing, across 25 phases and 69 plans.
+Total project: ~7,081 production LOC CJS, 525+ tests passing, across 25 phases and 69 plans (6 milestones shipped).
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
 v1.2.1 shipped with all 10 STAB requirements complete.
 v1.3 architecture specification complete (260319-fzc task, 5 plans across 4 waves):
@@ -187,6 +180,13 @@ Nine specification documents produced. All ~40 active requirements assigned to m
 | Node.js version verification in health-check and install | 8th health-check stage; install Step 0 warns (never blocks) on version mismatch | Done -- Phase 20 |
 | Re-export audit: removed 7 re-exports from core.cjs | Only MCPClient remains re-exported; consumers import directly from subsystem modules | Done -- Phase 22 |
 | End-to-end M1 verification with tmpdir sandbox and real fresh install | 14/14 requirements validated; 515 tests; scripted backup/restore for real install test | Done -- Phase 22 |
+| Deterministic dual-path routing (no LLM for path selection) | Path decision itself must be cheap (<1ms); LLM reserved for deliberation content only | Done -- Phase 24 |
+| Adversarial counter-prompting in injection templates | "From your experience" framing prevents Claude from treating injected memories as canonical definitions | Done -- Phase 24 |
+| Jaccard overlap (0.3 threshold) for semantic shift detection | Deterministic, sub-millisecond, no embeddings needed; embedding-based deferred to M4 | Done -- Phase 24 |
+| Deep-copy state at pipeline entry | Prevents mutation between steps or on error paths; clean rollback semantics | Done -- Phase 24 |
+| Copy shim (not symlink) for bare CLI | Survives repo moves; `.repo-path` dotfile enables DYNAMO_DEV=1 to find repo | Done -- Phase 25 |
+| Classic mode removed entirely (no hybrid fallback) | Clean break preferred over maintaining dead code; aligns with user's clean break preference | Done -- Phase 25 |
+| Voice commands output to stderr only (no --format flag) | Developer tool use case; human-readable only, no programmatic consumption needed | Done -- Phase 25 |
 
 ## Decision Detail
 
@@ -544,4 +544,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-21 after Phase 25 completion (v1.3-M2 all phases complete)*
+*Last updated: 2026-03-21 after v1.3-M2 milestone*
