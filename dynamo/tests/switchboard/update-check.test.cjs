@@ -22,11 +22,12 @@ function rmrf(dir) {
 
 describe('update-check.cjs', () => {
 
-  it('module exists and exports checkUpdate and compareVersions', () => {
+  it('module exists and exports checkUpdate, compareVersions, and normalizeVersion', () => {
     assert.ok(fs.existsSync(MOD_PATH), 'update-check.cjs should exist');
     const mod = require(MOD_PATH);
     assert.ok(typeof mod.checkUpdate === 'function', 'should export checkUpdate');
     assert.ok(typeof mod.compareVersions === 'function', 'should export compareVersions');
+    assert.ok(typeof mod.normalizeVersion === 'function', 'should export normalizeVersion');
   });
 
   it('has identity comment', () => {
@@ -66,6 +67,92 @@ describe('compareVersions', () => {
 
   it('handles missing patch as zero', () => {
     assert.equal(compareVersions('1.0', '1.0.0'), 0);
+  });
+
+});
+
+describe('compareVersions - milestone ordering', () => {
+  let compareVersions;
+
+  beforeEach(() => {
+    compareVersions = require(MOD_PATH).compareVersions;
+  });
+
+  it('M1 < M2 for same base version', () => {
+    assert.equal(compareVersions('1.3.0-M1', '1.3.0-M2'), -1);
+  });
+
+  it('M2 > M1 for same base version', () => {
+    assert.equal(compareVersions('1.3.0-M2', '1.3.0-M1'), 1);
+  });
+
+  it('equal milestones', () => {
+    assert.equal(compareVersions('1.3.0-M2', '1.3.0-M2'), 0);
+  });
+
+  it('M3 > M2', () => {
+    assert.equal(compareVersions('1.3.0-M3', '1.3.0-M2'), 1);
+  });
+
+  it('release > any milestone of same base', () => {
+    assert.equal(compareVersions('1.3.0', '1.3.0-M99'), 1);
+  });
+
+  it('milestone < release of same base', () => {
+    assert.equal(compareVersions('1.3.0-M99', '1.3.0'), -1);
+  });
+
+  it('higher base with milestone > lower base release', () => {
+    assert.equal(compareVersions('2.0.0-M1', '1.3.0'), 1);
+  });
+
+  it('lower base milestone < higher base release', () => {
+    assert.equal(compareVersions('1.3.0-M5', '2.0.0'), -1);
+  });
+
+  it('milestone of higher base > milestone of lower base', () => {
+    assert.equal(compareVersions('2.0.0-M1', '1.3.0-M5'), 1);
+  });
+
+  it('standard semver still works with no milestones', () => {
+    assert.equal(compareVersions('1.2.0', '1.3.0'), -1);
+  });
+
+});
+
+describe('normalizeVersion', () => {
+  let normalizeVersion;
+
+  beforeEach(() => {
+    normalizeVersion = require(MOD_PATH).normalizeVersion;
+  });
+
+  it('strips v prefix and inserts .0 patch', () => {
+    assert.equal(normalizeVersion('v1.3-M2'), '1.3.0-M2');
+  });
+
+  it('strips v prefix, keeps existing patch', () => {
+    assert.equal(normalizeVersion('v1.3.0-M2'), '1.3.0-M2');
+  });
+
+  it('strips v prefix, no suffix', () => {
+    assert.equal(normalizeVersion('v1.3.0'), '1.3.0');
+  });
+
+  it('no v prefix, inserts patch', () => {
+    assert.equal(normalizeVersion('1.3-M2'), '1.3.0-M2');
+  });
+
+  it('passthrough for already-normalized', () => {
+    assert.equal(normalizeVersion('1.3.0-M2'), '1.3.0-M2');
+  });
+
+  it('handles major.minor without suffix', () => {
+    assert.equal(normalizeVersion('v2.0'), '2.0.0');
+  });
+
+  it('handles empty string gracefully', () => {
+    assert.equal(normalizeVersion(''), '');
   });
 
 });
@@ -115,6 +202,14 @@ describe('checkUpdate', () => {
       apiUrl: 'http://localhost:1/'
     });
     assert.equal(result.current, '0.0.0', 'should default to 0.0.0 when VERSION missing');
+  });
+
+  it('reads milestone version from VERSION file correctly', async () => {
+    const versionFile = path.join(tmpDir, 'VERSION');
+    fs.writeFileSync(versionFile, '1.3.0-M2\n', 'utf8');
+
+    const result = await checkUpdate({ versionPath: versionFile, apiUrl: 'http://localhost:1/' });
+    assert.equal(result.current, '1.3.0-M2', 'should read milestone version correctly');
   });
 
 });
