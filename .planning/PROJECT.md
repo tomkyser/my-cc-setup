@@ -41,8 +41,10 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 ## Current State
 
 **Shipped:** v1.3-M1 Foundation and Infrastructure Refactor (2026-03-20)
-**Current milestone:** v1.3-M2 Core Intelligence
-**Active phase:** Phase 25 (Graduated Rollout) — Phase 24 complete
+**Current milestone:** v1.3-M2 Core Intelligence — ALL PHASES COMPLETE
+**Active phase:** None — milestone ready for completion
+
+Phase 25 (Cutover & Completion) removed classic Ledger curation entirely, making Reverie the only processing pipeline. Eliminated `reverie.mode` config key, OpenRouter dependency, 5 classic prompt templates, and all dead Ledger hook code. Added `dynamo voice status/explain/reset` CLI commands for Inner Voice visibility. Created bare CLI shim at `bin/dynamo` with symlink install. Wrote CHANGELOG.md integrated into update commands. Extended install/sync pipeline with Reverie sync pair and active classic artifact cleanup. 32 new voice tests, 525+ total tests. Validated in Phase 25: FLAG-02, FLAG-04, OPS-01, OPS-02, OPS-03.
 
 Phase 24 (Cognitive Pipeline) replaced all 7 pass-through Reverie handler stubs with full cognitive processing pipelines. Created 3 new core modules: `dual-path.cjs` (deterministic path selection, semantic shift detection, explicit recall, token estimation, hot-path formatting), `curation.cjs` (template-based injection formatting with adversarial counter-prompting, token limit enforcement), and `inner-voice.cjs` (pipeline orchestrator with per-hook processing, state bridge for deliberation results). Created inner-voice subagent definition at `cc/agents/inner-voice.md` and 5 prompt templates. 188 new tests (257 total reverie), 0 regressions. Validated in Phase 24: IV-05, IV-06, IV-07, IV-08, IV-09, IV-11, PATH-01, PATH-02, PATH-03, PATH-04, PATH-05, PATH-06.
 
@@ -132,8 +134,9 @@ Phase 21 complete — SQLite session index: `subsystems/terminus/session-store.c
 Phase 22 complete -- M1 verification and cleanup: automated verification suite (36 tests in tmpdir sandbox covering all 14 requirements), core.cjs re-export audit (7 re-exports removed, only MCPClient retained), real fresh install verified (10/10 steps, 45 files deployed, 314 sessions migrated to SQLite), documentation refreshed (README, CLAUDE.md template, PROJECT.md, roadmaps, 7 codebase maps). v1.3-M1 tagged on dev branch.
 Phase 23 complete -- Foundation and Routing: Reverie config CLI, IV state file with atomic persistence, activation engine (entity extraction, spreading activation, sublimation scoring), 7 handler stubs with dual-mode dispatcher, SubagentStart/SubagentStop registration. 198 new tests, ~500 production LOC.
 Phase 24 complete -- Cognitive Pipeline: 3 new core modules (dual-path.cjs, curation.cjs, inner-voice.cjs), inner-voice subagent definition, 5 prompt templates, all 7 handler stubs replaced with full cognitive pipelines, state bridge for deliberation results. 188 new tests, 257 reverie tests total.
-Tech stack: Node/CJS (subsystems/, cc/, lib/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter), SQLite (session storage via node:sqlite).
-Total project: ~6,500+ production LOC CJS, 700+ tests passing, across 24 phases and 65 plans.
+Phase 25 complete -- Cutover & Completion: Classic Ledger curation removed entirely, Reverie is the only pipeline. reverie.mode config eliminated, OpenRouter dependency purged, 12 dead files deleted. Voice CLI (status/explain/reset) added. Bare CLI shim with DYNAMO_DEV override. CHANGELOG.md integrated into update commands. Install pipeline extended with Reverie sync pair and active classic artifact cleanup. 32 new voice tests, 525+ total tests.
+Tech stack: Node/CJS (subsystems/, cc/, lib/), Docker (Graphiti stack), SQLite (session storage via node:sqlite). No external API dependencies -- all LLM operations via native Claude Code subagents.
+Total project: ~6,800+ production LOC CJS, 525+ tests passing, across 25 phases and 69 plans.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
 v1.2.1 shipped with all 10 STAB requirements complete.
 v1.3 architecture specification complete (260319-fzc task, 5 plans across 4 waves):
@@ -541,4 +544,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-20 after Phase 24 completion*
+*Last updated: 2026-03-21 after Phase 25 completion (v1.3-M2 all phases complete)*
