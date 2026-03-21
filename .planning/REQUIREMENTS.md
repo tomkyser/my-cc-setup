@@ -58,7 +58,7 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 
 - [x] **OPS-01**: Bare `dynamo` CLI invocation works via symlink shim without requiring `node` or path prefix; dev flag overrides to repo version
 - [x] **OPS-02**: CHANGELOG.md generated with well-written update notes; integrated into `dynamo update` and `dynamo check-update` display
-- [ ] **OPS-03**: Install/sync pipeline updated for new Reverie files, agents directory (`cc/agents/`), and prompt templates (`cc/prompts/`)
+- [x] **OPS-03**: Install/sync pipeline updated for new Reverie files, agents directory (`cc/agents/`), and prompt templates (`cc/prompts/`)
 
 ## v2 Requirements (Deferred)
 
@@ -129,7 +129,7 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | FLAG-04 | Phase 25 | Complete |
 | OPS-01 | Phase 25 | Complete |
 | OPS-02 | Phase 25 | Complete |
-| OPS-03 | Phase 25 | Pending |
+| OPS-03 | Phase 25 | Complete |
 
 **Coverage:**
 - v1.3-M2 requirements: 28 active (COST-01, COST-02, COST-04 deferred; COST-03 revised to OPS-MON-01; OPS-MON-02 added)

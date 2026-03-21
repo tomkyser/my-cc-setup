@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 25-03-PLAN.md
-last_updated: "2026-03-21T00:14:20.203Z"
+stopped_at: Completed 25-04-PLAN.md
+last_updated: "2026-03-21T00:17:57.846Z"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -73,6 +73,7 @@ v1.3-M1 decisions archived to milestones/v1.3-M1-ROADMAP.md.
 - [Phase 25]: Removed curation section from generateConfig -- new installs get clean config without OpenRouter artifacts
 - [Phase 25]: Voice commands output to stderr (human-readable only, no --format flag) matching developer tool use case
 - [Phase 25]: No voice history subcommand -- injection history already visible in voice status output
+- [Phase 25]: generateConfig curation removal already shipped in 25-01; cleanupClassicArtifacts uses options.liveDir for test isolation
 
 ### Blockers/Concerns
 
@@ -80,6 +81,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T00:14:20.201Z
-Stopped at: Completed 25-03-PLAN.md
+Last session: 2026-03-21T00:17:57.844Z
+Stopped at: Completed 25-04-PLAN.md
 Resume file: None
