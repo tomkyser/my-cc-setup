@@ -21,6 +21,81 @@ const SETTINGS_BACKUP = SETTINGS_PATH + '.bak';  // ~/.claude/settings.json.bak
 const HOOKS_TEMPLATE = path.join(REPO_ROOT, 'cc', 'settings-hooks.json');
 const INSTALL_EXCLUDES = ['tests', '.last-sync', '.git', '.DS_Store', 'node_modules'];
 
+// Classic-mode artifacts to remove during install upgrade
+const CLEANUP_FILES = [
+  'cc/prompts/curation.md',
+  'cc/prompts/precompact.md',
+  'cc/prompts/prompt-context.md',
+  'cc/prompts/session-name.md',
+  'cc/prompts/session-summary.md',
+  'subsystems/ledger/curation.cjs',
+];
+
+// --- Helper: cleanupClassicArtifacts ---
+
+/**
+ * Remove classic-mode artifacts from deployed directory.
+ * Deletes dead prompt templates, dead Ledger handlers, dead hooks directory,
+ * and strips curation/reverie.mode from existing config.json.
+ * @param {object} [options={}] - Options for test isolation
+ * @param {string} [options.liveDir] - Override live directory
+ * @returns {number} Count of items cleaned
+ */
+function cleanupClassicArtifacts(options = {}) {
+  const liveDir = options.liveDir || LIVE_DIR;
+  let cleaned = 0;
+
+  // Remove dead prompt templates and classic modules
+  for (const relPath of CLEANUP_FILES) {
+    const fullPath = path.join(liveDir, relPath);
+    try {
+      fs.unlinkSync(fullPath);
+      cleaned++;
+    } catch (e) {
+      // File doesn't exist -- already clean
+    }
+  }
+
+  // Remove dead Ledger hook handlers
+  const ledgerHooksDir = path.join(liveDir, 'subsystems', 'ledger', 'hooks');
+  try {
+    const deadHandlers = ['session-start.cjs', 'prompt-augment.cjs', 'session-summary.cjs', 'preserve-knowledge.cjs', 'capture-change.cjs'];
+    for (const f of deadHandlers) {
+      try { fs.unlinkSync(path.join(ledgerHooksDir, f)); cleaned++; } catch (e) { /* already gone */ }
+    }
+    // Try removing the directory if now empty
+    try { fs.rmdirSync(ledgerHooksDir); } catch (e) { /* not empty or doesn't exist */ }
+  } catch (e) {
+    // Directory doesn't exist
+  }
+
+  // Clean curation key from existing config.json if present
+  const configPath = path.join(liveDir, 'config.json');
+  try {
+    const raw = fs.readFileSync(configPath, 'utf8');
+    const config = JSON.parse(raw);
+    let configChanged = false;
+    if (config.curation) {
+      delete config.curation;
+      configChanged = true;
+    }
+    if (config.reverie && config.reverie.mode) {
+      delete config.reverie.mode;
+      configChanged = true;
+    }
+    if (configChanged) {
+      const tmpPath = configPath + '.tmp';
+      fs.writeFileSync(tmpPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+      fs.renameSync(tmpPath, configPath);
+      cleaned++;
+    }
+  } catch (e) {
+    // Config not found or not parseable -- skip
+  }
+
+  return cleaned;
+}
+
 // --- Helper: copyTree ---
 
 /**
@@ -440,7 +515,19 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Migrate sessions', status: 'WARN', detail: 'Migration error: ' + e.message });
   }
 
-  // Step 9: Post-install health check
+  // Step 9: Clean up classic-mode artifacts
+  try {
+    const cleaned = cleanupClassicArtifacts();
+    if (cleaned > 0) {
+      steps.push({ name: 'Cleanup classics', status: 'OK', detail: 'Cleaned ' + cleaned + ' classic-mode artifacts' });
+    } else {
+      steps.push({ name: 'Cleanup classics', status: 'OK', detail: 'No classic artifacts to clean' });
+    }
+  } catch (e) {
+    steps.push({ name: 'Cleanup classics', status: 'WARN', detail: e.message });
+  }
+
+  // Step 10: Post-install health check
   let hcResult = null;
   try {
     const hc = require(resolve('terminus', 'health-check.cjs'));
@@ -451,7 +538,7 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Health check', status: 'WARN', detail: e.message });
   }
 
-  // Step 10: Install CLI shim
+  // Step 11: Install CLI shim
   try {
     installShim();
     steps.push({ name: 'CLI shim', status: 'OK', detail: 'Installed at ~/.local/bin/dynamo' });
@@ -521,5 +608,7 @@ module.exports = {
   retirePython,
   restoreSettings,
   restorePython,
-  installShim
+  installShim,
+  cleanupClassicArtifacts,
+  CLEANUP_FILES
 };

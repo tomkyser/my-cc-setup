@@ -224,6 +224,22 @@ describe('generateConfig helper', () => {
     const config = readJSON(path.join(outDir, 'config.json'));
     assert.strictEqual(config.enabled, true, 'generated config should have enabled:true');
   });
+
+  it('generated config does NOT contain OPENROUTER references', () => {
+    const envPath = path.join(tmpDir, '.env');
+    fs.writeFileSync(envPath, 'GRAPHITI_MCP_URL=http://test:8100/mcp\n', 'utf8');
+
+    const outDir = path.join(tmpDir, 'out');
+    fs.mkdirSync(outDir, { recursive: true });
+
+    const { generateConfig } = require(INSTALL_PATH);
+    generateConfig(envPath, outDir);
+
+    const raw = fs.readFileSync(path.join(outDir, 'config.json'), 'utf8');
+    assert.ok(!raw.includes('openrouter'), 'config.json should NOT reference OpenRouter');
+    assert.ok(!raw.includes('OPENROUTER'), 'config.json should NOT reference OPENROUTER');
+    assert.ok(!raw.includes('claude-haiku'), 'config.json should NOT reference claude-haiku');
+  });
 });
 
 describe('mergeSettings helper', () => {
@@ -421,5 +437,114 @@ describe('rollback helper', () => {
     restorePython(graphitiDir, legacyDir);
 
     assert.ok(fs.existsSync(path.join(graphitiDir, 'helper.py')), 'should restore .py to graphiti');
+  });
+});
+
+describe('cleanupClassicArtifacts', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir('cleanup');
+  });
+
+  afterEach(() => {
+    rmrf(tmpDir);
+  });
+
+  it('removes files listed in CLEANUP_FILES from target directory', () => {
+    const { cleanupClassicArtifacts, CLEANUP_FILES } = require(INSTALL_PATH);
+
+    // Create all classic artifact files
+    for (const relPath of CLEANUP_FILES) {
+      const fullPath = path.join(tmpDir, relPath);
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, 'classic content', 'utf8');
+    }
+
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+
+    // All files should be removed
+    for (const relPath of CLEANUP_FILES) {
+      assert.ok(!fs.existsSync(path.join(tmpDir, relPath)), relPath + ' should be removed');
+    }
+    assert.ok(cleaned >= CLEANUP_FILES.length, 'should report at least ' + CLEANUP_FILES.length + ' cleaned');
+  });
+
+  it('removes dead Ledger hook handlers', () => {
+    const { cleanupClassicArtifacts } = require(INSTALL_PATH);
+
+    const hooksDir = path.join(tmpDir, 'subsystems', 'ledger', 'hooks');
+    fs.mkdirSync(hooksDir, { recursive: true });
+    const deadHandlers = ['session-start.cjs', 'prompt-augment.cjs', 'session-summary.cjs', 'preserve-knowledge.cjs', 'capture-change.cjs'];
+    for (const f of deadHandlers) {
+      fs.writeFileSync(path.join(hooksDir, f), '// dead handler', 'utf8');
+    }
+
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+
+    for (const f of deadHandlers) {
+      assert.ok(!fs.existsSync(path.join(hooksDir, f)), f + ' should be removed');
+    }
+    assert.ok(cleaned >= deadHandlers.length, 'should report at least ' + deadHandlers.length + ' cleaned');
+  });
+
+  it('strips curation key from config.json', () => {
+    const { cleanupClassicArtifacts } = require(INSTALL_PATH);
+
+    const configPath = path.join(tmpDir, 'config.json');
+    writeJSON(configPath, {
+      version: '0.1.0',
+      enabled: true,
+      graphiti: { mcp_url: 'http://localhost:8100/mcp' },
+      curation: { model: 'anthropic/claude-haiku-4.5', api_url: 'https://openrouter.ai/api/v1/chat/completions' },
+      timeouts: { health: 3000, mcp: 5000 }
+    });
+
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+
+    const config = readJSON(configPath);
+    assert.strictEqual(config.curation, undefined, 'curation key should be removed');
+    assert.ok(config.graphiti, 'graphiti key should be preserved');
+    assert.ok(config.enabled === true, 'enabled key should be preserved');
+    assert.ok(cleaned >= 1, 'should report at least 1 cleaned');
+  });
+
+  it('strips reverie.mode from config.json', () => {
+    const { cleanupClassicArtifacts } = require(INSTALL_PATH);
+
+    const configPath = path.join(tmpDir, 'config.json');
+    writeJSON(configPath, {
+      version: '0.1.0',
+      enabled: true,
+      curation: { model: 'test' },
+      reverie: { mode: 'classic', other_key: 'keep' }
+    });
+
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+
+    const config = readJSON(configPath);
+    assert.strictEqual(config.curation, undefined, 'curation key should be removed');
+    assert.strictEqual(config.reverie.mode, undefined, 'reverie.mode should be removed');
+    assert.strictEqual(config.reverie.other_key, 'keep', 'other reverie keys should be preserved');
+    assert.ok(cleaned >= 1, 'should report at least 1 cleaned');
+  });
+
+  it('handles missing files gracefully (returns 0 when nothing to clean)', () => {
+    const { cleanupClassicArtifacts } = require(INSTALL_PATH);
+
+    // Empty directory -- nothing to clean
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+    assert.strictEqual(cleaned, 0, 'should return 0 when nothing to clean');
+  });
+
+  it('CLEANUP_FILES contains exactly 6 entries', () => {
+    const { CLEANUP_FILES } = require(INSTALL_PATH);
+    assert.strictEqual(CLEANUP_FILES.length, 6, 'should have 6 classic artifact paths');
+  });
+
+  it('exports cleanupClassicArtifacts and CLEANUP_FILES', () => {
+    const mod = require(INSTALL_PATH);
+    assert.ok(typeof mod.cleanupClassicArtifacts === 'function', 'should export cleanupClassicArtifacts');
+    assert.ok(Array.isArray(mod.CLEANUP_FILES), 'should export CLEANUP_FILES array');
   });
 });

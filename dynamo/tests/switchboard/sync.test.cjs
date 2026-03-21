@@ -245,9 +245,9 @@ describe('sync module exports', () => {
     assert.strictEqual(typeof sync.deleteFiles, 'function');
   });
 
-  it('exports SYNC_PAIRS with 8 directory pairs (six-subsystem layout)', () => {
+  it('exports SYNC_PAIRS with 9 directory pairs (six-subsystem layout + reverie)', () => {
     assert.ok(Array.isArray(sync.SYNC_PAIRS), 'SYNC_PAIRS should be an array');
-    assert.strictEqual(sync.SYNC_PAIRS.length, 8, 'should have 8 sync pairs');
+    assert.strictEqual(sync.SYNC_PAIRS.length, 9, 'should have 9 sync pairs');
     const labels = sync.SYNC_PAIRS.map(p => p.label);
     assert.ok(labels.includes('root'), 'should have root pair');
     assert.ok(labels.includes('dynamo-meta'), 'should have dynamo-meta pair');
@@ -255,6 +255,7 @@ describe('sync module exports', () => {
     assert.ok(labels.includes('assay'), 'should have assay pair');
     assert.ok(labels.includes('ledger'), 'should have ledger pair');
     assert.ok(labels.includes('terminus'), 'should have terminus pair');
+    assert.ok(labels.includes('reverie'), 'should have reverie pair');
     assert.ok(labels.includes('cc'), 'should have cc pair');
     assert.ok(labels.includes('lib'), 'should have lib pair');
   });
