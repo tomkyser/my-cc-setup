@@ -1,79 +1,131 @@
-# Integrations Analysis: Dynamo
+# External Integrations
 
-**Analysis date:** 2026-03-18
+**Generated:** 2026-03-20
+**Context:** v1.3-M1 shipped -- six-subsystem architecture
+
+## Graphiti MCP Server
+
+**Protocol:** HTTP JSON-RPC + Server-Sent Events (SSE)
+**Endpoint:** `http://localhost:8100/mcp`
+**Health:** `http://localhost:8100/health`
+
+### Connection Pattern
+
+All MCP communication flows through `subsystems/terminus/mcp-client.cjs`:
+
+```
+MCPClient.initialize() -> SSE connection -> session_id extraction
+MCPClient.callTool(name, args) -> JSON-RPC POST -> SSE stream -> parseSSE -> result
+```
+
+### MCP Tools Used
+
+| Tool | Subsystem | Purpose |
+|------|-----------|---------|
+| `add_memory` | Ledger | Store episodes (change capture, summaries, user memories) |
+| `search` | Assay | Semantic search across knowledge graph |
+| `get_entity_edge` | Assay | Inspect specific relationships |
+| `delete_entity_edge` | Assay | Remove specific relationships |
+| `delete_episode` | Assay | Remove episodes by UUID |
+| `clear_data` | Assay | Clear all data for a scope (destructive) |
+
+### Error Handling
+
+- MCPClient wraps all calls in try/catch
+- Connection failures return null/empty results (graceful degradation)
+- Health checks verify MCP connectivity via 8-stage pipeline
+- Session IDs cached per MCPClient instance; stale IDs require restart
+
+## Neo4j 5.26
+
+**Bolt:** `bolt://localhost:7687`
+**HTTP:** `http://localhost:7475` (admin browser)
+**Container:** `neo4j-graphiti` (Docker)
+
+Not accessed directly by Dynamo -- all graph operations go through Graphiti MCP.
+
+## OpenRouter API
+
+**Endpoint:** `https://openrouter.ai/api/v1/chat/completions`
+**Model:** `anthropic/claude-haiku-4.5`
+**Auth:** `OPENROUTER_API_KEY` from `~/.claude/graphiti/.env`
+
+### Usage Points
+
+| Module | Purpose | Timeout |
+|--------|---------|---------|
+| `subsystems/ledger/curation.cjs` | Curate/filter retrieved memories before injection | 10s |
+| `subsystems/ledger/hooks/session-summary.cjs` | Generate session summaries on Stop | 15s |
+| `subsystems/ledger/hooks/preserve-knowledge.cjs` | Summarize before context compaction | 15s |
+| `subsystems/assay/sessions.cjs` | Auto-name sessions via Haiku (backfill) | 10s |
+
+### Request Pattern
+
+```javascript
+const response = await fetch(config.curation.api_url, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${apiKey}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    model: config.curation.model,
+    messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }]
+  })
+});
+```
+
+## Docker Stack
+
+**Compose file:** `~/.claude/graphiti/docker-compose.yml`
+**Management:** `subsystems/terminus/stack.cjs` (start/stop via `docker compose`)
+
+### Containers
+
+| Container | Image | Purpose | Ports |
+|-----------|-------|---------|-------|
+| `graphiti-mcp` | Graphiti MCP | Knowledge graph API server | 8100 |
+| `neo4j-graphiti` | Neo4j 5.26 | Graph database | 7475, 7687 |
+
+### Health Check Pipeline (8 stages)
+
+1. Docker daemon reachable
+2. Neo4j HTTP responsive
+3. Graphiti API healthy
+4. MCP session initializable
+5. Environment variables set (OPENROUTER_API_KEY, NEO4J_PASSWORD)
+6. Canary write/read round-trip
+7. Node.js version >= 22
+8. Session storage backend (SQLite or JSON)
 
 ## Claude Code Integration
 
-### Hook System
-- 5 hooks registered in `~/.claude/settings.json` via `claude-config/settings-hooks.json`
-- All hooks point to `~/.claude/dynamo/hooks/dynamo-hooks.cjs`
-- Hook events: SessionStart, UserPromptSubmit, PostToolUse, PreCompact, Stop
-- Claude Code sends JSON on stdin with `hook_event_name` field
-- Single dispatcher (`dynamo-hooks.cjs`) routes to appropriate `ledger/hooks/` handler
+**Hook dispatcher:** `cc/hooks/dynamo-hooks.cjs`
+**Registration:** `cc/settings-hooks.json` merged into `~/.claude/settings.json`
 
-### CLAUDE.md Integration
-- Template at `claude-config/CLAUDE.md.template`
-- User manually incorporates into `~/.claude/CLAUDE.md`
-- Provides operational instructions for Claude Code to use Dynamo CLI
-- NOT auto-deployed by installer (users have custom CLAUDE.md content)
+### Hook Events
 
-### Settings.json Integration
-- `switchboard/install.cjs` merges hook definitions into `~/.claude/settings.json`
-- Backup created at `settings.json.bak` before modification
-- Rollback command restores backup
+| Event | Timeout | Purpose |
+|-------|---------|---------|
+| SessionStart (startup/resume) | 30s | Context injection from knowledge graph |
+| SessionStart (compact) | 30s | Re-inject context after compaction |
+| UserPromptSubmit | 15s | Semantic search augmentation per prompt |
+| PostToolUse (Write/Edit/MultiEdit) | 10s | Capture file changes as episodes |
+| PreCompact | 30s | Preserve key knowledge before compression |
+| Stop | 30s | Session summary and storage |
 
-## Graphiti MCP Server Integration
+## SQLite (Session Storage)
 
-### Connection
-- `ledger/mcp-client.cjs` provides `MCPClient` class
-- JSON-RPC 2.0 over HTTP with SSE (Server-Sent Events) response parsing
-- Endpoint: `http://localhost:8100/mcp` (configurable in config.json)
-- Health endpoint: `http://localhost:8100/health`
+**Module:** `subsystems/terminus/session-store.cjs`
+**API:** `node:sqlite` DatabaseSync (synchronous, WAL mode)
+**Location:** `~/.claude/graphiti/sessions.db`
 
-### Operations
-- `add_memory`: Store episodes with group_id scoping
-- `search_memory_facts`: Semantic fact search
-- `search_memory_nodes`: Entity node search
-- `get_episodes`: List episodes by scope
-- `get_entity_edge`: Inspect specific relationship
-- `delete_episode`: Remove episode by UUID
-- `delete_entity_edge`: Remove relationship by UUID
-- `clear_graph`: Wipe all data for a scope
+### Dual-Write Pattern
 
-### Docker Stack
-- Managed by `switchboard/stack.cjs` (wraps docker compose)
-- Config at `ledger/graphiti/docker-compose.yml`
-- Deployed to `~/.claude/graphiti/` (separate from dynamo/)
-- Neo4j data persists in Docker volumes (`neo4j_data`, `neo4j_logs`)
-
-## OpenRouter Integration
-
-### Curation Pipeline
-- `ledger/curation.cjs` calls OpenRouter API
-- Model: `anthropic/claude-haiku-4.5`
-- API URL: `https://openrouter.ai/api/v1/chat/completions`
-- Used for: memory curation, session summarization, knowledge extraction
-- 5 prompt templates in `dynamo/prompts/` directory
-- `temperature: 1.0` required for Anthropic models via OpenRouter
-
-### Authentication
-- `OPENROUTER_API_KEY` environment variable
-- Loaded from `~/.claude/graphiti/.env` by config loading in core.cjs
-
-## File System Integration
-
-### Sync Pairs (repo -> deployed)
-- `dynamo/` -> `~/.claude/dynamo/` (excludes: tests)
-- `ledger/` -> `~/.claude/dynamo/ledger/`
-- `switchboard/` -> `~/.claude/dynamo/switchboard/`
-- Content-based comparison using Buffer.compare (not mtime)
-- Bidirectional: detects which side is newer
-
-### Config Generation
-- `dynamo/config.json` is the template
-- `install.cjs` generates deployed config at `~/.claude/dynamo/config.json`
-- `.env` values merged into config during install
+- **Read:** SQLite (authoritative)
+- **Write:** Both SQLite and JSON (`sessions.json`)
+- **Fallback:** JSON-only if `node:sqlite` unavailable
+- **Migration:** `dynamo install` auto-migrates `sessions.json` to SQLite
 
 ---
-
-*Integration analysis: 2026-03-18*
+*Integration analysis for: Dynamo v1.3-M1*

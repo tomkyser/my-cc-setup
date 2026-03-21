@@ -1,0 +1,24 @@
+#!/bin/sh
+# Dynamo CLI shim
+# Installed by: dynamo install
+# Location: ~/.local/bin/dynamo
+
+# Dev mode: use repo version if DYNAMO_DEV=1
+if [ "$DYNAMO_DEV" = "1" ]; then
+  REPO_PATH=""
+  if [ -f "$HOME/.claude/dynamo/.repo-path" ]; then
+    REPO_PATH=$(cat "$HOME/.claude/dynamo/.repo-path")
+  fi
+  if [ -n "$REPO_PATH" ] && [ -f "$REPO_PATH/dynamo.cjs" ]; then
+    exec node "$REPO_PATH/dynamo.cjs" "$@"
+  fi
+fi
+
+# Normal mode: use deployed version
+DYNAMO="$HOME/.claude/dynamo/dynamo.cjs"
+if [ ! -f "$DYNAMO" ]; then
+  echo "Error: Dynamo not installed at $DYNAMO" >&2
+  echo "Run the Dynamo installer to set up." >&2
+  exit 1
+fi
+exec node "$DYNAMO" "$@"

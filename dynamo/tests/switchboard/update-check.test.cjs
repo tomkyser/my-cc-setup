@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const MOD_PATH = path.join(__dirname, '..', '..', '..', 'switchboard', 'update-check.cjs');
+const MOD_PATH = path.join(__dirname, '..', '..', '..', 'subsystems', 'switchboard', 'update-check.cjs');
 
 // All tests use temp directories -- never touch real ~/.claude/
 function makeTmpDir(prefix) {

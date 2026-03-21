@@ -1,480 +1,680 @@
-# Stack Research
+# Technology Stack: v1.3-M2 Core Intelligence
 
-**Domain:** CJS/Node architectural rewrite of Claude Code enhancement platform (Dynamo)
-**Researched:** 2026-03-17
-**Confidence:** HIGH — verified against installed runtime (Node v24.13.1), GSD source code (v1.25.1), existing hooks, Claude Code official docs, and npm registry
-
----
-
-## Why CJS, Not ESM
-
-This is the most important decision to understand up front. The answer is short: **follow GSD's proven pattern**.
-
-| Factor | CJS | ESM |
-|--------|-----|-----|
-| GSD framework compatibility | Native — GSD is 100% CJS (.cjs files, `require()`, `module.exports`) | Would require interop layer or fork |
-| `~/.claude/package.json` | Already set to `{"type":"commonjs"}` | Changing would break existing GSD hooks |
-| Existing Dynamo hooks | 3 JS hooks already use CJS (`require('fs')`, `require('path')`) | Would need rewriting |
-| Claude Code hook execution | Hooks run as `node script.js` — CJS starts ~20ms faster (no module resolution overhead) | ESM adds startup latency in hook-critical paths |
-| Node.js 24 support | Fully supported, not deprecated, explicitly maintained | Recommended for new projects but not required |
-| Dynamic require from hooks | `require()` is synchronous — critical for hooks with 5-15s timeouts | `import()` is async — adds complexity in time-constrained hooks |
-| Ecosystem direction | ESM is the future, but CJS is explicitly not being removed | — |
-
-**Decision: CJS.** Because GSD is CJS, the Claude runtime is CJS, and hooks need synchronous fast-path execution. ESM would gain us nothing and force interop complexity. When/if GSD migrates to ESM (unlikely near-term given v1.25.1 is pure CJS), we can migrate then.
-
-**Confidence: HIGH** — Verified by reading GSD source (14 `.cjs` files, zero `.mjs` files, zero `import` statements), `~/.claude/package.json` content, and 3 existing JS hooks all using `require()`.
+**Project:** Dynamo v1.3-M2
+**Researched:** 2026-03-20
+**Mode:** Stack additions for new capabilities (not re-researching existing stack)
+**Constraint:** Zero npm dependencies -- all additions must use Node.js built-ins or hand-rolled CJS
+**Confidence:** HIGH (verified against official docs, platform inspection, and current codebase)
 
 ---
 
-## Recommended Stack
+## 1. Executive Summary
 
-### Core Runtime
+v1.3-M2 requires eight technical capability domains: cognitive processing (activation maps, sublimation scoring, entity extraction), dual-path routing (hot CJS path + custom subagent deliberation), cost monitoring (SQLite-backed budget tracking), hooks-as-primary-behavior (dispatcher refactoring), modular injection control (feature flags), memory backfill (JSONL transcript parsing), bare CLI invocation (shell shim), and Graphiti small_model support (Docker image update).
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Node.js | v24.x (LTS Oct 2025+) | Runtime | Already installed (v24.13.1). LTS = stable for production. Built-in `fetch`, `node:test`, `node:assert` eliminate external deps. |
+**All eight domains are achievable within the zero-npm-dependency constraint.** The cognitive processing engine is pure arithmetic in CJS. The custom subagent uses Claude Code's native `~/.claude/agents/` system with YAML frontmatter. Cost tracking extends the existing SQLite infrastructure (node:sqlite DatabaseSync). Transcript parsing uses Node.js built-in JSONL line reading. The bare CLI shim is a symlink to the already-shebanged `dynamo.cjs`.
 
-**No framework.** Dynamo is a CLI tool + hook library, not a web app. Express, Fastify, etc. are irrelevant. Follow GSD's pattern: pure Node.js with zero framework dependency.
+No new npm packages. No new external service dependencies beyond what already exists (OpenRouter for Haiku, Graphiti MCP for knowledge graph). The Anthropic Messages API (direct HTTP) is used only as fallback for non-subscription users.
 
-### Module System
+---
 
-| Pattern | Source | Purpose |
-|---------|--------|---------|
-| `require()` / `module.exports` | GSD convention | Module loading |
-| `.cjs` file extension | GSD convention | Explicit CJS marking (avoids ambiguity even though `package.json` sets `"type": "commonjs"`) |
-| Single entry point + lib/ modules | GSD `gsd-tools.cjs` pattern | CLI router delegates to focused modules |
+## 2. Cognitive Processing Engine (CORTEX-01)
 
-**Architecture pattern from GSD:**
+### 2.1 Activation Map Management
+
+**Technology:** Pure CJS arithmetic + JSON state persistence
+
+**Why:** The activation map is a plain JavaScript object keyed by entity UUIDs. Spreading activation is BFS graph traversal with numeric decay -- no matrix math, no embeddings library, no external compute. All operations are deterministic and complete in <50ms.
+
+| Component | Implementation | Built-in Used |
+|-----------|---------------|---------------|
+| Activation map | `Object<uuid, {level, sources, last_activated, convergence_count}>` | Plain JS objects |
+| Decay computation | `level * Math.exp(-decayRate * timeDeltaMinutes)` | `Math.exp`, `Date.now()` |
+| Convergence bonus | `level *= 1.5` when independent paths converge | Arithmetic |
+| BFS propagation | Iterative BFS through graph adjacency (1-hop, v1.3) | Array/Set iteration |
+| State persistence | Atomic JSON write (tmp + rename pattern from existing codebase) | `node:fs`, `node:crypto` for randomUUID |
+
+**Key data structure -- `inner-voice-state.json` activation_map section:**
+
+```javascript
+{
+  "entity_uuid": {
+    "level": 0.85,          // 0.0 - 1.0, decays over time
+    "sources": ["direct_mention", "association"],
+    "last_activated": "2026-03-20T15:58:00Z",
+    "convergence_count": 2  // independent activation paths
+  }
+}
 ```
-bin/
-  dynamo.cjs              # CLI entry point (like gsd-tools.cjs)
-  lib/
-    core.cjs              # Shared utilities, output helpers, error handling
-    graphiti-client.cjs   # MCP client (replaces Python MCPClient class)
-    hooks.cjs             # Hook I/O helpers (stdin parsing, JSON output)
-    health.cjs            # Health check logic (replaces health-check.py)
-    sessions.cjs          # Session management (replaces session commands in graphiti-helper.py)
-    curation.cjs          # LLM curation via OpenRouter (replaces Python curate_results)
-    project.cjs           # Project detection (replaces detect-project)
-    config.cjs            # Dynamo configuration
+
+**Graph queries for propagation:** Uses existing `assay/search.cjs` (via Graphiti MCP) to fetch 1-hop neighbors of anchor entities. No new transport code. The Assay interface already returns entity-relationship data that provides the adjacency information needed for BFS.
+
+### 2.2 Sublimation Threshold
+
+**Technology:** Composite scoring function -- pure arithmetic
+
+```
+sublimation_score(entity) =
+    activation_level             // from activation map (0.0-1.0)
+  * surprise_factor              // 1.0 - keyword_overlap(entity, predictions)
+  * relevance_ratio              // keyword_overlap(entity, current_prompt)
+  * (1 - cognitive_load_penalty) // heuristic: session_age, turn_count, prompt_length
+  * confidence_weight            // time-decayed from entity last verification
 ```
 
-### HTTP Client
+**v1.3 simplification:** The `surprise_factor` and `relevance_ratio` use keyword overlap scoring (Jaccard similarity of tokenized terms), not embeddings. Embedding-based cosine similarity is a v1.4 capability (MENH-08, local embeddings). Jaccard similarity is cheap, deterministic, and sufficient for the threshold function.
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| `globalThis.fetch` (built-in) | Node 24 native | HTTP requests to Graphiti MCP, OpenRouter API, health endpoints | Zero dependencies. Replaces Python `httpx`. Available in CJS via global. Verified working on installed Node. |
+```javascript
+// Keyword overlap (Jaccard similarity) -- zero dependencies
+function jaccard(setA, setB) {
+  const intersection = new Set([...setA].filter(x => setB.has(x)));
+  const union = new Set([...setA, ...setB]);
+  return union.size === 0 ? 0 : intersection.size / union.size;
+}
+```
 
-**Why not `undici` npm package:** The built-in `fetch` in Node 24 IS undici under the hood. Installing undici separately only makes sense if you need connection pooling, request interceptors, or HTTP/2 — none of which Dynamo needs. The hooks make simple POST/GET requests with 3-15s timeouts.
+### 2.3 Entity Extraction (Hot Path)
 
-**Why not `node-fetch`:** Deprecated in favor of built-in fetch. Was necessary for Node <18, irrelevant now.
+**Technology:** Deterministic pattern matching -- regex + heuristics
 
-**Why not `axios`:** External dependency for no gain. Built-in fetch covers all Dynamo use cases (JSON POST to MCP, GET health checks, POST to OpenRouter).
+Entity extraction on the hot path does NOT use an LLM. It uses pattern matching:
+- File paths: `/[\w./\-]+\.\w+/`
+- Function/class names: camelCase and PascalCase patterns
+- Known entity names from the activation map (exact match against loaded state)
+- Domain keywords per frame classification
 
-### Testing
+This is the same approach used by many NER-lite systems for code-centric domains. Accuracy is lower than LLM extraction but latency is <5ms vs 500ms+.
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| `node:test` | Node 24 built-in | Test runner | Zero dependencies. Stable and production-ready in Node 24. Supports `describe`/`it`/`test`, mocking, watch mode, coverage. GSD has no tests (it's a framework), but Dynamo should — hooks that silently fail need test coverage. |
-| `node:assert` | Node 24 built-in | Assertions | Paired with `node:test`. `assert.strictEqual`, `assert.deepStrictEqual`, `assert.throws` cover all needs. |
+### 2.4 Domain Frame Classification
 
-**Why not Jest:** External dependency (dozens of transitive deps). `node:test` covers all Dynamo's needs: unit tests for module functions, integration tests for hook I/O. Jest's snapshot testing and DOM mocking are irrelevant here.
+**Technology:** Keyword/regex heuristic lookup table
 
-**Why not Vitest:** ESM-first, adds complexity for CJS projects. Also external dependency.
+```javascript
+const FRAME_KEYWORDS = {
+  engineering:  ['code', 'function', 'module', 'refactor', 'implement'],
+  debugging:    ['error', 'bug', 'fix', 'stack trace', 'failing'],
+  architecture: ['design', 'pattern', 'architecture', 'boundary', 'component'],
+  social:       ['team', 'meeting', 'review', 'feedback'],
+  general:      []  // fallback
+};
+```
 
-**Test execution:**
+Single dominant frame per prompt in v1.3. Multi-frame fan-out deferred to v1.4 (requires embedding classification from MENH-08).
+
+---
+
+## 3. Dual-Path Routing (CORTEX-02)
+
+### 3.1 Hot Path (<500ms, CJS Command Hooks)
+
+**Technology:** Existing hook dispatcher pattern + new Reverie handler modules
+
+The hot path is pure CJS code that runs within the existing `cc/hooks/dynamo-hooks.cjs` dispatcher. No new infrastructure -- the dispatcher already routes events to handler modules by event name. The change is that handlers migrate from `subsystems/ledger/hooks/` to `subsystems/reverie/handlers/` and gain cognitive processing logic.
+
+**Latency budget verified:**
+
+| Step | Target | Mechanism |
+|------|--------|-----------|
+| State load (JSON parse) | <5ms | `fs.readFileSync` + `JSON.parse` -- verified on 50KB files |
+| Domain classification | <1ms | Keyword lookup table |
+| Activation map update | 10-50ms | In-memory object operations + optional Assay search |
+| Sublimation scoring | <1ms | Pure arithmetic |
+| Template formatting | <5ms | String interpolation |
+| State persistence | <5ms | Atomic write (tmp + rename) via `node:crypto.randomUUID()` |
+| **Total (no Haiku)** | **<70ms** | Deterministic path |
+| **Total (with Haiku)** | **<500ms** | Haiku call adds ~200-400ms |
+
+### 3.2 Deliberation Path (Custom Subagent, 2-10s)
+
+**Technology:** Claude Code custom subagent system (`~/.claude/agents/inner-voice.md`)
+
+**Verified YAML frontmatter fields** (from official Claude Code docs at code.claude.com/docs/en/sub-agents, fetched 2026-03-20):
+
+| Field | Value | Rationale |
+|-------|-------|-----------|
+| `name` | `inner-voice` | Lowercase + hyphens per spec |
+| `description` | Cognitive processing engine for Dynamo memory | Drives automatic delegation decisions |
+| `model` | `sonnet` | Alias accepted; resolves to claude-sonnet-4-6. Capable for analysis, cheaper than Opus |
+| `tools` | `Read, Grep, Glob, Bash` | Read-only + CLI access for `dynamo search` queries |
+| `disallowedTools` | `Write, Edit, Agent` | Reverie observes, does not modify user code or spawn sub-subagents |
+| `permissionMode` | `dontAsk` | Auto-deny permission prompts; explicitly allowed tools still work |
+| `maxTurns` | `10` | Bounded processing; prevents runaway analysis |
+| `memory` | `user` | Persistent at `~/.claude/agent-memory/inner-voice/` |
+| `background` | `false` | Foreground for state bridge reliability; background considered for v1.4 |
+
+**Subagent file location:** `~/.claude/agents/inner-voice.md` (user-level, available in all projects). Deployed via `cc/agents/inner-voice.md` in the repo, synced by the install/sync pipeline.
+
+**Additional confirmed fields available (not used in v1.3):**
+- `skills` -- could preload Dynamo skills into subagent context (v1.4 consideration)
+- `hooks` -- subagent-scoped hooks, e.g., `Stop` in frontmatter auto-converts to `SubagentStop`
+- `effort` -- `low`, `medium`, `high`, `max` (Opus only). Default: inherits from session
+- `isolation` -- `worktree` for isolated git worktree (not needed for IV processing)
+
+### 3.3 State Bridge Pattern (SubagentStop to UserPromptSubmit)
+
+**Technology:** File-based state bridge -- JSON write/read/delete
+
+**Confirmed from Claude Code hooks documentation (code.claude.com/docs/en/hooks, fetched 2026-03-20):**
+
+SubagentStop hook receives:
+- `agent_id` -- unique identifier
+- `agent_type` -- matches subagent name ("inner-voice")
+- `agent_transcript_path` -- path to subagent's JSONL transcript
+- `last_assistant_message` -- text of the subagent's final response (key field)
+- `stop_hook_active` -- boolean for loop prevention
+
+SubagentStart hook receives:
+- `agent_id` and `agent_type`
+- Can return `additionalContext` that is **injected directly into the subagent's prompt** (not the parent's context)
+
+**Critical constraint confirmed:** SubagentStop CANNOT inject into parent context (GitHub issue #5812, closed as NOT_PLANNED). The file-based state bridge is the correct workaround. SubagentStop writes `inner-voice-deliberation-result.json`; the next UserPromptSubmit reads it.
+
+**Hook event routing in settings.json:**
+
+```json
+{
+  "hooks": {
+    "SubagentStart": [{
+      "matcher": "inner-voice",
+      "hooks": [{
+        "type": "command",
+        "command": "node \"$HOME/.claude/dynamo/cc/hooks/dynamo-hooks.cjs\""
+      }]
+    }],
+    "SubagentStop": [{
+      "matcher": "inner-voice",
+      "hooks": [{
+        "type": "command",
+        "command": "node \"$HOME/.claude/dynamo/cc/hooks/dynamo-hooks.cjs\""
+      }]
+    }]
+  }
+}
+```
+
+The existing dispatcher at `cc/hooks/dynamo-hooks.cjs` already handles event routing via `data.hook_event_name`. The `VALID_EVENTS` set needs to be extended to include `SubagentStart` and `SubagentStop`.
+
+### 3.4 API Plan Fallback (Direct HTTP)
+
+**Technology:** Node.js built-in `fetch` + Anthropic Messages API
+
+For non-subscription users, the deliberation path falls back to direct API calls instead of custom subagents. Uses the same built-in `fetch` and `AbortSignal.timeout` already used by `lib/core.cjs` for Haiku calls.
+
+```javascript
+// Anthropic Messages API -- same fetch pattern as existing curation.cjs
+const response = await fetch('https://api.anthropic.com/v1/messages', {
+  method: 'POST',
+  headers: {
+    'x-api-key': process.env.ANTHROPIC_API_KEY,
+    'anthropic-version': '2023-06-01',
+    'content-type': 'application/json'
+  },
+  body: JSON.stringify({
+    model: config.reverie.deliberation.model,
+    max_tokens: 500,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: deliberationPrompt }]
+  }),
+  signal: AbortSignal.timeout(config.reverie.deliberation.max_latency_ms)
+});
+```
+
+**API key requirement:** `ANTHROPIC_API_KEY` in `.env`. Only needed for non-subscription users. The existing `.env` loading infrastructure (`core.cjs > loadEnv()`) handles this.
+
+---
+
+## 4. Cost Monitoring (CORTEX-03)
+
+### 4.1 Data Store
+
+**Technology:** SQLite via `node:sqlite` DatabaseSync (same infrastructure as session storage)
+
+Cost tracking data is small, structured, and needs aggregation queries (sum by day, by month, by operation type). SQLite is the correct tool -- already proven in the codebase for session storage (Phase 21).
+
+**Schema:**
+
+```sql
+CREATE TABLE IF NOT EXISTS cost_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  timestamp TEXT NOT NULL,         -- ISO-8601
+  operation TEXT NOT NULL,         -- 'hot_haiku', 'deliberation_sonnet', 'session_start', etc.
+  model TEXT NOT NULL,             -- 'anthropic/claude-haiku-4.5', 'claude-sonnet-4-6', etc.
+  input_tokens INTEGER NOT NULL,
+  output_tokens INTEGER NOT NULL,
+  cost_usd REAL NOT NULL,          -- computed from token counts and model pricing
+  path TEXT NOT NULL,              -- 'hot' | 'deliberation' | 'rem'
+  session_id TEXT
+);
+
+CREATE TABLE IF NOT EXISTS budget (
+  scope TEXT PRIMARY KEY,          -- 'daily' | 'monthly'
+  limit_usd REAL NOT NULL,
+  reset_at TEXT NOT NULL           -- ISO-8601, next reset time
+);
+
+CREATE INDEX IF NOT EXISTS idx_cost_timestamp ON cost_log(timestamp);
+CREATE INDEX IF NOT EXISTS idx_cost_operation ON cost_log(operation);
+```
+
+### 4.2 Budget Enforcement
+
+**Technology:** Pre-check query before every LLM call
+
+```javascript
+function checkBudget(db) {
+  const today = new Date().toISOString().slice(0, 10);
+  const row = db.prepare(
+    'SELECT COALESCE(SUM(cost_usd), 0) as spent FROM cost_log WHERE timestamp >= ?'
+  ).get(today + 'T00:00:00Z');
+
+  const budgetRow = db.prepare('SELECT limit_usd FROM budget WHERE scope = ?').get('daily');
+  if (budgetRow && row.spent >= budgetRow.limit_usd) {
+    return { allowed: false, spent: row.spent, limit: budgetRow.limit_usd };
+  }
+  return { allowed: true, spent: row.spent };
+}
+```
+
+When budget is exhausted, all operations fall back to hot-path-only (deterministic, zero LLM cost). The system degrades gracefully from "intelligent" to "functional."
+
+### 4.3 Model Pricing Table
+
+**Technology:** Static lookup table in CJS, updated during `dynamo update`
+
+```javascript
+const MODEL_PRICING = {
+  'anthropic/claude-haiku-4.5': { input_per_mtok: 0.80, output_per_mtok: 4.00 },
+  'claude-sonnet-4-6':          { input_per_mtok: 3.00, output_per_mtok: 15.00 },
+  'claude-opus-4-6':            { input_per_mtok: 15.00, output_per_mtok: 75.00 },
+};
+
+function computeCost(model, inputTokens, outputTokens) {
+  const pricing = MODEL_PRICING[model];
+  if (!pricing) return 0; // Unknown model -- no cost tracked
+  return (inputTokens / 1_000_000) * pricing.input_per_mtok
+       + (outputTokens / 1_000_000) * pricing.output_per_mtok;
+}
+```
+
+### 4.4 Integration Point
+
+Cost logging wraps existing LLM call functions. The `curation.cjs > callHaiku()` function already returns response data. Adding a cost log entry after each call requires ~3 lines of integration code per call site.
+
+**Subsystem placement:** `subsystems/terminus/cost-store.cjs` (data infrastructure). Cost enforcement logic lives in `subsystems/reverie/dual-path.cjs` (cognitive decision). This honors the boundary: Terminus provides the pipe (storage), Reverie decides what flows through it (budget enforcement).
+
+---
+
+## 5. Hooks as Primary Behavior (MGMT-05)
+
+### 5.1 Dispatcher Extension
+
+**Technology:** Extended event routing in existing `cc/hooks/dynamo-hooks.cjs`
+
+The dispatcher's `VALID_EVENTS` set and `switch` statement need two additions:
+
+```javascript
+const VALID_EVENTS = new Set([
+  'SessionStart', 'UserPromptSubmit', 'PostToolUse', 'PreCompact', 'Stop',
+  'SubagentStart', 'SubagentStop'  // NEW for v1.3-M2
+]);
+```
+
+**Handler routing change:** The dispatcher currently routes to `ledger/hooks/`. For M2, it routes to `reverie/handlers/` for cognitive events while maintaining Ledger's PostToolUse handler (file change capture is Ledger's responsibility, not Reverie's).
+
+```javascript
+// Dual dispatch for PostToolUse
+case 'PostToolUse':
+  await require(resolve('ledger', 'hooks/capture-change.cjs'))(ctx);  // Ledger: file capture
+  await require(resolve('reverie', 'handlers/post-tool-use.cjs'))(ctx);  // Reverie: activation update
+  break;
+```
+
+### 5.2 settings.json Hook Registration
+
+**Technology:** Existing install.cjs settings management
+
+The installer already manages `~/.claude/settings.json` hook entries. M2 adds SubagentStart and SubagentStop entries targeting the same dispatcher script. No new infrastructure -- the `subsystems/switchboard/install.cjs` settings merge logic handles this.
+
+---
+
+## 6. Modular Injection Control (MGMT-10)
+
+### 6.1 Feature Flag
+
+**Technology:** `config.json` field + runtime check
+
+```javascript
+// In config.json
+{
+  "reverie": {
+    "enabled": true,
+    "mode": "cortex"  // "classic" | "cortex"
+  }
+}
+```
+
+The `reverie.mode` field controls which processing path activates:
+- `"cortex"` -- Full Inner Voice processing (Reverie handlers)
+- `"classic"` -- Legacy Haiku curation (existing Ledger handlers)
+
+**Instant rollback:** `dynamo config set reverie.mode classic` switches back to v1.2 behavior. Zero code changes, zero restart required -- the dispatcher checks the flag on every hook invocation.
+
+### 6.2 Config Command Extension
+
+**Technology:** New `dynamo config` subcommands (CLI router extension)
+
 ```bash
-node --test bin/lib/__tests__/*.cjs       # Run all tests
-node --test --watch bin/lib/__tests__/     # Watch mode
-node --test --experimental-test-coverage   # Coverage report
+dynamo config get reverie.mode     # Read a config value
+dynamo config set reverie.mode classic  # Write a config value
 ```
 
-### YAML Parsing
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| `js-yaml` | ^4.1.1 | Parse `curation/prompts.yaml`, `config.yaml`, `.ddev/config.yaml` | De facto standard (24,681 dependents). Pure JS, CJS compatible. Replaces Python `pyyaml`. Only external dependency needed. |
-
-**Why this is the ONE npm dependency:** The existing system reads YAML for curation prompts, DDEV config detection, and Graphiti config. Node.js has no built-in YAML parser. `js-yaml` is the standard choice — lightweight, well-maintained, CJS-native.
-
-### Process & IPC
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| `child_process` (built-in) | Node 24 native | Shell commands (git, docker) | Replaces Python `subprocess`. `execSync` for simple commands, `spawnSync` for controlled I/O. Same pattern GSD uses. |
-| `process.stdin` / `process.stdout` | Node 24 native | Hook I/O with Claude Code | Hooks receive JSON on stdin, output JSON on stdout. Existing hooks already use this pattern. |
+The CLI router at `dynamo.cjs` already handles 20+ commands. Adding `config get|set` is a simple case branch delegating to a new `lib/config.cjs` utility for safe JSON read/modify/write.
 
 ---
 
-## Supporting Libraries (All Built-in)
+## 7. Memory Backfill from Chat Transcripts
 
-These are Node.js built-in modules — zero npm install required.
+### 7.1 Transcript Location and Format
 
-| Module | Purpose | Replaces |
-|--------|---------|----------|
-| `fs` | File system operations | Python `pathlib`, `os` |
-| `path` | Path manipulation | Python `os.path`, `pathlib` |
-| `os` | Home directory, temp dir, platform detection | Python `os`, `pathlib.Path.home()` |
-| `child_process` | Shell execution (git, docker) | Python `subprocess` |
-| `crypto` | UUID generation (`crypto.randomUUID()`) | Python `uuid` |
-| `node:test` | Test runner | (none — Python code was untested) |
-| `node:assert` | Test assertions | (none) |
+**Technology:** Node.js `readline` or line-by-line `fs.readFileSync` + `JSON.parse`
+
+**Verified transcript location:** `~/.claude/projects/<project-hash>/<session-uuid>.jsonl`
+
+**Verified JSONL line types** (from actual inspection of session files):
+
+| Line Type | Content | Backfill Relevance |
+|-----------|---------|-------------------|
+| `user` | `{type: "user", message: {role: "user", content: "..."}}` | HIGH -- user prompts are primary backfill source |
+| `assistant` | `{type: "assistant", message: {role: "assistant", content: [...]}}` | MEDIUM -- decisions and context |
+| `progress` | Hook execution progress | LOW -- operational metadata |
+| `system/stop_hook_summary` | Stop hook output | LOW |
+| `system/turn_duration` | Timing data | LOW |
+| `file-history-snapshot` | File state snapshots | MEDIUM -- what was being worked on |
+
+**Parsing strategy:**
+
+```javascript
+const fs = require('node:fs');
+const readline = require('node:readline');
+
+async function* parseTranscript(filePath) {
+  const fileStream = fs.createReadStream(filePath);
+  const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+  for await (const line of rl) {
+    try {
+      const entry = JSON.parse(line);
+      if (entry.type === 'user' || entry.type === 'assistant') {
+        yield entry;
+      }
+    } catch { /* skip malformed lines */ }
+  }
+}
+```
+
+### 7.2 Backfill Pipeline
+
+**Technology:** CJS batch processor feeding Ledger's `episodes.cjs > addEpisode()`
+
+The backfill command (`dynamo backfill`) iterates over transcript files, extracts user/assistant conversation turns, chunks them into episode-sized units, and writes them to the knowledge graph via the existing Ledger write interface.
+
+**Key design decision:** Backfill is a batch operation, not real-time. It runs as a CLI command (`dynamo backfill [--project name] [--since date]`) and processes transcripts sequentially. Rate limiting against the Graphiti MCP server prevents overwhelming the knowledge graph.
+
+**Session metadata from transcript filenames:**
+- Session UUID: filename without `.jsonl` extension
+- Project: parent directory name decoded from the path-based hash
+- Timestamps: from `timestamp` field in each JSONL line
+
+### 7.3 Content Extraction
+
+For backfill, content extraction from assistant messages requires handling the content block array format:
+
+```javascript
+function extractAssistantText(message) {
+  const content = message?.message?.content;
+  if (!content) return '';
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('\n');
+  }
+  return '';
+}
+```
 
 ---
 
-## What NOT to Install
+## 8. Bare CLI Invocation (Shell Shim)
 
-This section is critical. Dynamo must stay lean — every dependency is a maintenance burden, a security surface, and a startup-time cost for hooks that have 5-15 second timeouts.
+### 8.1 Approach
+
+**Technology:** Symlink in `~/.local/bin/` pointing to deployed `dynamo.cjs`
+
+The `dynamo.cjs` file already has `#!/usr/bin/env node` as its first line (verified in both repo and deployed copy). The file is already executable in the functional sense. The missing piece is a symlink from a PATH directory.
+
+**Verified environment:**
+- `~/.local/bin/` exists and is in PATH (confirmed: 4 PATH entries include it)
+- Other tools (claude, codeman) already use this pattern
+- Node.js is accessible via `#!/usr/bin/env node` (nvm-managed, v24.13.1)
+
+### 8.2 Implementation
+
+```bash
+# Added to install.cjs (Switchboard)
+chmod +x ~/.claude/dynamo/dynamo.cjs  # ensure executable
+ln -sf ~/.claude/dynamo/dynamo.cjs ~/.local/bin/dynamo
+```
+
+**After installation:** `dynamo search "query"` works directly without `node ~/.claude/dynamo/dynamo.cjs search "query"`.
+
+### 8.3 Uninstall / Rollback
+
+```bash
+# Added to rollback path
+rm -f ~/.local/bin/dynamo
+```
+
+### 8.4 Why Not Other Approaches
+
+| Approach | Why Not |
+|----------|---------|
+| Shell function in `.zshrc` | Fragile; requires user's shell config modification; breaks in non-interactive shells |
+| Shell alias | Same problems as function; doesn't work in scripts or subshells |
+| npm global install / `bin` field | Requires package.json, npm infrastructure; violates zero-dependency constraint |
+| Copy script to PATH dir | Diverges from source; sync issues; maintenance burden |
+| **Symlink (chosen)** | Zero overhead, follows platform convention, self-updating (always points to deployed copy) |
+
+---
+
+## 9. Graphiti small_model Support
+
+### 9.1 Current Status
+
+**PR #1156** (getzep/graphiti): `feat(mcp): add configurable small_model support for OpenAI provider`
+- **Status:** Open, not merged (as of 2026-03-20)
+- **Issue:** #1155 -- small_model in LLMConfig cannot be configured via config.yaml
+- **Impact:** Only affects users running Graphiti with local LLMs (Ollama). Does NOT affect Dynamo's default setup (which uses Graphiti's default OpenAI models via the Docker MCP image).
+
+### 9.2 Relevance to Dynamo
+
+**LOW relevance for M2.** Dynamo uses the `zepai/knowledge-graph-mcp:standalone` Docker image (verified in `~/.claude/graphiti/docker-compose.yml`). This image uses the Graphiti default models (GPT-4.1-mini and GPT-4.1-nano via OpenAI API). The small_model configuration is only needed for users running local LLMs.
+
+**Action:** Monitor PR #1156. If merged before M2 ships, update the Docker image version. If not, no action needed. The Graphiti MCP server works correctly for Dynamo's use case without this PR.
+
+### 9.3 Docker Image Management
+
+The Graphiti Docker image is pinned in `~/.claude/graphiti/docker-compose.yml`. To update:
+
+```yaml
+# Current
+graphiti-mcp:
+  image: zepai/knowledge-graph-mcp:standalone
+
+# To pin a specific version when updating:
+graphiti-mcp:
+  image: zepai/knowledge-graph-mcp:standalone@sha256:<digest>
+```
+
+Neo4j is pinned at `5.26.0` (verified). No upgrade needed for M2.
+
+---
+
+## 10. Update Notes Generation
+
+### 10.1 Approach
+
+**Technology:** Markdown template + CLI command + git log analysis
+
+```bash
+dynamo update-notes [--since tag] [--format md|text]
+```
+
+The command:
+1. Reads git log since the specified tag (or last release tag)
+2. Categorizes commits by conventional commit prefix (feat, fix, chore, docs)
+3. Generates structured markdown using a template
+4. Optionally uses Haiku for polishing prose (same callHaiku pattern from curation.cjs)
+
+**No new dependencies.** Uses `child_process.execSync` for `git log` (already used by `detectProject()` in core.cjs) and string templating.
+
+---
+
+## 11. Recommended Stack Summary
+
+### Core Technologies (All Existing -- No New Dependencies)
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Node.js | >= 22 (current: 24.13.1) | Runtime | Already required; provides all built-ins needed |
+| `node:fs` | Built-in | State file I/O | Atomic read/write for inner-voice-state.json |
+| `node:crypto` | Built-in | UUID generation | `randomUUID()` for state file temp names, deliberation IDs |
+| `node:sqlite` | Built-in (experimental) | Cost tracking DB | Already proven for session storage (Phase 21) |
+| `node:readline` | Built-in | Transcript parsing | Line-by-line JSONL processing for backfill |
+| `node:perf_hooks` | Built-in | Latency measurement | `performance.now()` for hot path timing validation |
+| `node:child_process` | Built-in | Git operations | `execSync` for update notes, already used by detectProject |
+
+### Claude Code Platform Features (No New Dependencies)
+
+| Feature | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| Custom subagents | Current | Deliberation path | `~/.claude/agents/inner-voice.md` with YAML frontmatter; zero marginal cost on subscription |
+| SubagentStart hook | Current | Context injection | Injects IV state into subagent via `additionalContext` |
+| SubagentStop hook | Current | Result capture | Reads `last_assistant_message` for state bridge file write |
+| Hook `additionalContext` | Current | Memory injection | Returns processed insights to Claude's context per hook event |
+| `permissionMode: dontAsk` | Current | Autonomous subagent | Inner Voice operates without user prompts |
+
+### External Services (Already Configured -- No New Dependencies)
+
+| Service | Current Setup | M2 Usage |
+|---------|--------------|----------|
+| OpenRouter (Haiku) | `.env > OPENROUTER_API_KEY` | Hot path formatting, session naming (unchanged) |
+| Graphiti MCP | Docker: `zepai/knowledge-graph-mcp:standalone` | Knowledge graph queries, episode writes (unchanged) |
+| Neo4j | Docker: `neo4j:5.26.0` | Graph storage backend (unchanged) |
+| Anthropic API | `.env > ANTHROPIC_API_KEY` (NEW, optional) | API plan fallback for deliberation path only |
+
+### Supporting Patterns (Already Established in Codebase)
+
+| Pattern | Current Usage | M2 Extension |
+|---------|--------------|-------------|
+| Atomic file write (tmp + rename) | session-store.cjs, settings backup | inner-voice-state.json, deliberation-result.json |
+| Options-based test isolation | All 515 existing tests | All new Reverie module tests |
+| Centralized path resolver | `lib/resolve.cjs` for 8 subsystems | Already resolves `reverie` subsystem path |
+| SQLite DatabaseSync | session-store.cjs (Phase 21) | cost-store.cjs (identical pattern) |
+| Hook dispatcher routing | 5 events in dynamo-hooks.cjs | Extended to 7 events (+SubagentStart, +SubagentStop) |
+| Config.json runtime check | `isEnabled()` toggle gate | `reverie.mode` feature flag gate |
+
+---
+
+## 12. Alternatives Considered
+
+| Recommended | Alternative | Why Not |
+|-------------|-------------|---------|
+| Keyword overlap (Jaccard) for v1.3 similarity | npm: `natural`, `compromise`, or TF-IDF | Violates zero-dependency constraint; embedding-based approach deferred to v1.4 (MENH-08) |
+| SQLite for cost tracking | JSON file | Need aggregation queries (SUM by day/month); JSON scanning is O(n); SQLite is O(log n) with indexes |
+| Custom subagent for deliberation | Direct Anthropic API always | Subscription users get zero marginal cost via subagent; API-only wastes the subscription benefit |
+| Symlink for bare CLI | npm `bin` field or shell function | Symlink is simplest, follows platform convention, self-updating; npm adds unnecessary infrastructure |
+| File-based state bridge | In-memory IPC, named pipes | Subagent runs in separate process; no shared memory; file bridge is the only reliable cross-process pattern in Claude Code's architecture |
+| Regex entity extraction (hot path) | LLM-based NER | Hot path latency budget (<500ms) cannot accommodate an LLM call for entity extraction |
+| `perf_hooks.performance.now()` for timing | `Date.now()` | `performance.now()` provides sub-millisecond resolution; important for validating hot path stays under 500ms |
+
+---
+
+## 13. What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| Express / Fastify / Hapi | Not a web server. Hooks are CLI scripts. | Built-in `process.stdin`/`process.stdout` |
-| axios / got / node-fetch | Redundant with built-in `fetch` in Node 24 | `globalThis.fetch` |
-| Jest / Mocha / Vitest | External test runners add dep weight | `node:test` + `node:assert` (built-in) |
-| TypeScript | GSD is pure JS. TS adds build step, slows hook startup. CJS+TS is awkward. | JSDoc type annotations if needed |
-| commander / yargs | CLI argument parsing frameworks. GSD uses raw `process.argv` parsing — follow the pattern. | Manual `process.argv.slice(2)` parsing (GSD pattern) |
-| dotenv | GSD loads config from JSON files, not .env | Manual `.env` parsing (10 lines, like existing Python code) |
-| winston / pino / bunyan | Logging frameworks. Hooks log to stderr or to files directly. | `process.stderr.write()` + `fs.appendFileSync()` |
-| uuid | `crypto.randomUUID()` is built-in since Node 19 | `require('crypto').randomUUID()` |
-| chalk / picocolors | ANSI color libraries. Existing hooks use raw ANSI escape codes. | Raw `\x1b[32m` codes (GSD pattern, see `gsd-statusline.js`) |
-
-**Total external dependencies for Dynamo: 1 (js-yaml).**
-
-Compare to the Python system being replaced: `httpx`, `anthropic`, `pyyaml`, plus a full Python venv (~50MB).
+| npm packages for NLP/ML | Violates zero-dependency constraint; adds installation complexity | Built-in regex/Jaccard for v1.3; local embeddings (MENH-08) for v1.4 |
+| ESM modules | CJS is the standard in this ecosystem; all 27 existing modules are CJS | CJS with `require()` |
+| TypeScript | Adds build step; no compilation dependency allowed | JSDoc comments for type hints where needed |
+| WebSocket for state bridge | Overengineered; Claude Code subagents are separate processes with no native IPC | File-based JSON state bridge |
+| External embedding API (e.g., OpenAI embeddings) | Adds latency (network round-trip) and cost to the hot path | Keyword overlap for v1.3; local embeddings for v1.4 |
+| Redis/Memcached for activation map | Overkill for single-user system; adds infrastructure dependency | In-memory JS object + JSON file persistence |
+| `node:worker_threads` for parallel processing | Adds complexity; activation map processing is fast enough single-threaded | Sequential processing within the 500ms budget |
+| `process.env` for feature flags | Not persistent; lost between process invocations | `config.json` field checked at runtime |
 
 ---
 
-## Integration with Claude Code Hook System
+## 14. Version Compatibility
 
-### Hook Architecture (Current vs. Target)
-
-**Current (Python/Bash):**
-```
-settings.json hook entry
-  -> bash script (session-start.sh, capture-change.sh, etc.)
-    -> Python venv/graphiti-helper.py
-      -> httpx HTTP calls to Graphiti MCP + OpenRouter
-```
-
-**Target (Node/CJS):**
-```
-settings.json hook entry
-  -> node dynamo.cjs hook <event-name>
-    -> Built-in fetch to Graphiti MCP + OpenRouter
-```
-
-Three layers collapse to two. The bash middleman is eliminated. Python venv is eliminated.
-
-### Hook Event Coverage
-
-Based on verified Claude Code hook schema (22 events total, Dynamo uses 6):
-
-| Hook Event | Current Implementation | Target CJS |
-|------------|----------------------|------------|
-| `SessionStart` | `session-start.sh` -> Python (search global prefs, project context, recent sessions) | `dynamo.cjs hook session-start` |
-| `UserPromptSubmit` | `prompt-augment.sh` -> Python (semantic search, curation, session naming) | `dynamo.cjs hook prompt-augment` |
-| `PostToolUse` (Write/Edit) | `capture-change.sh` -> Python (add episode to knowledge graph) | `dynamo.cjs hook capture-change` |
-| `PostToolUse` (all) | `gsd-context-monitor.js` (already CJS) | Keep as-is or integrate |
-| `PreCompact` | `preserve-knowledge.sh` -> Python (extract critical knowledge before compaction) | `dynamo.cjs hook preserve-knowledge` |
-| `Stop` | `session-summary.sh` -> Python (summarize session, index, auto-name) | `dynamo.cjs hook session-summary` |
-
-### Hook I/O Contract
-
-All hooks follow the same pattern (verified against official docs):
-
-**Input (stdin):**
-```json
-{
-  "session_id": "abc123",
-  "cwd": "/path/to/project",
-  "hook_event_name": "PostToolUse",
-  "tool_name": "Write",
-  "tool_input": { "file_path": "..." }
-}
-```
-
-**Output (stdout) for context injection:**
-```json
-{
-  "hookSpecificOutput": {
-    "hookEventName": "SessionStart",
-    "additionalContext": "Curated memory context here..."
-  }
-}
-```
-
-**Or plain text** (SessionStart and UserPromptSubmit accept raw text on stdout as context).
-
-**Exit codes:** 0 = success (JSON parsed), 2 = blocking error, other = non-blocking error (stderr shown in verbose mode).
-
-### Shared Hook I/O Module
-
-The `lib/hooks.cjs` module should provide a standard pattern for all hooks:
-
-```javascript
-// lib/hooks.cjs — Hook I/O helpers
-const STDIN_TIMEOUT_MS = 3000; // Match existing pattern from gsd-context-monitor.js
-
-function readStdin() {
-  return new Promise((resolve, reject) => {
-    let input = '';
-    const timeout = setTimeout(() => resolve('{}'), STDIN_TIMEOUT_MS);
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', chunk => input += chunk);
-    process.stdin.on('end', () => {
-      clearTimeout(timeout);
-      try { resolve(JSON.parse(input)); }
-      catch { resolve({}); }
-    });
-  });
-}
-
-function outputContext(hookEventName, additionalContext) {
-  const output = {
-    hookSpecificOutput: { hookEventName, additionalContext }
-  };
-  process.stdout.write(JSON.stringify(output));
-}
-
-function silentExit() { process.exit(0); }
-
-module.exports = { readStdin, outputContext, silentExit };
-```
+| Component | Required Version | Verified | Notes |
+|-----------|-----------------|----------|-------|
+| Node.js | >= 22 | v24.13.1 on this machine | Required for `node:sqlite`, native `fetch`, `crypto.randomUUID()` |
+| `node:sqlite` | Experimental (Node >= 22) | Works on v24.13.1 | DatabaseSync API used; experimental warning suppressed |
+| Claude Code | >= 2.1.63 | v2.1.80 on this machine | Required for SubagentStart/Stop hooks, custom agents, Agent tool (renamed from Task) |
+| Graphiti MCP | `standalone` tag | Current Docker image | No version-specific requirements for M2 |
+| Neo4j | 5.x | 5.26.0 | No version-specific requirements for M2 |
 
 ---
 
-## MCP Client (Replacing Python MCPClient)
+## 15. New Files Created by M2
 
-The Python `MCPClient` class does four things: initialize MCP session, call tools, parse SSE responses, and close the connection. This maps directly to CJS using built-in `fetch`:
+| File | Subsystem | Purpose |
+|------|-----------|---------|
+| `subsystems/reverie/inner-voice.cjs` | Reverie | Core pipeline orchestrator |
+| `subsystems/reverie/dual-path.cjs` | Reverie | Hot/deliberation path routing |
+| `subsystems/reverie/activation.cjs` | Reverie | Activation map management |
+| `subsystems/reverie/curation.cjs` | Reverie | Intelligent curation (migrated from Ledger) |
+| `subsystems/reverie/handlers/session-start.cjs` | Reverie | SessionStart handler |
+| `subsystems/reverie/handlers/user-prompt.cjs` | Reverie | UserPromptSubmit handler |
+| `subsystems/reverie/handlers/pre-compact.cjs` | Reverie | PreCompact handler |
+| `subsystems/reverie/handlers/stop.cjs` | Reverie | Stop handler |
+| `subsystems/reverie/handlers/post-tool-use.cjs` | Reverie | PostToolUse activation update |
+| `subsystems/reverie/handlers/iv-subagent-start.cjs` | Reverie | SubagentStart handler |
+| `subsystems/reverie/handlers/iv-subagent-stop.cjs` | Reverie | SubagentStop handler |
+| `subsystems/terminus/cost-store.cjs` | Terminus | SQLite cost tracking storage |
+| `cc/agents/inner-voice.md` | CC (adapter) | Custom subagent definition |
+| `cc/prompts/iv-system-prompt.md` | CC (adapter) | Inner Voice system prompt |
+| `cc/prompts/session-briefing.md` | CC (adapter) | Session briefing template |
+| `cc/prompts/adversarial-counter.md` | CC (adapter) | Counter-prompting template |
+| `lib/config.cjs` | Lib | Config get/set utility |
 
-```javascript
-// lib/graphiti-client.cjs — MCP client for Graphiti
-const crypto = require('crypto');
-
-const MCP_URL = process.env.GRAPHITI_MCP_URL || 'http://localhost:8100/mcp';
-const HEALTH_URL = process.env.GRAPHITI_HEALTH_URL || 'http://localhost:8100/health';
-
-class GraphitiClient {
-  constructor(timeout = 5000) {
-    this.sessionId = null;
-    this.timeout = timeout;
-  }
-
-  async initialize() {
-    if (this.sessionId) return;
-    const resp = await fetch(MCP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' },
-      body: JSON.stringify({
-        jsonrpc: '2.0', method: 'initialize',
-        params: { protocolVersion: '2025-03-26', capabilities: {},
-                  clientInfo: { name: 'dynamo', version: '1.0.0' } },
-        id: 1
-      }),
-      signal: AbortSignal.timeout(this.timeout)
-    });
-    this.sessionId = resp.headers.get('mcp-session-id');
-    // Send initialized notification
-    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' };
-    if (this.sessionId) headers['mcp-session-id'] = this.sessionId;
-    await fetch(MCP_URL, {
-      method: 'POST', headers,
-      body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
-      signal: AbortSignal.timeout(this.timeout)
-    });
-  }
-
-  async callTool(toolName, args) {
-    await this.initialize();
-    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' };
-    if (this.sessionId) headers['mcp-session-id'] = this.sessionId;
-    const resp = await fetch(MCP_URL, {
-      method: 'POST', headers,
-      body: JSON.stringify({
-        jsonrpc: '2.0', method: 'tools/call',
-        params: { name: toolName, arguments: args },
-        id: crypto.randomUUID()
-      }),
-      signal: AbortSignal.timeout(this.timeout)
-    });
-    const contentType = resp.headers.get('content-type') || '';
-    if (contentType.includes('text/event-stream')) {
-      return this._parseSSE(await resp.text());
-    }
-    return resp.json();
-  }
-
-  _parseSSE(text) {
-    for (const line of text.split('\n')) {
-      if (line.startsWith('data:')) {
-        const data = line.slice(5).trim();
-        if (data) {
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.result || parsed.error) return parsed;
-          } catch {}
-        }
-      }
-    }
-    return { error: 'No valid response in SSE stream' };
-  }
-
-  static async healthCheck(timeoutMs = 3000) {
-    try {
-      const resp = await fetch(HEALTH_URL, { signal: AbortSignal.timeout(timeoutMs) });
-      return resp.status === 200;
-    } catch { return false; }
-  }
-}
-
-module.exports = { GraphitiClient };
-```
-
-This is a direct 1:1 port of the Python `MCPClient` class using zero external dependencies.
+**Migrated (not new):**
+- `subsystems/ledger/curation.cjs` LLM functions migrate to `subsystems/reverie/curation.cjs`
+- Ledger retains deterministic formatting functions as `subsystems/ledger/format.cjs`
 
 ---
 
-## OpenRouter / Curation Client (Replacing Python httpx Calls)
+## 16. Sources
 
-The curation system calls OpenRouter's API (Claude Haiku via chat completions endpoint). This is a simple `fetch` POST:
+### Official Documentation (HIGH confidence)
+- [Claude Code Custom Subagents](https://code.claude.com/docs/en/sub-agents) -- YAML frontmatter specification, all fields, examples
+- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks) -- SubagentStart/Stop input/output, additionalContext behavior, all 22 hook events
+- [Node.js Crypto API](https://nodejs.org/api/crypto.html) -- randomUUID() documentation
 
-```javascript
-// lib/curation.cjs — LLM curation via OpenRouter
-const fs = require('fs');
-const path = require('path');
-const yaml = require('js-yaml');  // The ONE external dependency
+### GitHub Issues/PRs (MEDIUM confidence)
+- [Graphiti Issue #1155](https://github.com/getzep/graphiti/issues/1155) -- small_model configuration request (open)
+- [Graphiti PR #1156](https://github.com/getzep/graphiti/pull/1156) -- small_model support (open, not merged)
+- [Claude Code Issue #5812](https://github.com/anthropics/claude-code/issues/5812) -- additionalParentContext NOT_PLANNED (confirms state bridge necessity)
 
-const CURATION_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const CURATION_MODEL = 'anthropic/claude-haiku-4.5';
-
-function loadPrompts() {
-  const promptsPath = path.join(__dirname, '..', '..', 'curation', 'prompts.yaml');
-  try { return yaml.load(fs.readFileSync(promptsPath, 'utf8')) || {}; }
-  catch { return {}; }
-}
-
-async function curate(memories, context, promptKey, opts = {}) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return memories;
-  // ... rest follows same pattern as Python
-}
-
-module.exports = { curate, loadPrompts };
-```
+### Verified on This Machine
+- Node.js v24.13.1 built-in capabilities (crypto.randomUUID, node:sqlite, fetch, AbortSignal.timeout)
+- `~/.local/bin/` exists and is in PATH (symlink approach confirmed viable)
+- Claude Code v2.1.80 installed
+- JSONL transcript format and location verified via direct file inspection
+- Graphiti Docker compose config verified at `~/.claude/graphiti/docker-compose.yml`
 
 ---
-
-## Installation
-
-```bash
-# The ONE external dependency
-npm install js-yaml
-
-# Dev dependency (none required — node:test is built-in)
-# No dev dependencies needed.
-```
-
-**package.json additions:**
-```json
-{
-  "type": "commonjs",
-  "dependencies": {
-    "js-yaml": "^4.1.1"
-  },
-  "scripts": {
-    "test": "node --test bin/lib/__tests__/*.cjs",
-    "test:watch": "node --test --watch bin/lib/__tests__/",
-    "test:coverage": "node --test --experimental-test-coverage bin/lib/__tests__/*.cjs"
-  }
-}
-```
-
----
-
-## Alternatives Considered
-
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| `globalThis.fetch` | `undici` npm package | If you need HTTP/2, connection pooling, or request interceptors (Dynamo doesn't) |
-| `node:test` | Jest | If you need snapshot testing, complex DOM mocking, or have a team used to Jest (not applicable) |
-| `js-yaml` | `yaml` npm package | If you need YAML 1.2 spec compliance or YAML writing (Dynamo only reads YAML) |
-| Raw `process.argv` parsing | `commander` / `yargs` | If CLI has >20 subcommands with complex option types (Dynamo's CLI is hook-focused, not user-interactive) |
-| `.cjs` extension | `.js` + `"type": "commonjs"` | If only deploying to one location. `.cjs` is unambiguous regardless of `package.json` location. GSD uses `.cjs`. |
-| Manual `.env` parsing | `dotenv` npm package | If `.env` files have complex features (multiline, interpolation). Dynamo's `.env` is 3 simple `KEY=VALUE` lines. |
-
----
-
-## Version Compatibility
-
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| Node.js v24.x | `js-yaml` ^4.1.1 | Verified — js-yaml is pure JS, no native bindings |
-| Node.js v24.x | `node:test` stable | Stable since Node 22, production-ready in 24 |
-| Node.js v24.x | `globalThis.fetch` | Stable since Node 21, non-experimental in 24 |
-| Node.js v24.x | `crypto.randomUUID()` | Available since Node 19 |
-| `js-yaml` ^4.1.1 | CJS `require()` | Native CJS support confirmed |
-
----
-
-## Stack Patterns by Variant
-
-**If adding new hook events (future v1.3+):**
-- Follow the `dynamo.cjs hook <event-name>` pattern
-- Add handler in `lib/hooks/` directory
-- Register in `settings.json` hook configuration
-- Same I/O contract: stdin JSON in, stdout JSON/text out, exit 0/2
-
-**If Graphiti MCP moves to a different transport:**
-- `GraphitiClient` class isolates all MCP communication
-- Change the fetch calls in one file, not across all hooks
-- SSE parsing is already modular
-
-**If migrating to ESM in the future:**
-- `.cjs` extension means files will continue working as CJS even if surrounding `package.json` changes to `"type": "module"`
-- Migration path: rename `.cjs` to `.mjs`, change `require()` to `import`, `module.exports` to `export`
-- Not recommended until GSD framework migrates
-
----
-
-## Python/Bash Elimination Summary
-
-What gets replaced and what stays:
-
-| Current | Replaces | Lines (approx) |
-|---------|----------|-----------------|
-| `graphiti-helper.py` | `lib/graphiti-client.cjs` + `lib/sessions.cjs` + `lib/curation.cjs` + `lib/project.cjs` | ~945 -> ~400 |
-| `health-check.py` | `lib/health.cjs` | ~553 -> ~200 |
-| `diagnose.py` | Can be absorbed into health checks or deferred | ~700 |
-| `session-start.sh` | `dynamo.cjs hook session-start` | ~58 -> 0 (shell eliminated) |
-| `capture-change.sh` | `dynamo.cjs hook capture-change` | ~59 -> 0 |
-| `prompt-augment.sh` | `dynamo.cjs hook prompt-augment` | ~68 -> 0 |
-| `preserve-knowledge.sh` | `dynamo.cjs hook preserve-knowledge` | ~(similar) -> 0 |
-| `session-summary.sh` | `dynamo.cjs hook session-summary` | ~(similar) -> 0 |
-| `health-check.sh` | `dynamo.cjs health` | ~(small) -> 0 |
-
-**What stays unchanged:**
-- `start-graphiti.sh` / `stop-graphiti.sh` — Docker management scripts. These are 20-line bash scripts that call `docker compose`. No reason to rewrite.
-- `docker-compose.yml` — Infrastructure config, not code.
-- `curation/prompts.yaml` — Content file, consumed by new CJS code via `js-yaml`.
-- `.env` / `.env.example` — Config files, read by new CJS code.
-
----
-
-## Sources
-
-- GSD source code: `~/.claude/get-shit-done/bin/` — 14 CJS files examined (gsd-tools.cjs, lib/*.cjs) — **HIGH confidence**
-- `~/.claude/package.json` — Verified `{"type":"commonjs"}` — **HIGH confidence**
-- `~/.claude/settings.json` — Verified hook configuration structure — **HIGH confidence**
-- `~/.claude/hooks/gsd-context-monitor.js` — Verified CJS hook pattern — **HIGH confidence**
-- `~/.claude/hooks/gsd-statusline.js` — Verified CJS statusline pattern — **HIGH confidence**
-- Node.js v24.13.1 runtime — Verified `node:test`, `node:assert`, `globalThis.fetch` availability — **HIGH confidence**
-- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks) — Official hook event schemas — **HIGH confidence**
-- [Claude Code Hooks Guide](https://claude.com/blog/how-to-configure-hooks) — Official configuration patterns — **HIGH confidence**
-- [Node.js 24 LTS announcement](https://nodesource.com/blog/nodejs-24-becomes-lts) — LTS status confirmed — **HIGH confidence**
-- [Node.js Test Runner docs](https://nodejs.org/api/test.html) — `node:test` stable status — **HIGH confidence**
-- [js-yaml on npm](https://www.npmjs.com/package/js-yaml) — v4.1.1, 24,681 dependents — **HIGH confidence**
-- [Node.js built-in fetch (undici foundation)](https://nodejs.org/en/learn/getting-started/fetch) — Stable in Node 24 — **HIGH confidence**
-
----
-*Stack research for: Dynamo v1.2 CJS Architectural Foundation*
-*Researched: 2026-03-17*
+*Stack research for: Dynamo v1.3-M2 Core Intelligence*
+*Researched: 2026-03-20*
+*Previous: M1 STACK.md archived to .planning/research/archive/*

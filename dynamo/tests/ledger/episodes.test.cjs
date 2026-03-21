@@ -6,7 +6,7 @@ const assert = require('node:assert');
 const path = require('path');
 
 const { addEpisode, extractContent } = require(
-  path.join(__dirname, '..', '..', '..', 'ledger', 'episodes.cjs')
+  path.join(__dirname, '..', '..', '..', 'subsystems', 'ledger', 'episodes.cjs')
 );
 
 // --- extractContent ---

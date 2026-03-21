@@ -2,6 +2,102 @@
 
 *A living document updated after each milestone. Lessons feed forward into future planning.*
 
+## Milestone: v1.3-M2 — Core Intelligence
+
+**Shipped:** 2026-03-21
+**Phases:** 3 | **Plans:** 11 | **Commits:** 58 | **Production LOC:** ~7,081 CJS | **Tests:** 525+
+
+### What Was Built
+- Reverie cognitive pipeline: activation engine (`activation.cjs` — entity extraction <5ms, domain classification <1ms, spreading activation, sublimation scoring), dual-path routing (`dual-path.cjs` — deterministic path selection, semantic shift via Jaccard overlap, explicit recall bypass), template-based curation (`curation.cjs` — adversarial counter-prompting, token limits 500/150/50)
+- Central pipeline orchestrator (`inner-voice.cjs`) wiring 5 per-hook cognitive pipelines with 400ms abort threshold, atomic state bridge (correlation ID + 60s TTL), and self-model persistence
+- Inner Voice subagent definition (`cc/agents/inner-voice.md`, Sonnet model, read-only tools) with 5 prompt templates (`cc/prompts/iv-*.md`)
+- All 7 Reverie handler stubs replaced with full cognitive pipeline delegation
+- Classic Ledger curation removed entirely: dispatcher simplified to two-branch (subagent vs Reverie), `reverie.mode` eliminated, OpenRouter dependency purged, 12 dead files deleted
+- `dynamo voice status/explain/reset` CLI commands for Inner Voice state visibility
+- Bare CLI shim (`bin/dynamo`) with `DYNAMO_DEV=1` override via `.repo-path` dotfile
+- CHANGELOG.md with version-tagged entries integrated into `dynamo check-update` and `dynamo update`
+- Install pipeline extended: Reverie sync pair in layout, active classic artifact cleanup, config sanitization
+
+### What Worked
+- Three-phase architecture (foundation → pipeline → cutover) gave clean dependency ordering — each phase built exactly on the previous one's outputs
+- TDD pattern continued: failing tests first, then implementation. 257 Reverie-specific tests caught regressions immediately
+- Stub-then-replace strategy: Phase 23 created pass-through stubs with `resolve()` lazy require; Phase 24 hot-swapped real implementations without touching dispatcher
+- Adversarial counter-prompting templates validated via automated framing checks — injection quality built into the test suite
+- Clean break for classic removal (Phase 25): deleting 12 files + Ledger hooks directory in one pass was simpler than maintaining dual paths
+
+### What Was Inefficient
+- Phase 25 was originally scoped as 2 phases (cutover + operational improvements) but merged during discussion — 4 plans in one phase was manageable but at the upper bound of cohesion
+- State bridge testing required careful mock orchestration — integration test would have been more valuable than unit tests for the SubagentStop → UserPromptSubmit flow
+- Some prompt templates (`iv-*.md`) contain structural detail that may need revision once real deliberation sessions run — premature optimization risk
+
+### Patterns Established
+- Cognitive pipeline pattern: state load → entity extraction → activation update → path selection → injection formatting → state persist (all synchronous, sub-500ms)
+- Adversarial counter-prompting: "From your experience" and "As you described it" qualifiers prevent Claude from treating injected context as canonical definitions
+- State bridge: file-based IPC with correlation ID, TTL, and atomic consumption via `fs.renameSync` — no shared memory needed between hook invocations
+- Deterministic path selection: signal-based priority chain (predictions → recall → rate limit → semantic shift → confidence) with zero LLM cost
+- Voice CLI pattern: stderr-only output, no `--format` flag, developer-tool UX
+
+### Key Lessons
+1. Stub-then-replace is the right strategy for multi-phase subsystem builds — it decouples routing from logic, enabling independent verification at each phase
+2. Deterministic path selection (no LLM for routing decisions) keeps the hot path fast and testable — defer LLM to content generation only
+3. Adversarial framing in injection templates is load-bearing architecture, not decoration — without it, Claude treats memories as authoritative facts instead of user-reported context
+4. Classic mode removal was cleaner than maintaining a hybrid fallback — the dual-pipeline code was more complex than the migration itself
+5. Token budget enforcement (500/150/50) prevents injection from dominating context — Cognitive Load Theory applied to LLM prompting is a useful design heuristic
+
+### Cost Observations
+- Model mix: opus (executor, planner, researcher), sonnet (verifier, plan-checker, Nyquist auditor)
+- 3 phases completed across ~5 hours of wall time (2026-03-20 14:41 to 2026-03-20 19:28 for code commits)
+- 11 plans executed with 58 commits
+- 28/28 requirements validated without milestone audit — cleanest requirements coverage to date
+
+---
+
+## Milestone: v1.3-M1 — Foundation and Infrastructure Refactor
+
+**Shipped:** 2026-03-20
+**Phases:** 5 | **Plans:** 13 | **Commits:** ~75 | **Production LOC:** ~5,335 CJS | **Tests:** 515
+
+### What Was Built
+- Centralized path resolver (`lib/resolve.cjs`) with logical name API for 8 subsystems and DFS circular dependency detector (`lib/dep-graph.cjs`)
+- Six-subsystem directory restructure: 27 files moved via `git mv` from `dynamo/`/`ledger/`/`switchboard/` to `subsystems/`, `cc/`, `lib/` with unified `lib/layout.cjs`
+- Management hardening: Node.js >= 22 version check (health-check stage 7, install Step 0), hook dispatcher input validation (type/length/event checks), `<dynamo-memory-context>` boundary markers
+- SQLite session storage (`subsystems/terminus/session-store.cjs`): `node:sqlite` DatabaseSync, dual-write JSON compat, transparent fallback, install migration (314 sessions)
+- M1 verification suite: 36-test tmpdir sandbox, real fresh install (45 files, 8/8 health stages), core.cjs re-export audit (7 removed)
+
+### What Worked
+- Prerequisite-first ordering: Phase 18 (resolver, dep-graph) before Phase 19 (restructure) meant zero path breakage during the 27-file migration
+- Unified layout mapping (`lib/layout.cjs`) as single source of truth eliminated scattered path constants — sync, install, resolver all derive from one module
+- SQLite placed last (Phase 21) after infrastructure was stable, reducing integration risk
+- Phase 22 verification caught the `loadPrompt` path bug (cc/prompts vs prompts) and stale regression test paths — would have shipped broken without it
+- Milestone audit caught 2 tech debt items (help text + backfill wiring) that were resolved before archival
+
+### What Was Inefficient
+- Phase 19 required 3 plans for what was conceptually one migration — prep wave could have been folded into the main migration with careful ordering
+- Re-export shims created in Phase 19 (to maintain backward compatibility) were immediately removed in Phase 22 — could have skipped the shim step entirely
+- SYNC_PAIRS count changed from 4→7→8 across plans as edge cases were discovered — upfront mapping would have avoided the churn
+
+### Patterns Established
+- Centralized resolver pattern: `resolve('subsystem-name')` returns absolute path for any subsystem in any layout
+- Layout-as-data: `lib/layout.cjs` exports `getLayoutPaths()`, `getSyncPairs()`, `SUBSYSTEM_DIRS` — all path knowledge lives here
+- Connection map per dbPath: SQLite connections keyed by file path for complete test isolation
+- Boundary markers: `<dynamo-memory-context>` wraps all hook injection output to contain prompt bleed
+- Input validation at dispatcher entry: reject malformed/unknown events before any handler runs
+
+### Key Lessons
+1. Prerequisites phases pay for themselves — Phase 18's resolver investment made Phase 19's 27-file migration mechanical rather than error-prone
+2. "Layout as single source of truth" should be established early in any restructure — it eliminates an entire class of sync/install/deploy bugs
+3. Dual-write patterns (SQLite + JSON) provide safe migration paths but add ongoing maintenance cost — plan to remove the legacy path in a future milestone
+4. End-to-end verification phases (Phase 22) consistently find integration bugs that per-phase verification misses — make them standard for infrastructure milestones
+5. Re-export shims for backward compatibility during migration are often unnecessary if you can do a single-pass migration — avoid creating debt you'll immediately pay down
+
+### Cost Observations
+- Model mix: opus (executor, planner, researcher), sonnet (verifier, plan-checker, Nyquist auditor)
+- 5 phases completed across 2 days of wall time (2026-03-19 to 2026-03-20)
+- 13 plans executed with ~75 commits
+- Milestone audit confirmed zero gaps — cleanest audit to date
+
+---
+
 ## Milestone: v1.2.1 — Stabilization and Polish
 
 **Shipped:** 2026-03-19
@@ -187,6 +283,8 @@
 | v1.1 | 34 | 4 | 8 | 0 | Added diagnostic-first approach and verification tools |
 | v1.2 | 29 | 4 | 12 | 272 | CJS rewrite with TDD, full feature parity |
 | v1.2.1 | 104 | 6 | 17 | 374 | Stabilization: restructure, toggle, docs, update system, deploy hardening |
+| v1.3-M1 | ~75 | 5 | 13 | 515 | Six-subsystem architecture, centralized resolver, SQLite sessions, management hardening |
+| v1.3-M2 | 58 | 3 | 11 | 525+ | Inner Voice cognitive pipeline, dual-path routing, classic removal, voice CLI |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -197,3 +295,8 @@
 5. Options-based dependency injection enables complete test isolation without mocking frameworks
 6. Milestone audits before archival consistently find integration gaps — make them mandatory
 7. Dual-layout path resolution patterns are reusable across modules — establish once, apply everywhere
+8. Prerequisite phases (resolver, layout mapping) before large restructures prevent cascading path breakage
+9. "Layout as single source of truth" eliminates an entire class of sync/install/deploy bugs — establish early
+10. Stub-then-replace decouples routing from logic in multi-phase builds — verify independently at each phase
+11. Adversarial framing in injection templates is load-bearing architecture — without it, LLMs treat injected context as authoritative
+12. Deterministic path selection (no LLM for routing) keeps the hot path fast, testable, and cheap

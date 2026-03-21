@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const sync = require(path.join(__dirname, '..', '..', '..', 'switchboard', 'sync.cjs'));
+const sync = require(path.join(__dirname, '..', '..', '..', 'subsystems', 'switchboard', 'sync.cjs'));
 
 // --- Test helpers ---
 
@@ -72,6 +72,20 @@ describe('walkDir', () => {
     assert.strictEqual(typeof entry.size, 'number');
     assert.ok(entry.mtime > 0);
     assert.ok(entry.size > 0);
+  });
+
+  it('filesOnly mode skips subdirectories', () => {
+    const files = sync.walkDir(tmpDir, [], [], undefined, true);
+    assert.ok('a.txt' in files, 'root file should be included');
+    assert.ok(!('sub/b.txt' in files), 'nested file should be excluded');
+    assert.ok(!('sub/deep/c.txt' in files), 'deeply nested file should be excluded');
+  });
+
+  it('filesOnly=false or undefined recurses into subdirectories', () => {
+    const files = sync.walkDir(tmpDir, [], [], undefined, false);
+    assert.ok('a.txt' in files, 'root file should be included');
+    assert.ok('sub/b.txt' in files, 'nested file should be included');
+    assert.ok('sub/deep/c.txt' in files, 'deeply nested file should be included');
   });
 });
 
@@ -231,21 +245,27 @@ describe('sync module exports', () => {
     assert.strictEqual(typeof sync.deleteFiles, 'function');
   });
 
-  it('exports SYNC_PAIRS with 3 directory pairs', () => {
+  it('exports SYNC_PAIRS with 9 directory pairs (six-subsystem layout + reverie)', () => {
     assert.ok(Array.isArray(sync.SYNC_PAIRS), 'SYNC_PAIRS should be an array');
-    assert.strictEqual(sync.SYNC_PAIRS.length, 3, 'should have 3 sync pairs');
+    assert.strictEqual(sync.SYNC_PAIRS.length, 9, 'should have 9 sync pairs');
     const labels = sync.SYNC_PAIRS.map(p => p.label);
-    assert.ok(labels.includes('dynamo'), 'should have dynamo pair');
-    assert.ok(labels.includes('ledger'), 'should have ledger pair');
+    assert.ok(labels.includes('root'), 'should have root pair');
+    assert.ok(labels.includes('dynamo-meta'), 'should have dynamo-meta pair');
     assert.ok(labels.includes('switchboard'), 'should have switchboard pair');
+    assert.ok(labels.includes('assay'), 'should have assay pair');
+    assert.ok(labels.includes('ledger'), 'should have ledger pair');
+    assert.ok(labels.includes('terminus'), 'should have terminus pair');
+    assert.ok(labels.includes('reverie'), 'should have reverie pair');
+    assert.ok(labels.includes('cc'), 'should have cc pair');
+    assert.ok(labels.includes('lib'), 'should have lib pair');
   });
 });
 
-// --- 3-directory layout tests ---
+// --- Six-subsystem layout tests ---
 
-describe('sync 3-directory layout', () => {
-  it('uses REPO_ROOT constant (renamed from REPO_DIR)', () => {
-    const syncPath = path.join(__dirname, '..', '..', '..', 'switchboard', 'sync.cjs');
+describe('sync six-subsystem layout', () => {
+  it('uses REPO_ROOT constant', () => {
+    const syncPath = path.join(__dirname, '..', '..', '..', 'subsystems', 'switchboard', 'sync.cjs');
     const content = fs.readFileSync(syncPath, 'utf8');
     assert.ok(content.includes('REPO_ROOT'), 'should use REPO_ROOT constant');
     assert.ok(!content.includes('REPO_DIR'), 'should not use old REPO_DIR constant');
@@ -260,8 +280,21 @@ describe('sync 3-directory layout', () => {
     }
   });
 
-  it('dynamo pair excludes tests directory', () => {
-    const dynamoPair = sync.SYNC_PAIRS.find(p => p.label === 'dynamo');
-    assert.ok(dynamoPair.excludes.includes('tests'), 'dynamo pair should exclude tests');
+  it('dynamo-meta pair excludes tests directory', () => {
+    const dynamoPair = sync.SYNC_PAIRS.find(p => p.label === 'dynamo-meta');
+    assert.ok(dynamoPair.excludes.includes('tests'), 'dynamo-meta pair should exclude tests');
+  });
+
+  it('root pair has filesOnly flag set to true', () => {
+    const rootPair = sync.SYNC_PAIRS.find(p => p.label === 'root');
+    assert.ok(rootPair, 'should have root pair');
+    assert.strictEqual(rootPair.filesOnly, true, 'root pair should have filesOnly=true');
+  });
+
+  it('non-root pairs do not have filesOnly flag', () => {
+    const nonRootPairs = sync.SYNC_PAIRS.filter(p => p.label !== 'root');
+    for (const pair of nonRootPairs) {
+      assert.ok(!pair.filesOnly, `${pair.label} pair should not have filesOnly=true`);
+    }
   });
 });

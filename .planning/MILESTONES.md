@@ -1,5 +1,48 @@
 # Milestones
 
+## v1.3-M2 Core Intelligence (Shipped: 2026-03-21)
+
+**Delivered:** Intelligent memory system with Inner Voice cognitive pipeline, dual-path routing (hot <500ms + deliberation subagent), and full cutover from classic Ledger curation to Reverie-only architecture.
+
+**Phases completed:** 23-25 (3 phases, 11 plans, 21 tasks)
+**Commits:** 58 | **Files changed:** 97 | **Lines:** +14,895 / -881
+**Production LOC:** ~7,081 CJS | **Tests:** 525+ passing
+**Timeline:** 2026-03-20 to 2026-03-21
+**Requirements:** 28/28 (CORTEX-01/02/03, MGMT-05, MGMT-10 categories; 3 cost reqs deferred with rationale)
+**Git range:** docs(23: capture phase context) → docs(phase-25: evolve PROJECT.md)
+
+**Key accomplishments:**
+
+- Built Reverie cognitive pipeline: activation engine (entity extraction, spreading activation, sublimation scoring), dual-path routing (deterministic hot path + Sonnet deliberation subagent), template-based curation with adversarial counter-prompting
+- Created central pipeline orchestrator (`inner-voice.cjs`) wiring 5 per-hook cognitive pipelines with 400ms abort, atomic state bridge (correlation ID + 60s TTL), and self-model persistence
+- Replaced all 7 classic Ledger handler stubs with full Reverie cognitive pipeline delegation
+- Removed classic curation entirely: eliminated `reverie.mode` config, OpenRouter dependency, 12 dead files, and Ledger hook code
+- Added `dynamo voice status/explain/reset` CLI commands for Inner Voice visibility
+- Created bare CLI shim, CHANGELOG.md integrated into update commands, and install pipeline with active classic artifact cleanup
+
+**What's next:** v1.3-M3 Management and Visibility (MGMT-02/03, UI-08)
+
+---
+
+## v1.3-M1 Foundation and Infrastructure Refactor (Shipped: 2026-03-20)
+
+**Phases completed:** 5 phases, 13 plans, 28 tasks
+**Commits:** ~75 | **Files changed:** 74 | **Lines:** +3,037 / -1,021
+**Production LOC:** ~5,335 CJS | **Tests:** 515 passing
+**Timeline:** 2026-03-19 to 2026-03-20
+**Requirements:** 14/14 (ARCH-01 through ARCH-07, MGMT-01, MGMT-08a/b, DATA-01 through DATA-04)
+**Git range:** feat(18-01) → docs(v1.3-M1)
+
+**Key accomplishments:**
+
+- Centralized path resolver (`lib/resolve.cjs`) with logical name API for 8 subsystems and DFS-based circular dependency detector (`lib/dep-graph.cjs`)
+- Six-subsystem directory restructure: 27 production files migrated via `git mv` from 3-dir to `subsystems/`, `cc/`, `lib/` layout with unified `lib/layout.cjs`
+- Management hardening: Node.js version verification in health-check and install, input validation with field length limits, `<dynamo-memory-context>` boundary markers against prompt injection
+- SQLite session storage via `node:sqlite` DatabaseSync with dual-write pattern, JSON fallback, and one-time migration (314 sessions migrated)
+- End-to-end verification: 14/14 requirements validated, real fresh install (45 files deployed), 515 tests, core.cjs re-export audit (7 removed)
+
+---
+
 ## v1.2.1 Stabilization and Polish (Shipped: 2026-03-19)
 
 **Phases completed:** 6 phases, 17 plans

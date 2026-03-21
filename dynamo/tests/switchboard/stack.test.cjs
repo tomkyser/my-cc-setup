@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const stack = require(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'));
+const stack = require(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'));
 
 // --- Module exports tests ---
 
@@ -26,13 +26,13 @@ describe('stack module exports', () => {
 describe('stack constants', () => {
   it('COMPOSE_FILE uses explicit absolute path under ~/.claude/graphiti', () => {
     // Read the source to verify the constant
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(src.includes("'.claude', 'graphiti'"), 'COMPOSE_FILE should reference ~/.claude/graphiti');
     assert.ok(src.includes('docker-compose.yml'), 'COMPOSE_FILE should reference docker-compose.yml');
   });
 
   it('uses explicit -f flag in docker compose commands', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     // All docker compose calls should use -f "${COMPOSE_FILE}"
     const composeMatches = src.match(/docker compose/g) || [];
     const fFlagMatches = src.match(/docker compose -f/g) || [];
@@ -42,7 +42,7 @@ describe('stack constants', () => {
   });
 
   it('does NOT contain cd or process.chdir', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(!src.includes('process.chdir'), 'should not use process.chdir');
     // Check for cd as a command, not as part of variable/function names
     const cdMatches = src.match(/\bcd\s+['"\/~]/g) || [];
@@ -50,28 +50,28 @@ describe('stack constants', () => {
   });
 
   it('has health wait loop with MAX_HEALTH_ATTEMPTS', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(src.includes('MAX_HEALTH_ATTEMPTS'), 'should have MAX_HEALTH_ATTEMPTS constant');
   });
 
   it('has timeout on compose up (60000 or higher)', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     // Look for timeout: 60000 in compose up context
     assert.ok(src.includes('timeout: 60000'), 'compose up should have 60s timeout');
   });
 
   it('uses fetchWithTimeout for health polling', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(src.includes('fetchWithTimeout'), 'should use fetchWithTimeout for health checks');
   });
 
   it('has HEALTH_URL pointing to localhost:8100/health', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(src.includes('http://localhost:8100/health'), 'should have health URL');
   });
 
   it('has HEALTH_INTERVAL_MS for wait between retries', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(src.includes('HEALTH_INTERVAL_MS'), 'should have HEALTH_INTERVAL_MS constant');
   });
 });
@@ -107,36 +107,36 @@ describe('stack integration', () => {
 
 describe('stack source structure', () => {
   it('first line is module identity block', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     const firstLine = src.split('\n')[0];
     assert.strictEqual(firstLine, '// Dynamo > Switchboard > stack.cjs');
   });
 
   it('has module.exports with start and stop', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(src.includes('module.exports'), 'should have module.exports');
     assert.ok(src.includes('start'), 'should export start');
     assert.ok(src.includes('stop'), 'should export stop');
   });
 
   it('requires child_process execSync', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(src.includes('execSync'), 'should use execSync from child_process');
   });
 
   it('imports from core.cjs', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(src.includes('core.cjs'), 'should import from core.cjs');
   });
 
   it('handles already-running state by checking docker compose ps', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     assert.ok(src.includes('ps --status running'), 'should check for running containers');
     assert.ok(src.includes('already_running'), 'should have already_running status');
   });
 
   it('returns proper status objects for start and stop', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     // start statuses
     assert.ok(src.includes("'started'") || src.includes('"started"'), 'should have started status');
     assert.ok(src.includes("'already_running'") || src.includes('"already_running"'), 'should have already_running status');
@@ -146,7 +146,7 @@ describe('stack source structure', () => {
   });
 
   it('preserves data volumes on stop (does not use -v flag)', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'switchboard', 'stack.cjs'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'stack.cjs'), 'utf8');
     // The actual compose down command should NOT have -v
     // But the hint message should mention -v for user reference
     assert.ok(src.includes('down -v'), 'hint should mention -v for data removal');

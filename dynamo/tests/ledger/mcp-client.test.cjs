@@ -5,7 +5,7 @@ const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const path = require('path');
 
-const { MCPClient, parseSSE } = require(path.join(__dirname, '..', '..', '..', 'ledger', 'mcp-client.cjs'));
+const { MCPClient, parseSSE } = require(path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'mcp-client.cjs'));
 
 // --- Test data ---
 

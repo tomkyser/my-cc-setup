@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const INSTALL_PATH = path.join(__dirname, '..', '..', '..', 'switchboard', 'install.cjs');
+const INSTALL_PATH = path.join(__dirname, '..', '..', '..', 'subsystems', 'switchboard', 'install.cjs');
 
 // All tests use temp directories -- never touch real ~/.claude/
 function makeTmpDir(prefix) {
@@ -81,11 +81,12 @@ describe('install.cjs', () => {
     assert.ok(!content.includes('REPO_DIR'), 'should not use old REPO_DIR constant');
   });
 
-  it('copies from 3 source directories (dynamo, ledger, switchboard)', () => {
+  it('copies from six-subsystem layout (subsystems, cc, lib, dynamo)', () => {
     const content = fs.readFileSync(INSTALL_PATH, 'utf8');
-    assert.ok(content.includes("path.join(REPO_ROOT, 'dynamo')"), 'should copy from dynamo/');
-    assert.ok(content.includes("path.join(REPO_ROOT, 'ledger')"), 'should copy from ledger/');
-    assert.ok(content.includes("path.join(REPO_ROOT, 'switchboard')"), 'should copy from switchboard/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'subsystems')"), 'should copy from subsystems/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'cc')"), 'should copy from cc/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'lib')"), 'should copy from lib/');
+    assert.ok(content.includes("path.join(REPO_ROOT, 'dynamo.cjs')"), 'should copy dynamo.cjs from root');
   });
 
   it('deploys CLAUDE.md template during install', () => {
@@ -94,14 +95,39 @@ describe('install.cjs', () => {
     assert.ok(content.includes('Deploy CLAUDE.md'), 'should have Deploy CLAUDE.md step name');
   });
 
-  it('cleans stale lib/ directory during install', () => {
+  it('verifies lib/ shared substrate during install', () => {
     const content = fs.readFileSync(INSTALL_PATH, 'utf8');
-    assert.ok(content.includes('staleLibDir') || content.includes('Clean stale lib'), 'should clean stale lib/ directory');
+    assert.ok(content.includes('Verify lib/'), 'should verify lib/ shared substrate deployment');
   });
 
   it('generateConfig includes enabled:true in source', () => {
     const content = fs.readFileSync(INSTALL_PATH, 'utf8');
     assert.ok(content.includes('enabled: true'), 'should include enabled:true in generated config');
+  });
+
+  it('has dependency check step reference in source', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    assert.ok(content.includes("'Check dependencies'"), 'should have Check dependencies step');
+  });
+
+  it('dependency check step appears before Copy files step', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    const depIdx = content.indexOf("'Check dependencies'");
+    const copyIdx = content.indexOf("'Copy files'");
+    assert.ok(depIdx !== -1, 'Check dependencies must exist');
+    assert.ok(copyIdx !== -1, 'Copy files must exist');
+    assert.ok(depIdx < copyIdx, 'Check dependencies must appear before Copy files');
+  });
+
+  it('dependency check uses WARN not FAIL on version mismatch', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    // Find the dependency check block (between "Check dependencies" and "Copy files")
+    const depIdx = content.indexOf("'Check dependencies'");
+    const copyIdx = content.indexOf("'Copy files'");
+    const depBlock = content.slice(depIdx, copyIdx);
+    // The catch/else block should use WARN, not FAIL
+    assert.ok(depBlock.includes("status: 'WARN'"), 'dependency check should use WARN on failure');
+    assert.ok(!depBlock.includes("status: 'FAIL'"), 'dependency check must not use FAIL');
   });
 });
 
@@ -163,8 +189,7 @@ describe('generateConfig helper', () => {
     const envPath = path.join(tmpDir, '.env');
     fs.writeFileSync(envPath, [
       'GRAPHITI_MCP_URL=http://test:8100/mcp',
-      'GRAPHITI_HEALTH_URL=http://test:8100/health',
-      'OPENROUTER_API_KEY=sk-test-123'
+      'GRAPHITI_HEALTH_URL=http://test:8100/health'
     ].join('\n'), 'utf8');
 
     // Create output dir for config
@@ -181,7 +206,7 @@ describe('generateConfig helper', () => {
     assert.ok(config.version, 'should have version');
     assert.ok(config.graphiti, 'should have graphiti section');
     assert.ok(config.graphiti.mcp_url, 'should have mcp_url');
-    assert.ok(config.curation, 'should have curation section');
+    assert.strictEqual(config.curation, undefined, 'should NOT have curation section');
     assert.ok(config.timeouts, 'should have timeouts section');
     assert.ok(config.logging, 'should have logging section');
   });
@@ -198,6 +223,22 @@ describe('generateConfig helper', () => {
 
     const config = readJSON(path.join(outDir, 'config.json'));
     assert.strictEqual(config.enabled, true, 'generated config should have enabled:true');
+  });
+
+  it('generated config does NOT contain OPENROUTER references', () => {
+    const envPath = path.join(tmpDir, '.env');
+    fs.writeFileSync(envPath, 'GRAPHITI_MCP_URL=http://test:8100/mcp\n', 'utf8');
+
+    const outDir = path.join(tmpDir, 'out');
+    fs.mkdirSync(outDir, { recursive: true });
+
+    const { generateConfig } = require(INSTALL_PATH);
+    generateConfig(envPath, outDir);
+
+    const raw = fs.readFileSync(path.join(outDir, 'config.json'), 'utf8');
+    assert.ok(!raw.includes('openrouter'), 'config.json should NOT reference OpenRouter');
+    assert.ok(!raw.includes('OPENROUTER'), 'config.json should NOT reference OPENROUTER');
+    assert.ok(!raw.includes('claude-haiku'), 'config.json should NOT reference claude-haiku');
   });
 });
 
@@ -396,5 +437,114 @@ describe('rollback helper', () => {
     restorePython(graphitiDir, legacyDir);
 
     assert.ok(fs.existsSync(path.join(graphitiDir, 'helper.py')), 'should restore .py to graphiti');
+  });
+});
+
+describe('cleanupClassicArtifacts', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir('cleanup');
+  });
+
+  afterEach(() => {
+    rmrf(tmpDir);
+  });
+
+  it('removes files listed in CLEANUP_FILES from target directory', () => {
+    const { cleanupClassicArtifacts, CLEANUP_FILES } = require(INSTALL_PATH);
+
+    // Create all classic artifact files
+    for (const relPath of CLEANUP_FILES) {
+      const fullPath = path.join(tmpDir, relPath);
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, 'classic content', 'utf8');
+    }
+
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+
+    // All files should be removed
+    for (const relPath of CLEANUP_FILES) {
+      assert.ok(!fs.existsSync(path.join(tmpDir, relPath)), relPath + ' should be removed');
+    }
+    assert.ok(cleaned >= CLEANUP_FILES.length, 'should report at least ' + CLEANUP_FILES.length + ' cleaned');
+  });
+
+  it('removes dead Ledger hook handlers', () => {
+    const { cleanupClassicArtifacts } = require(INSTALL_PATH);
+
+    const hooksDir = path.join(tmpDir, 'subsystems', 'ledger', 'hooks');
+    fs.mkdirSync(hooksDir, { recursive: true });
+    const deadHandlers = ['session-start.cjs', 'prompt-augment.cjs', 'session-summary.cjs', 'preserve-knowledge.cjs', 'capture-change.cjs'];
+    for (const f of deadHandlers) {
+      fs.writeFileSync(path.join(hooksDir, f), '// dead handler', 'utf8');
+    }
+
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+
+    for (const f of deadHandlers) {
+      assert.ok(!fs.existsSync(path.join(hooksDir, f)), f + ' should be removed');
+    }
+    assert.ok(cleaned >= deadHandlers.length, 'should report at least ' + deadHandlers.length + ' cleaned');
+  });
+
+  it('strips curation key from config.json', () => {
+    const { cleanupClassicArtifacts } = require(INSTALL_PATH);
+
+    const configPath = path.join(tmpDir, 'config.json');
+    writeJSON(configPath, {
+      version: '0.1.0',
+      enabled: true,
+      graphiti: { mcp_url: 'http://localhost:8100/mcp' },
+      curation: { model: 'anthropic/claude-haiku-4.5', api_url: 'https://openrouter.ai/api/v1/chat/completions' },
+      timeouts: { health: 3000, mcp: 5000 }
+    });
+
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+
+    const config = readJSON(configPath);
+    assert.strictEqual(config.curation, undefined, 'curation key should be removed');
+    assert.ok(config.graphiti, 'graphiti key should be preserved');
+    assert.ok(config.enabled === true, 'enabled key should be preserved');
+    assert.ok(cleaned >= 1, 'should report at least 1 cleaned');
+  });
+
+  it('strips reverie.mode from config.json', () => {
+    const { cleanupClassicArtifacts } = require(INSTALL_PATH);
+
+    const configPath = path.join(tmpDir, 'config.json');
+    writeJSON(configPath, {
+      version: '0.1.0',
+      enabled: true,
+      curation: { model: 'test' },
+      reverie: { mode: 'classic', other_key: 'keep' }
+    });
+
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+
+    const config = readJSON(configPath);
+    assert.strictEqual(config.curation, undefined, 'curation key should be removed');
+    assert.strictEqual(config.reverie.mode, undefined, 'reverie.mode should be removed');
+    assert.strictEqual(config.reverie.other_key, 'keep', 'other reverie keys should be preserved');
+    assert.ok(cleaned >= 1, 'should report at least 1 cleaned');
+  });
+
+  it('handles missing files gracefully (returns 0 when nothing to clean)', () => {
+    const { cleanupClassicArtifacts } = require(INSTALL_PATH);
+
+    // Empty directory -- nothing to clean
+    const cleaned = cleanupClassicArtifacts({ liveDir: tmpDir });
+    assert.strictEqual(cleaned, 0, 'should return 0 when nothing to clean');
+  });
+
+  it('CLEANUP_FILES contains exactly 6 entries', () => {
+    const { CLEANUP_FILES } = require(INSTALL_PATH);
+    assert.strictEqual(CLEANUP_FILES.length, 6, 'should have 6 classic artifact paths');
+  });
+
+  it('exports cleanupClassicArtifacts and CLEANUP_FILES', () => {
+    const mod = require(INSTALL_PATH);
+    assert.ok(typeof mod.cleanupClassicArtifacts === 'function', 'should export cleanupClassicArtifacts');
+    assert.ok(Array.isArray(mod.CLEANUP_FILES), 'should export CLEANUP_FILES array');
   });
 });

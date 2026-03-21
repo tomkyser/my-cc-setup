@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const MOD_PATH = path.join(__dirname, '..', '..', '..', 'switchboard', 'migrate.cjs');
+const MOD_PATH = path.join(__dirname, '..', '..', '..', 'subsystems', 'terminus', 'migrate.cjs');
 
 // --- Helpers ---
 

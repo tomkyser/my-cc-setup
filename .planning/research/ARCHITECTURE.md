@@ -1,738 +1,944 @@
-# Architecture Research
+# Architecture: Reverie Integration into Dynamo
 
-**Domain:** Claude Code enhancement platform — CJS module architecture for Ledger + Switchboard systems
-**Researched:** 2026-03-17
-**Confidence:** HIGH
+**Domain:** Inner Voice cognitive layer integration into six-subsystem Dynamo memory platform
+**Researched:** 2026-03-20
+**Confidence:** HIGH (based on existing specs + verified Claude Code platform docs + live codebase analysis)
+**Milestone:** v1.3-M2 Core Intelligence
 
-## System Overview
+---
 
-```
-~/.claude/
-├─────────────────────────────────────────────────────────────────────┐
-│  settings.json (hook registration, permissions, statusLine)        │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  hooks/                        dynamo/                              │
-│  ├── dynamo-hooks.cjs          ├── bin/                             │
-│  │   (single entry point       │   └── dynamo.cjs  (CLI router)    │
-│  │    for ALL hook events)     ├── lib/                             │
-│  │                             │   ├── core.cjs    (shared substrate│
-│  │                             │   ├── ledger/     (memory system)  │
-│  │                             │   └── switchboard/(management)     │
-│  ├── gsd-context-monitor.js    ├── config.yaml                     │
-│  ├── gsd-statusline.js         ├── curation/                       │
-│  └── gsd-check-update.js       │   └── prompts.yaml                │
-│                                └── docker-compose.yml               │
-│                                                                     │
-│  graphiti/ (legacy — deprecated after migration)                    │
-│                                                                     │
-├─────────────────────────────────────────────────────────────────────┤
-│  get-shit-done/  (GSD framework — read-only dependency)            │
-└─────────────────────────────────────────────────────────────────────┘
-```
+## 1. Executive Summary
 
-### How the Pieces Connect
+This document specifies how the Reverie subsystem (Inner Voice) integrates with Dynamo's existing six-subsystem architecture. It covers four data flows (hot-path injection, deliberation-path activation, cost tracking, and memory backfill), identifies all new and modified modules with file paths, defines the build order across M2 requirements, and ensures six-subsystem boundary rules are honored throughout.
 
-Claude Code fires hook events (SessionStart, PostToolUse, Stop, etc.) as defined in `settings.json`. Today, those hooks call Bash scripts that shell out to Python (`graphiti-helper.py`). The v1.2 architecture replaces this chain with a single CJS entry point (`dynamo-hooks.cjs`) that directly calls into the Dynamo module tree, eliminating the Bash-to-Python bridge entirely.
+The integration is a surgical transformation: the hook dispatcher (`cc/hooks/dynamo-hooks.cjs`) gains a mode switch that routes to either classic Ledger handlers or new Reverie handlers. Reverie's CJS modules provide deterministic hot-path processing. Claude Code's custom subagent system provides the deliberation path. A file-based state bridge connects the two. Cost monitoring wraps all LLM-calling paths. The bare `dynamo` CLI shim is a self-contained install-time symlink.
 
-## Component Responsibilities
+**Key architectural principle:** The dispatcher stays thin. It gains a feature flag check and a new routing table, but all intelligence lives in `subsystems/reverie/`. The boundary rules hold: Ledger writes, Assay reads, Reverie orchestrates both, Switchboard dispatches, Terminus transports.
 
-| Component | Responsibility | Current Implementation | v1.2 CJS Implementation |
-|-----------|---------------|----------------------|--------------------------|
-| Hook dispatcher | Route Claude Code events to handlers | 6 separate `.sh` scripts in `graphiti/hooks/` | Single `dynamo-hooks.cjs` with event router |
-| MCP client | Communicate with Graphiti MCP server | Python `MCPClient` class in `graphiti-helper.py` | `lib/ledger/mcp-client.cjs` |
-| Health check | Verify Graphiti server is reachable | `health-check.py` (360 LOC) | `lib/core.cjs` -- `healthCheck()` function |
-| Memory search | Query knowledge graph for context | Python `cmd_search()` + curation | `lib/ledger/search.cjs` |
-| Memory write | Store episodes in knowledge graph | Python `cmd_add_episode()` | `lib/ledger/episodes.cjs` |
-| Context curation | Filter search results via Haiku | Python `curate_results()` via OpenRouter | `lib/ledger/curation.cjs` |
-| Session naming | Generate session names via Haiku | Python `generate_session_name()` via OpenRouter | `lib/ledger/sessions.cjs` |
-| Session index | Local JSON session tracking | Python `sessions.json` CRUD | `lib/ledger/sessions.cjs` |
-| Session summary | Summarize and store session on Stop | Python `cmd_summarize_session()` | `lib/ledger/sessions.cjs` |
-| Project detection | Detect project name from cwd | Python `cmd_detect_project()` | `lib/core.cjs` -- `detectProject()` |
-| Config loading | Load `.env`, `config.yaml`, etc. | Python scattered across helper | `lib/core.cjs` -- `loadConfig()` |
-| Hook registration | Manage `settings.json` hook entries | Manual / `install.sh` | `lib/switchboard/hooks.cjs` |
-| Verification | End-to-end memory pipeline test | Python `cmd_verify_memory()` | `lib/switchboard/verify.cjs` |
-| Diagnostics | Root cause analysis | `diagnose.py` (23K LOC) | `lib/switchboard/diagnostics.cjs` |
+---
 
-## Recommended Directory Structure
+## 2. Integration Points: Existing to New
+
+### 2.1 Hook Dispatcher Modification (cc/hooks/dynamo-hooks.cjs)
+
+The dispatcher is the single integration seam. Currently it routes all events to Ledger handlers. After M2, it conditionally routes cognitive events to Reverie handlers based on `reverie.mode` in config.
+
+**Current routing table (v1.3-M1):**
 
 ```
-~/.claude/dynamo/
-├── bin/
-│   └── dynamo.cjs              # CLI router (like gsd-tools.cjs)
-├── lib/
-│   ├── core.cjs                # Shared substrate
-│   ├── ledger/                 # Memory system
-│   │   ├── index.cjs           # Ledger public API
-│   │   ├── mcp-client.cjs      # MCP/JSON-RPC client for Graphiti
-│   │   ├── search.cjs          # Memory search + curation
-│   │   ├── episodes.cjs        # Episode write (add-episode)
-│   │   ├── curation.cjs        # Haiku-powered result filtering
-│   │   └── sessions.cjs        # Session index, naming, summary, view
-│   └── switchboard/            # Management system
-│       ├── index.cjs           # Switchboard public API
-│       ├── hooks.cjs           # Hook registration/deregistration
-│       ├── verify.cjs          # verify-memory pipeline test
-│       ├── diagnostics.cjs     # diagnose command
-│       ├── docker.cjs          # start/stop/health for Docker stack
-│       └── installer.cjs       # settings.json + config management
-├── hooks/
-│   └── dynamo-hooks.cjs        # Single hook entry point for ALL events
-├── config.yaml                 # Graphiti server configuration
-├── curation/
-│   └── prompts.yaml            # Haiku curation prompts
-├── docker-compose.yml          # Neo4j + Graphiti containers
-├── .env                        # API keys (not committed)
-└── VERSION                     # Dynamo version for self-management
+SessionStart      -> subsystems/ledger/hooks/session-start.cjs
+UserPromptSubmit  -> subsystems/ledger/hooks/prompt-augment.cjs
+PostToolUse       -> subsystems/ledger/hooks/capture-change.cjs
+PreCompact        -> subsystems/ledger/hooks/preserve-knowledge.cjs
+Stop              -> subsystems/ledger/hooks/session-summary.cjs
 ```
 
-### Structure Rationale
-
-- **`bin/dynamo.cjs`:** Single CLI entry point mirroring the GSD pattern (`gsd-tools.cjs`). Provides `dynamo <command> [args]` interface for both human use and hook invocation. All commands route through here.
-
-- **`lib/core.cjs`:** The shared substrate. Contains utilities both Ledger and Switchboard need: config loading, environment/env-file parsing, project detection, health checking, output formatting, error handling. This is the dependency both systems share but neither owns.
-
-- **`lib/ledger/`:** Everything about what Claude knows. The MCP client, search, episode storage, curation, and session management. Ledger has no knowledge of hooks or settings.json -- it only knows about the Graphiti knowledge graph.
-
-- **`lib/switchboard/`:** Everything about how Claude behaves. Hook registration, verification, diagnostics, Docker management, and installer logic. Switchboard has no knowledge of MCP or the knowledge graph -- it only knows about Claude Code's settings and infrastructure.
-
-- **`hooks/dynamo-hooks.cjs`:** The bridge. This single file is what Claude Code actually calls for every hook event. It reads stdin JSON, determines the event type, and delegates to the appropriate Ledger or Switchboard function. One file, one registration pattern in settings.json, all events.
-
-- **Separation from `graphiti/`:** The new `dynamo/` directory coexists with the legacy `graphiti/` during migration. Both can be active simultaneously (hooks registered for either). The migration plan removes `graphiti/` hooks from settings.json once `dynamo/` hooks pass verification.
-
-## Architectural Patterns
-
-### Pattern 1: Single Entry Point Hook Dispatcher
-
-**What:** Instead of N separate hook scripts (current: 6 Bash files), register a single CJS file (`dynamo-hooks.cjs`) for every hook event. The script reads the event from `hook_event_name` in the stdin JSON and routes internally.
-
-**When to use:** Always. This is the core pattern.
-
-**Trade-offs:**
-- Pro: One file to maintain, one registration pattern, unified error handling
-- Pro: No Bash-to-Python bridge overhead -- direct Node.js execution
-- Pro: Shared state (health check cache, MCP session reuse) within a single process
-- Con: Slightly larger single file (mitigated by delegation to lib modules)
-
-**Example:**
-```javascript
-#!/usr/bin/env node
-// dynamo-hooks.cjs -- Single entry point for all Claude Code hook events
-
-const { handleSessionStart, handlePostToolUse,
-        handleUserPrompt, handlePreCompact,
-        handleStop } = require('../lib/ledger/index.cjs');
-
-let input = '';
-const stdinTimeout = setTimeout(() => process.exit(0), 5000);
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => input += chunk);
-process.stdin.on('end', async () => {
-  clearTimeout(stdinTimeout);
-  try {
-    const data = JSON.parse(input);
-    const event = data.hook_event_name;
-
-    switch (event) {
-      case 'SessionStart':
-        await handleSessionStart(data);
-        break;
-      case 'UserPromptSubmit':
-        await handleUserPrompt(data);
-        break;
-      case 'PostToolUse':
-        await handlePostToolUse(data);
-        break;
-      case 'PreCompact':
-        await handlePreCompact(data);
-        break;
-      case 'Stop':
-        await handleStop(data);
-        break;
-      default:
-        process.exit(0); // Unknown event, exit silently
-    }
-  } catch (e) {
-    process.exit(0); // Never block Claude Code
-  }
-});
-```
-
-### Pattern 2: GSD-Style Module Organization
-
-**What:** Follow GSD's proven CJS pattern: single CLI entry point (`bin/`), modular library (`lib/`), pure-function exports, `require()`-based dependency injection. Every module exports named functions. The CLI router maps commands to function calls.
-
-**When to use:** For the entire module tree.
-
-**Trade-offs:**
-- Pro: Proven pattern in the same user environment (GSD already works this way)
-- Pro: CJS means no build step, no transpilation, runs directly with Node.js
-- Pro: Testable -- every export is a pure function or class with explicit dependencies
-- Con: No ES module features (top-level await, import.meta) -- mitigated by wrapping async in main()
-
-**Key GSD patterns to adopt:**
-1. **`output(result, raw, rawValue)`** -- Dual-mode output: JSON for programmatic use, raw string for human/pipe use
-2. **`error(message)`** -- Unified error handling with stderr + exit(1)
-3. **`safeReadFile(path)`** -- Graceful file reading (returns null on failure)
-4. **`loadConfig(cwd)`** -- Config with defaults + override cascade
-5. **CLI router with switch/case** -- Simple, explicit command routing
+**M2 routing table (dual-mode):**
 
 ```javascript
-// lib/core.cjs -- Shared substrate (follows GSD core.cjs patterns)
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+// Feature flag determines routing
+const config = loadConfig();
+const mode = config.reverie?.mode || 'classic';
 
-function output(result, raw, rawValue) {
-  if (raw && rawValue !== undefined) {
-    process.stdout.write(String(rawValue));
-  } else {
-    process.stdout.write(JSON.stringify(result, null, 2));
-  }
-  process.exit(0);
-}
+if (mode === 'cortex') {
+  // Reverie handlers for cognitive events
+  SessionStart      -> subsystems/reverie/handlers/session-start.cjs
+  UserPromptSubmit  -> subsystems/reverie/handlers/user-prompt.cjs
+  PreCompact        -> subsystems/reverie/handlers/pre-compact.cjs
+  Stop              -> subsystems/reverie/handlers/stop.cjs
 
-function error(message) {
-  process.stderr.write('Error: ' + message + '\n');
-  process.exit(1);
-}
-
-module.exports = { output, error, /* ... */ };
-```
-
-### Pattern 3: Boundary Enforcement via Index Exports
-
-**What:** Each system (Ledger, Switchboard) exposes a single `index.cjs` that is the public API. Internal modules are never imported directly from outside the system boundary. The hook dispatcher and CLI router only import from `index.cjs`.
-
-**When to use:** For all cross-boundary imports.
-
-**Trade-offs:**
-- Pro: Clear contract between Ledger and Switchboard
-- Pro: Internal refactoring does not break consumers
-- Pro: Easy to audit what each system exposes
-- Con: Minor boilerplate (index re-exports)
-
-```javascript
-// lib/ledger/index.cjs -- Public API for the memory system
-const { searchMemory, searchWithCuration } = require('./search.cjs');
-const { addEpisode } = require('./episodes.cjs');
-const { summarizeSession, generateSessionName,
-        indexSession, listSessions, viewSession } = require('./sessions.cjs');
-
-// Hook handlers (called by dynamo-hooks.cjs)
-async function handleSessionStart(data) { /* ... */ }
-async function handleUserPrompt(data) { /* ... */ }
-async function handlePostToolUse(data) { /* ... */ }
-async function handlePreCompact(data) { /* ... */ }
-async function handleStop(data) { /* ... */ }
-
-module.exports = {
-  // Hook handlers
-  handleSessionStart,
-  handleUserPrompt,
-  handlePostToolUse,
-  handlePreCompact,
-  handleStop,
-  // Direct API (for CLI commands)
-  searchMemory,
-  addEpisode,
-  summarizeSession,
-  generateSessionName,
-  indexSession,
-  listSessions,
-  viewSession,
-};
-```
-
-### Pattern 4: Cached Health Check with Per-Session Flag
-
-**What:** The current Bash hooks use a `/tmp/graphiti-health-warned-${PPID}` flag file to avoid repeated health check warnings. The CJS version should do the same but can be cleaner: check health once per hook invocation with a cached result file that has a TTL.
-
-**When to use:** Every hook that talks to Graphiti.
-
-**Trade-offs:**
-- Pro: Avoids 3s health check timeout on every hook invocation
-- Pro: Single warning per session, not per event
-- Con: Slightly stale health status (mitigated by short TTL of 30s)
-
-```javascript
-// lib/core.cjs -- Health check with caching
-const HEALTH_CACHE_TTL_MS = 30000; // 30 seconds
-
-function getHealthCachePath(sessionId) {
-  return path.join(os.tmpdir(), `dynamo-health-${sessionId || 'default'}.json`);
-}
-
-async function isHealthy(sessionId) {
-  const cachePath = getHealthCachePath(sessionId);
-  // Check cache first
-  try {
-    const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
-    if (Date.now() - cached.timestamp < HEALTH_CACHE_TTL_MS) {
-      return cached.healthy;
-    }
-  } catch {}
-
-  // Fresh check
-  try {
-    const resp = await fetch(HEALTH_URL, { signal: AbortSignal.timeout(3000) });
-    const healthy = resp.ok;
-    fs.writeFileSync(cachePath, JSON.stringify({ healthy, timestamp: Date.now() }));
-    return healthy;
-  } catch {
-    fs.writeFileSync(cachePath, JSON.stringify({ healthy: false, timestamp: Date.now() }));
-    return false;
-  }
+  // PostToolUse dispatches to BOTH (parallel)
+  PostToolUse       -> subsystems/ledger/hooks/capture-change.cjs  (file capture)
+                    -> subsystems/reverie/handlers/post-tool-use.cjs (activation update)
+} else {
+  // Classic mode: existing Ledger handlers (v1.2.1 behavior)
+  SessionStart      -> subsystems/ledger/hooks/session-start.cjs
+  UserPromptSubmit  -> subsystems/ledger/hooks/prompt-augment.cjs
+  PostToolUse       -> subsystems/ledger/hooks/capture-change.cjs
+  PreCompact        -> subsystems/ledger/hooks/preserve-knowledge.cjs
+  Stop              -> subsystems/ledger/hooks/session-summary.cjs
 }
 ```
 
-### Pattern 5: Native `fetch()` Instead of Python `httpx`
+**Boundary compliance:** Switchboard (dispatcher) routes events. It does not implement handler logic. The `mode` check adds ~1ms overhead (config read is cached). Ledger's capture-change.cjs remains in Ledger because it decides WHAT to extract from file changes (write-side logic). Reverie's post-tool-use.cjs updates the activation map (cognitive logic).
 
-**What:** Node.js 18+ (which Claude Code requires) includes native `fetch()`. Use it for all HTTP calls: Graphiti health checks, MCP JSON-RPC, OpenRouter API (curation/summarization). No npm dependencies needed.
-
-**When to use:** All HTTP communication.
-
-**Trade-offs:**
-- Pro: Zero external dependencies for HTTP
-- Pro: Consistent with GSD (which also uses zero npm deps)
-- Pro: `AbortSignal.timeout()` provides clean timeout support
-- Con: Slightly more verbose than `httpx` for SSE parsing
-
-```javascript
-// lib/ledger/mcp-client.cjs -- MCP client using native fetch
-class MCPClient {
-  constructor(baseUrl, timeout = 5000) {
-    this.baseUrl = baseUrl.replace(/\/$/, '');
-    this.timeout = timeout;
-    this.sessionId = null;
-  }
-
-  async callTool(toolName, args) {
-    if (!this.sessionId) await this._initialize();
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/event-stream',
-    };
-    if (this.sessionId) headers['mcp-session-id'] = this.sessionId;
-
-    const resp = await fetch(this.baseUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'tools/call',
-        params: { name: toolName, arguments: args },
-        id: crypto.randomUUID(),
-      }),
-      signal: AbortSignal.timeout(this.timeout),
-    });
-
-    const contentType = resp.headers.get('content-type') || '';
-    if (contentType.includes('text/event-stream')) {
-      return this._parseSSE(await resp.text());
-    }
-    return resp.json();
-  }
-}
-```
-
-## Data Flow
-
-### Hook Event Flow (v1.2)
-
-```
-Claude Code fires hook event
-    |
-    v
-settings.json routes to dynamo-hooks.cjs
-    |
-    v
-dynamo-hooks.cjs reads stdin JSON
-    |
-    +-- hook_event_name: "SessionStart"
-    |       |
-    |       v
-    |   ledger/index.cjs::handleSessionStart()
-    |       |
-    |       +-- core.cjs::isHealthy()  -->  Graphiti /health
-    |       +-- core.cjs::detectProject()
-    |       +-- ledger/search.cjs::searchMemory()  -->  Graphiti MCP
-    |       +-- ledger/curation.cjs::curateResults()  -->  OpenRouter (Haiku)
-    |       |
-    |       v
-    |   stdout: "[GRAPHITI MEMORY CONTEXT]\n..."
-    |   (Claude Code injects as additionalContext)
-    |
-    +-- hook_event_name: "PostToolUse"
-    |       |
-    |       v
-    |   Check tool_name: only Write|Edit|MultiEdit
-    |       |
-    |       v
-    |   ledger/index.cjs::handlePostToolUse()
-    |       +-- ledger/episodes.cjs::addEpisode()  -->  Graphiti MCP (add_memory)
-    |
-    +-- hook_event_name: "UserPromptSubmit"
-    |       |
-    |       v
-    |   ledger/index.cjs::handleUserPrompt()
-    |       +-- Skip if prompt < 15 chars
-    |       +-- ledger/search.cjs::searchMemory()  -->  Graphiti MCP
-    |       +-- ledger/curation.cjs::curateResults()  -->  OpenRouter (Haiku)
-    |       +-- ledger/sessions.cjs::earlyNameSession()  -->  OpenRouter (Haiku)
-    |       |
-    |       v
-    |   stdout: "[RELEVANT MEMORY]\n..."
-    |
-    +-- hook_event_name: "PreCompact"
-    |       |
-    |       v
-    |   ledger/index.cjs::handlePreCompact()
-    |       +-- ledger/curation.cjs::extractKnowledge()  -->  OpenRouter (Haiku)
-    |       +-- ledger/episodes.cjs::addEpisode()  -->  Graphiti MCP
-    |       |
-    |       v
-    |   stdout: "[PRESERVED CONTEXT]\n..."
-    |
-    +-- hook_event_name: "Stop"
-            |
-            v
-        Guard: skip if stop_hook_active === true
-            |
-            v
-        ledger/index.cjs::handleStop()
-            +-- ledger/sessions.cjs::summarizeSession()  -->  OpenRouter (Haiku)
-            +-- ledger/episodes.cjs::addEpisode()  -->  Graphiti MCP (project scope)
-            +-- ledger/episodes.cjs::addEpisode()  -->  Graphiti MCP (session scope)
-            +-- ledger/sessions.cjs::generateSessionName()  -->  OpenRouter (Haiku)
-            +-- ledger/sessions.cjs::indexSession()  -->  local sessions.json
-```
-
-### CLI Command Flow (v1.2)
-
-```
-User or Claude Code runs: node dynamo.cjs <command> [args]
-    |
-    v
-bin/dynamo.cjs (CLI router)
-    |
-    +-- "health-check"    -->  core.cjs::healthCheck()
-    +-- "search"          -->  ledger/search.cjs::searchMemory()
-    +-- "add-episode"     -->  ledger/episodes.cjs::addEpisode()
-    +-- "summarize"       -->  ledger/sessions.cjs::summarizeSession()
-    +-- "list-sessions"   -->  ledger/sessions.cjs::listSessions()
-    +-- "view-session"    -->  ledger/sessions.cjs::viewSession()
-    +-- "label-session"   -->  ledger/sessions.cjs::labelSession()
-    +-- "backfill"        -->  ledger/sessions.cjs::backfillSessions()
-    +-- "verify-memory"   -->  switchboard/verify.cjs::verifyMemory()
-    +-- "diagnose"        -->  switchboard/diagnostics.cjs::diagnose()
-    +-- "install"         -->  switchboard/installer.cjs::install()
-    +-- "register-hooks"  -->  switchboard/hooks.cjs::registerHooks()
-    +-- "docker-start"    -->  switchboard/docker.cjs::start()
-    +-- "docker-stop"     -->  switchboard/docker.cjs::stop()
-    +-- "detect-project"  -->  core.cjs::detectProject()
-```
-
-## settings.json Hook Registration (v1.2)
-
-The current settings.json has 6 separate hook entries with Bash commands pointing to `$HOME/.claude/graphiti/hooks/`. The v1.2 registration replaces all of them with a single CJS entry per event type.
+**New hook registrations for settings-hooks.json:**
 
 ```json
 {
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup|resume",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/hooks/gsd-check-update.js\""
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
-            "timeout": 15
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/hooks/gsd-context-monitor.js\""
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/dynamo/hooks/dynamo-hooks.cjs\"",
-            "timeout": 30
-          }
-        ]
-      }
-    ]
+  "SubagentStart": [
+    {
+      "matcher": "inner-voice",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"$HOME/.claude/dynamo/cc/hooks/dynamo-hooks.cjs\"",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "SubagentStop": [
+    {
+      "matcher": "inner-voice",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"$HOME/.claude/dynamo/cc/hooks/dynamo-hooks.cjs\"",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}
+```
+
+The dispatcher handles SubagentStart/SubagentStop by checking `agent_type === 'inner-voice'` and routing to Reverie's subagent handlers. These are new events that only fire when the inner-voice custom subagent is spawned/completed.
+
+**Verified platform support:** Claude Code supports SubagentStart and SubagentStop hook events with matcher filtering by agent name. SubagentStart receives `{ session_id, transcript_path, cwd, hook_event_name, agent_id, agent_type }`. SubagentStop receives `{ session_id, transcript_path, cwd, permission_mode, hook_event_name, stop_hook_active, agent_id, agent_type, agent_transcript_path, last_assistant_message }`. SubagentStart hooks can inject context into the subagent via structured JSON output with `hookSpecificOutput.additionalContext`. SubagentStop hooks cannot inject into the parent context (confirmed: GitHub issue #5812 closed NOT_PLANNED).
+
+### 2.2 Hook Output Format Consideration
+
+**Discovery:** The current dispatcher uses raw `process.stdout.write()` for injection, intercepted and wrapped in boundary markers. Claude Code also supports structured JSON output with `hookSpecificOutput.additionalContext`. For M2, Reverie handlers should return structured data that the dispatcher formats appropriately.
+
+**Current pattern (Ledger handlers):**
+```javascript
+// Handler writes directly to stdout
+process.stdout.write('[RELEVANT MEMORY]\n\n' + curated);
+// Dispatcher wraps in boundary markers
+```
+
+**M2 pattern (Reverie handlers):**
+```javascript
+// Handler returns structured result
+return { additionalContext: injection, metadata: { path: 'hot', tokens: 85 } };
+// Dispatcher formats for output (boundary markers for backward compat)
+```
+
+This is a refinement, not a breaking change. The dispatcher already intercepts stdout. Reverie handlers return data instead of writing to stdout, and the dispatcher formats it. Classic-mode handlers continue using stdout. Both paths produce the same external output.
+
+**SubagentStart output format:** SubagentStart hooks must output structured JSON to stdout for `additionalContext` injection:
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SubagentStart",
+    "additionalContext": "serialized IV state for subagent context"
   }
 }
 ```
 
-GSD hooks (`gsd-check-update.js`, `gsd-context-monitor.js`, `gsd-statusline.js`) remain untouched. They are GSD's responsibility. Dynamo hooks coexist alongside them.
+### 2.3 Ledger Interface (Write-Side)
 
-## Ledger / Switchboard Boundary
+Reverie calls Ledger for graph writes. No Ledger modifications required -- Reverie uses the existing `addEpisode()` API.
 
-This is the critical architectural boundary. Here is the definitive rule:
-
-**Ledger** owns anything that touches the knowledge graph or involves what Claude remembers:
-- MCP client (JSON-RPC to Graphiti)
-- Memory search (facts, nodes, curation)
-- Episode storage (file changes, session summaries, knowledge preservation)
-- Session management (index, naming, summary, view, label, backfill)
-- Context curation (Haiku calls for relevance filtering)
-- All hook event handlers that produce `additionalContext` for Claude
-
-**Switchboard** owns anything that manages Claude Code's infrastructure or behavior:
-- Hook registration/deregistration in `settings.json`
-- Memory pipeline verification (`verify-memory`)
-- Diagnostics and troubleshooting (`diagnose`)
-- Docker stack management (start, stop, health)
-- Installation and self-management
-- Configuration management (`.env`, `config.yaml`)
-- Future: skill registration, agent management, permission management
-
-**Shared Substrate** (`core.cjs`) owns cross-cutting utilities both systems need:
-- Output formatting (`output()`, `error()`)
-- Config loading (`.env` parsing, YAML config, environment variables)
-- Project detection (`detectProject()`)
-- Health check (cached, with session awareness)
-- File I/O utilities (`safeReadFile()`)
-
-**The boundary test:** Can Ledger function if Switchboard is completely removed? Yes -- it only needs `core.cjs`. Can Switchboard function if Ledger is removed? Yes -- it only needs `core.cjs`. They never import from each other.
-
-## Integration Points
-
-### Claude Code Hook System
-
-| Hook Event | Dynamo Handler | System | What It Does |
-|------------|---------------|--------|-------------|
-| SessionStart (startup/resume) | `handleSessionStart()` | Ledger | Injects global prefs + project context + recent sessions |
-| SessionStart (compact) | `handleSessionStart()` | Ledger | Same as startup (re-injects context after compaction) |
-| UserPromptSubmit | `handleUserPrompt()` | Ledger | Searches memory for relevant context, names session |
-| PostToolUse (Write/Edit/MultiEdit) | `handlePostToolUse()` | Ledger | Stores file change episode in knowledge graph |
-| PreCompact | `handlePreCompact()` | Ledger | Extracts and preserves key knowledge before compaction |
-| Stop | `handleStop()` | Ledger | Summarizes session, stores summary, generates name |
-
-### Graphiti MCP Server
-
-| Integration | Protocol | Endpoint |
-|-------------|----------|----------|
-| Health check | HTTP GET | `http://localhost:8100/health` |
-| Tool calls (search, add, get) | JSON-RPC over HTTP + SSE | `http://localhost:8100/mcp` |
-
-MCP tools used: `add_memory`, `search_memory_facts`, `search_nodes`, `get_episodes`.
-
-### OpenRouter API (Haiku)
-
-| Integration | Purpose | Model |
-|-------------|---------|-------|
-| Context curation | Filter search results for relevance | `anthropic/claude-haiku-4.5` |
-| Session summarization | Compress session into 3-5 bullets | `anthropic/claude-haiku-4.5` |
-| Session naming | Generate 3-5 word session name | `anthropic/claude-haiku-4.5` |
-| Knowledge preservation | Extract key facts before compaction | `anthropic/claude-haiku-4.5` |
-
-### Docker Infrastructure
-
-| Service | Port | Purpose |
-|---------|------|---------|
-| Neo4j | 7475 (HTTP), 7687 (Bolt) | Knowledge graph database |
-| Graphiti MCP | 8100 | MCP server for memory operations |
-
-### GSD Framework (Read-Only)
-
-Dynamo does not depend on GSD at runtime. The relationship is pattern-based: Dynamo follows GSD's CJS conventions so the codebase is consistent for Claude Code to work with. GSD hooks and Dynamo hooks coexist in `settings.json` without conflict.
-
-### Repository (my-cc-setup)
-
-The `my-cc-setup` repo contains the source of truth. `install.sh` (or future `dynamo install`) copies files from the repo to `~/.claude/dynamo/` and updates `settings.json`.
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| dynamo-hooks.cjs to Ledger | Direct `require()` | Same process, synchronous import |
-| dynamo-hooks.cjs to core | Direct `require()` | Same process, synchronous import |
-| Ledger to Graphiti MCP | HTTP (JSON-RPC) | Async `fetch()`, 5s timeout |
-| Ledger to OpenRouter | HTTP (REST) | Async `fetch()`, 10-15s timeout |
-| Switchboard to settings.json | File I/O | JSON read/write |
-| Switchboard to Docker | `child_process.execSync` | `docker compose up/down` |
-| install.sh to ~/.claude/ | File copy | One-way sync from repo to runtime |
-
-## Build Order (Dependency-Driven)
-
-The dependency graph dictates build order:
-
-```
-Phase 1: core.cjs (shared substrate)
-    No dependencies. Everything else depends on this.
-    Includes: output/error, config loading, .env parsing,
-    project detection, health check, safeReadFile.
-
-Phase 2: lib/ledger/mcp-client.cjs
-    Depends on: core.cjs (config, health check)
-    The MCP client is the foundation of all memory operations.
-
-Phase 3: lib/ledger/ (remaining modules)
-    Depends on: core.cjs, mcp-client.cjs
-    episodes.cjs, search.cjs, curation.cjs, sessions.cjs
-    Can be built in parallel since they share mcp-client but
-    do not depend on each other.
-
-Phase 4: lib/ledger/index.cjs (hook handlers)
-    Depends on: all ledger modules
-    Composes individual modules into hook event handlers.
-
-Phase 5: hooks/dynamo-hooks.cjs
-    Depends on: ledger/index.cjs, core.cjs
-    The single entry point. Routes events to handlers.
-
-Phase 6: lib/switchboard/ (all modules)
-    Depends on: core.cjs only
-    hooks.cjs, verify.cjs, diagnostics.cjs, docker.cjs, installer.cjs
-    Can be built in parallel with phases 2-5 if desired.
-
-Phase 7: bin/dynamo.cjs (CLI router)
-    Depends on: everything
-    Routes CLI commands to Ledger and Switchboard functions.
+**Existing interface (unchanged):**
+```javascript
+const { addEpisode } = require(resolve('ledger', 'episodes.cjs'));
+await addEpisode(content, scope, { hookName: 'reverie-stop' });
 ```
 
-## Scaling Considerations
+**What Reverie writes through Ledger:**
+- Session synthesis episodes (Stop handler, REM Tier 3)
+- Pre-compact preservation episodes (PreCompact handler, REM Tier 1)
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| Current (1 user, 5-10 hooks/session) | Single-file hooks, synchronous MCP calls, file-based session index |
-| Future (many sessions, large knowledge graph) | Session index could move to SQLite if JSON grows large (>1MB). MCP client could pool connections. Not needed for v1.2. |
-| Future (multiple projects, concurrent sessions) | Session-scoped health cache already handles this. Group_id scoping in Graphiti handles project isolation. |
+**Boundary compliance:** Reverie decides WHAT to write. Ledger executes the write. Reverie never imports from Terminus directly for graph writes.
 
-### Scaling Priorities
+### 2.4 Assay Interface (Read-Side)
 
-1. **First bottleneck:** Haiku API latency (~200-500ms per call, 3-5 calls per session lifecycle). Mitigate with parallel requests where possible (e.g., search global + project simultaneously).
-2. **Second bottleneck:** sessions.json file size. Currently ~5KB for ~20 sessions. At 1000+ sessions, switch to append-only log with periodic compaction, or SQLite.
+Reverie calls Assay for graph reads. No Assay modifications required -- Reverie uses the existing `combinedSearch()` and session APIs.
 
-## Anti-Patterns
+**Existing interface (unchanged):**
+```javascript
+const { combinedSearch } = require(resolve('assay', 'search.cjs'));
+const results = await combinedSearch(query, scope, { hookName: 'reverie-prompt' });
 
-### Anti-Pattern 1: Multiple Hook Entry Points
+const { indexSession, generateAndApplyName } = require(resolve('assay', 'sessions.cjs'));
+```
 
-**What people do:** Register separate scripts for each hook event (current state: 6 Bash files).
-**Why it is wrong:** Each invocation pays the full startup cost (Python interpreter + virtual env + module imports is approximately 500ms). Makes error handling inconsistent. Hook registration in settings.json becomes a complex manual task.
-**Do this instead:** Single CJS entry point with internal routing. Node.js cold start is approximately 50ms. One file to register, one error handling strategy.
+**What Reverie reads through Assay:**
+- Entity search results for activation map population (UserPromptSubmit, SessionStart)
+- Session history for briefing generation (SessionStart)
+- Entity relationship data for 1-hop propagation (activation.cjs)
 
-### Anti-Pattern 2: Bash-as-Glue Language
+**Boundary compliance:** Reverie decides WHAT to read. Assay executes the query. Assay never writes.
 
-**What people do:** Write Bash scripts that parse JSON with `jq`, shell out to Python, and handle errors with cascading `if/then/fi`.
-**Why it is wrong:** Brittle JSON parsing, hard to test, inconsistent error handling between Bash and Python layers, difficult to share state between hook invocations.
-**Do this instead:** CJS handles JSON natively, has try/catch, and shares modules via `require()`.
+### 2.5 Curation Migration (Ledger to Reverie)
 
-### Anti-Pattern 3: Cross-Boundary Imports
+The LLM-calling functions in `subsystems/ledger/curation.cjs` move to `subsystems/reverie/curation.cjs`. Deterministic formatting functions stay in Ledger.
 
-**What people do:** Import Ledger internals from Switchboard or vice versa (e.g., Switchboard calling `mcp-client.cjs` directly).
-**Why it is wrong:** Couples the two systems, prevents independent evolution, makes it unclear which system owns what.
-**Do this instead:** Each system exports through `index.cjs`. If Switchboard needs memory data for verification, it calls Ledger's public API. If Ledger needs hook state, it asks core.cjs.
+**Functions moving to Reverie:**
+- `curateResults()` -- LLM-powered relevance filtering
+- `summarizeText()` -- LLM-powered session synthesis
+- `generateSessionName()` -- LLM-powered session naming
+- `callHaiku()` -- low-level LLM call wrapper
 
-### Anti-Pattern 4: Blocking Hook Execution
+**Functions staying in Ledger:**
+- `addEpisode()` (episodes.cjs -- unchanged)
+- `extractContent()` (episodes.cjs -- unchanged)
 
-**What people do:** Let a hook time out or throw an unhandled error, which blocks Claude Code.
-**Why it is wrong:** A memory hook should never impair Claude Code's core functionality. The existing system correctly catches errors and exits 0.
-**Do this instead:** Wrap every hook handler in try/catch. On any error, log to `hook-errors.log` and exit 0. Never exit 2 (blocking) from a memory hook. The stdin timeout guard pattern from GSD hooks (3-5s timeout on stdin read) must be preserved.
+**The dividing line:** If it calls an LLM, it belongs to Reverie (cognitive processing). If it formats data or writes to the graph, it belongs to Ledger (data construction).
 
-### Anti-Pattern 5: npm Dependencies
+**Migration approach:** Phase the migration. First, Reverie's curation.cjs wraps Ledger's existing functions (re-exports with cost-tracking integration). Second, move the actual code and update imports. The classic-mode route to Ledger's handlers still needs these functions, so the Ledger originals remain available during the transition. Once `reverie.mode: cortex` is proven, Ledger's LLM functions can be removed (they become dead code in classic-mode-removed future).
 
-**What people do:** Install npm packages for HTTP, YAML parsing, etc.
-**Why it is wrong:** Creates a `node_modules` directory in `~/.claude/dynamo/`, requires `npm install` during setup, version conflicts possible, increases attack surface.
-**Do this instead:** Zero external dependencies. Use native `fetch()` for HTTP, simple YAML parser for config (or convert config to JSON), `fs`/`path`/`crypto` from Node.js stdlib. GSD proves this works at scale with 14 CJS files and zero npm deps.
+### 2.6 Config.json Extension
 
-## Migration Strategy
+The existing `dynamo/config.json` gains a `reverie` section. The `loadConfig()` function in `lib/core.cjs` already uses spread merging with defaults, so new config sections need defaults added.
 
-The migration from `graphiti/` (Python/Bash) to `dynamo/` (CJS) should be gradual:
+**New config section:**
+```json
+{
+  "reverie": {
+    "enabled": true,
+    "mode": "classic",
+    "billing_model": "subscription",
+    "hot_path": {
+      "max_latency_ms": 500,
+      "entity_confidence_threshold": 0.7,
+      "semantic_shift_threshold": 0.4,
+      "min_cached_results": 3
+    },
+    "deliberation": {
+      "model": "claude-sonnet-4-6-20250514",
+      "max_latency_ms": 2000,
+      "max_turns": 10
+    },
+    "injection": {
+      "session_start_max_tokens": 500,
+      "mid_session_max_tokens": 150,
+      "urgent_max_tokens": 50
+    },
+    "activation": {
+      "sublimation_threshold": 0.6,
+      "decay_rate": 0.1,
+      "propagation_hops": 1,
+      "convergence_bonus": 1.5,
+      "density_threshold_entities": 100,
+      "density_threshold_relationships": 200
+    },
+    "cost": {
+      "daily_budget_dollars": 5.00,
+      "monthly_budget_dollars": 100.00,
+      "hot_path_only_on_budget_exhaust": true,
+      "tracking_file": "cost-tracker.json"
+    }
+  }
+}
+```
 
-1. **Build `dynamo/` alongside `graphiti/`** -- they coexist in `~/.claude/`
-2. **Feature parity first** -- each CJS module must match the Python equivalent's behavior
-3. **Per-event migration** -- switch one hook event at a time in `settings.json`
-4. **Verify each switch** -- run `dynamo verify-memory` after each event migration
-5. **Remove `graphiti/` hooks last** -- only after all events verified on CJS
+**Startup behavior:** `reverie.mode` defaults to `"classic"` on first install. The user (or Claude) switches to `"cortex"` after Reverie is validated. This is the instant rollback mechanism (MGMT-10).
 
-This avoids any downtime in the memory system during migration.
+### 2.7 CLI Router Extension (dynamo.cjs)
 
-## YAML Config Consideration
+The CLI router gains new commands for Reverie management:
 
-The current `config.yaml` is read by Python's `yaml.safe_load()`. CJS without npm deps cannot parse YAML natively. Two options:
+```javascript
+case 'voice': {
+  const reverie = require(resolve('reverie', 'inner-voice.cjs'));
+  const subCmd = restArgs[0];
+  switch (subCmd) {
+    case 'status':   // Show IV state summary
+    case 'explain':  // Explain last injection decision
+    case 'reset':    // Reset self-model and relationship model
+    case 'mode':     // Get/set reverie.mode (classic/cortex)
+    default: error('Usage: dynamo voice <status|explain|reset|mode>');
+  }
+  break;
+}
 
-**Option A (recommended):** Convert `config.yaml` to `config.json` during the v1.2 migration. JSON is natively parseable in Node.js. The YAML format provides no advantage for this use case (no multi-line strings, no anchors/aliases used).
+case 'cost': {
+  const costTracker = require(resolve('reverie', 'cost-tracker.cjs'));
+  const subCmd = restArgs[0];
+  switch (subCmd) {
+    case 'today':    // Show today's cost breakdown
+    case 'month':    // Show monthly cost summary
+    case 'budget':   // Get/set budget limits
+    case 'reset':    // Reset cost counters
+    default: error('Usage: dynamo cost <today|month|budget|reset>');
+  }
+  break;
+}
 
-**Option B:** Write a minimal YAML subset parser (~50 LOC) that handles the flat key-value and simple nested structure used in `config.yaml`. This preserves format continuity but adds maintenance burden for no real benefit.
-
-Recommendation: Option A. Convert to JSON. The Docker Compose file stays YAML (Docker reads it, not Dynamo). The curation prompts file (`prompts.yaml`) should also convert to `prompts.json` with escaped newlines in prompt strings, or be loaded as raw text files (one per prompt).
-
-## Sources
-
-- GSD CJS architecture: `/Users/tom.kyser/.claude/get-shit-done/bin/gsd-tools.cjs` and `lib/*.cjs` (14 modules, zero deps) -- **HIGH confidence** (direct code inspection)
-- Claude Code hooks specification: [Hooks reference - Claude Code Docs](https://code.claude.com/docs/en/hooks) -- **HIGH confidence** (official documentation, 23 hook events documented)
-- Current graphiti system: `/Users/tom.kyser/.claude/graphiti/` (6 Bash hooks, 3 Python modules) -- **HIGH confidence** (direct code inspection)
-- Current settings.json hook registration: `/Users/tom.kyser/.claude/settings.json` -- **HIGH confidence** (direct inspection)
-- Claude Code hook plugin development: [anthropics/claude-code plugin-dev skill](https://github.com/anthropics/claude-code/blob/main/plugins/plugin-dev/skills/hook-development/SKILL.md) -- **MEDIUM confidence** (GitHub, may be version-specific)
-- [Claude Code power user customization: How to configure hooks](https://claude.com/blog/how-to-configure-hooks) -- **MEDIUM confidence** (official blog)
+case 'backfill': {
+  const backfill = require(resolve('reverie', 'backfill.cjs'));
+  await backfill.run(restArgs, pretty);
+  break;
+}
+```
 
 ---
-*Architecture research for: Dynamo v1.2 -- Ledger + Switchboard CJS Architecture*
-*Researched: 2026-03-17*
+
+## 3. New Modules (subsystems/reverie/)
+
+### 3.1 Complete Module Map
+
+```
+subsystems/reverie/
+  inner-voice.cjs            # Core pipeline orchestrator
+  dual-path.cjs              # Hot/deliberation path routing and scoring
+  activation.cjs             # Activation map management, spreading activation
+  curation.cjs               # Intelligent curation (migrated from Ledger)
+  cost-tracker.cjs           # Per-operation/day/month budget tracking (CORTEX-03)
+  backfill.cjs               # Memory backfill from past transcripts
+  handlers/
+    session-start.cjs        # SessionStart handler (cortex mode)
+    user-prompt.cjs          # UserPromptSubmit handler (cortex mode)
+    pre-compact.cjs          # PreCompact handler (cortex mode)
+    stop.cjs                 # Stop handler (cortex mode)
+    post-tool-use.cjs        # PostToolUse activation update (lightweight)
+    subagent-start.cjs       # SubagentStart handler (inner-voice only)
+    subagent-stop.cjs        # SubagentStop handler (inner-voice only)
+
+cc/agents/
+  inner-voice.md             # Custom subagent definition (YAML frontmatter)
+
+cc/prompts/
+  iv-system-prompt.md        # Inner Voice system prompt for deliberation
+  session-briefing.md        # Session start briefing template
+  adversarial-counter.md     # Adversarial counter-prompting template
+  (existing prompts curation.md, session-summary.md, etc. remain)
+
+State files (runtime, in ~/.claude/dynamo/):
+  inner-voice-state.json     # Operational state (~10-50KB)
+  inner-voice-deliberation-result.json  # State bridge (transient, ~1-5KB)
+  cost-tracker.json          # Cost accumulator (persistent)
+```
+
+### 3.2 Module Descriptions and Interfaces
+
+#### inner-voice.cjs (Core Pipeline Orchestrator)
+
+Central module implementing per-hook processing pipelines. All handlers delegate to this module.
+
+```javascript
+module.exports = {
+  processUserPrompt(promptData, state, pendingResult, options) ->
+    { injection: string|null, updatedState: object },
+
+  processSessionStart(sessionData, state, options) ->
+    { briefing: string, updatedState: object },
+
+  processStop(sessionData, state, options) ->
+    { synthesis: object, updatedState: object },
+
+  processPreCompact(compactData, state, options) ->
+    { summary: string, updatedState: object },
+
+  processPostToolUse(toolData, state, options) ->
+    { updatedState: object },
+
+  loadState(options) -> object,
+  persistState(state, options) -> void,
+  getDefaultState() -> object
+};
+```
+
+**Dependencies:** `dual-path.cjs`, `activation.cjs`, `curation.cjs`, `cost-tracker.cjs`, Assay (`search.cjs`), Ledger (`episodes.cjs`), `lib/core.cjs`.
+
+#### dual-path.cjs (Path Routing and Scoring)
+
+Deterministic path selection. No LLM call for the decision itself.
+
+```javascript
+module.exports = {
+  selectPath(activationMap, semanticShift, predictions, config) ->
+    'hot' | 'deliberation' | 'skip',
+
+  executeHotPath(entities, state, domainFrame, options) ->
+    { injection: string, tokens: number },
+
+  queueDeliberation(entities, state, domainFrame, options) ->
+    { queued: boolean, fallbackInjection: string|null },
+
+  shouldUseSubagent(config) -> boolean,
+
+  formatInjection(content, context, tokenLimit) -> string
+};
+```
+
+**Path selection signals (all deterministic):**
+
+| Signal | Hot Path | Deliberation Path |
+|--------|----------|-------------------|
+| Entity match confidence | >= 0.7 | < 0.7 |
+| Cached result count | >= 3 | < 3 |
+| Semantic shift score | < 0.4 | >= 0.4 |
+| Explicit recall request | Never | Always |
+| Session start briefing | Never | Always |
+| Rate limit / budget exhausted | Always (fallback) | Never |
+
+#### activation.cjs (Activation Map Management)
+
+Spreading activation from the Abstract applied to Graphiti's entity-relationship structure.
+
+```javascript
+module.exports = {
+  updateActivation(entities, currentMap, domainFrame, options) -> updatedMap,
+  propagateActivation(anchorEntities, graphData, hops, decayFactor) -> activationMap,
+  checkThresholdCrossings(activationMap, threshold) -> crossedEntities[],
+  decayAll(activationMap, timeDelta) -> decayedMap,
+  computeSublimationScore(entity, predictions, currentContext, cognitiveLoad) -> number,
+  classifyDomainFrame(promptText) -> { frame: string, confidence: number }
+};
+```
+
+**v1.3 constraints:** 1-hop propagation only. Keyword/regex domain classification. Graph density check before enabling spreading activation (falls back to direct-mention-only below 100 entities / 200 relationships).
+
+#### cost-tracker.cjs (CORTEX-03: Cost Monitoring)
+
+Per-operation, per-day, per-month budget tracking with hard enforcement.
+
+```javascript
+module.exports = {
+  trackOperation(operation, model, inputTokens, outputTokens, options) -> void,
+  getTodayCost(options) -> { total: number, breakdown: object },
+  getMonthCost(options) -> { total: number, breakdown: object },
+  isBudgetExhausted(options) -> boolean,
+  getBudgetStatus(options) -> { daily: object, monthly: object },
+  resetCounters(scope, options) -> void
+};
+```
+
+**Storage:** `cost-tracker.json` in `~/.claude/dynamo/`. Keyed by date (`YYYY-MM-DD`) for daily rollover. Monthly totals computed by summing daily entries.
+
+**Enforcement:** Every LLM-calling function checks `isBudgetExhausted()` before making the call. If exhausted, falls back to hot-path-only.
+
+**Pricing data:** Hardcoded cost-per-token table for known models (Haiku, Sonnet). Updated via config or migration when prices change.
+
+#### backfill.cjs (Memory Backfill)
+
+Batch processing of past chat transcripts to populate the knowledge graph retroactively.
+
+```javascript
+module.exports = {
+  run(args, pretty, options) -> { processed: number, errors: number },
+  discoverTranscripts(projectDir, options) -> transcriptPaths[],
+  processTranscript(transcriptPath, options) -> { entities: number, episodes: number },
+  estimateCost(transcriptPaths, options) -> { estimatedCost: number, tokenEstimate: number }
+};
+```
+
+**Data source:** Claude Code transcript files at `~/.claude/projects/{project}/{sessionId}.jsonl`. Each line is a JSON entry with role, content, tool calls, etc.
+
+**Processing model:** Batch job using subagent or direct API. Reads transcripts, extracts entities and relationships, writes episodes through Ledger. Cost-tracked through `cost-tracker.cjs`.
+
+#### handlers/*.cjs (Hook Handlers)
+
+Each handler follows the same pattern: load state, delegate to inner-voice.cjs pipeline, persist state, return injection (or null).
+
+```javascript
+// Pattern for handlers/user-prompt.cjs
+module.exports = async function handleUserPrompt(ctx, options = {}) {
+  const iv = require(resolve('reverie', 'inner-voice.cjs'));
+  const costTracker = require(resolve('reverie', 'cost-tracker.cjs'));
+
+  // Cost gate: if budget exhausted, degrade to minimal hot-path
+  const budgetExhausted = costTracker.isBudgetExhausted(options);
+
+  const state = iv.loadState(options);
+  const pendingResult = checkPendingDeliberation(options);
+  const { injection, updatedState } = iv.processUserPrompt(
+    ctx, state, pendingResult, { ...options, budgetExhausted }
+  );
+  iv.persistState(updatedState, options);
+
+  return injection ? { additionalContext: injection } : null;
+};
+```
+
+**SubagentStart handler:** Reads IV state, serializes relevant sections (self_model, relationship_model, activation_map, predictions, domain_frame, deliberation_queue), returns structured JSON with `additionalContext`.
+
+**SubagentStop handler:** Reads `last_assistant_message` from input, writes to `inner-voice-deliberation-result.json` state bridge file. Returns empty (cannot inject into parent).
+
+---
+
+## 4. Data Flow Diagrams
+
+### 4.1 Hot-Path Injection (UserPromptSubmit, <500ms)
+
+This is the 95% path. Deterministic CJS processing with no LLM call on the pure fast path.
+
+```
+User types prompt
+  |
+  v
+Claude Code fires UserPromptSubmit hook
+  |
+  v
+cc/hooks/dynamo-hooks.cjs (dispatcher)
+  | [toggle gate, input validation, boundary markers]
+  | [check config.reverie.mode]
+  |
+  v  (mode === 'cortex')
+subsystems/reverie/handlers/user-prompt.cjs
+  |
+  +-- 1. Load inner-voice-state.json                          [<5ms]
+  |
+  +-- 2. Check inner-voice-deliberation-result.json           [<5ms]
+  |      (if exists and status=complete: consume + delete)
+  |
+  +-- 3. Classify domain frame (keyword/regex)                [<1ms]
+  |
+  +-- 4. Detect semantic shift (cosine or keyword overlap)    [<5ms]
+  |
+  +-- 5. Update activation map                                [10-50ms]
+  |      +-- Extract entities from prompt (pattern match)
+  |      +-- Activate in map, propagate 1-hop via Assay
+  |      +-- Apply domain frame weight bonus
+  |      +-- Decay existing activations
+  |      +-- Check threshold crossings
+  |
+  +-- 6. Select path (deterministic)                          [<1ms]
+  |      entity_confidence >= 0.7 AND cached_results >= 3
+  |      AND semantic_shift < 0.4 => HOT PATH
+  |
+  +-- 7. Execute hot path                                     [50-200ms]
+  |      +-- Retrieve cached/indexed results via Assay
+  |      +-- Format using template (no LLM) OR Haiku (<200ms)
+  |      +-- Apply cognitive load limits (150 tokens mid-session)
+  |      +-- Track cost via cost-tracker.cjs
+  |
+  +-- 8. Persist updated state                                [<5ms]
+  |
+  +-- 9. Return { additionalContext: "injection..." }
+  |
+  v
+Dispatcher wraps in boundary markers, outputs to stdout
+  |
+  v
+Claude Code injects into model context
+```
+
+**Total latency budget: 100-500ms** (well within 15s hook timeout)
+
+### 4.2 Deliberation-Path Activation (UserPromptSubmit -> Subagent -> next UserPromptSubmit)
+
+This is the 5% path. Fires when the hot path determines deliberation is needed.
+
+```
+UserPromptSubmit (turn N)
+  |
+  v
+handlers/user-prompt.cjs
+  | [steps 1-6 same as hot path]
+  | [step 6: selectPath() returns 'deliberation']
+  |
+  +-- 7a. Queue deliberation in state                         [<5ms]
+  |       state.processing.deliberation_pending = true
+  |       state.processing.deliberation_queue = { entities, frame, context }
+  |
+  +-- 7b. Return hot-path-available injection (may be minimal) [50-200ms]
+  |
+  +-- 8. Return { additionalContext: "minimal injection...\n
+  |       [Internal: Spawn the inner-voice subagent for deep
+  |        context analysis of the current topic shift.]" }
+  |
+  v
+Claude Code model reads additionalContext, sees processing directive
+  | [Model decides to spawn inner-voice subagent]
+  |
+  v
+Claude Code spawns inner-voice subagent
+  |
+  v
+SubagentStart hook fires (matcher: "inner-voice")
+  |
+  v
+cc/hooks/dynamo-hooks.cjs -> handlers/subagent-start.cjs
+  | Reads inner-voice-state.json
+  | Serializes: self_model, relationship_model, activation_map,
+  |             predictions, domain_frame, deliberation_queue
+  | Returns structured JSON:
+  | { hookSpecificOutput: { hookEventName: "SubagentStart",
+  |   additionalContext: "<serialized IV state + instructions>" } }
+  |
+  v
+inner-voice subagent processes (2-10s, Sonnet model)
+  | Has tools: Read, Grep, Glob, Bash (read-only + CLI access)
+  | Disallowed: Write, Edit, Agent
+  | Runs: dynamo search queries via Bash CLI
+  | Performs: deep analysis, narrative construction
+  | Respects: token limits from injected state
+  |
+  v
+Subagent completes, SubagentStop hook fires (matcher: "inner-voice")
+  |
+  v
+cc/hooks/dynamo-hooks.cjs -> handlers/subagent-stop.cjs
+  | Reads input.last_assistant_message
+  | Writes inner-voice-deliberation-result.json:
+  |   { status: "complete", injection: "...",
+  |     agent_id: "...", timestamp: "..." }
+  |
+  v
+--- one turn delay ---
+  |
+  v
+UserPromptSubmit (turn N+1)
+  |
+  v
+handlers/user-prompt.cjs
+  +-- Step 2: Finds deliberation result file
+  |   Reads injection content, deletes file
+  |   Merges into current processing context
+  |
+  +-- Returns combined injection (deliberation result + hot-path content)
+  |
+  v
+Claude Code model receives enriched context
+```
+
+**Key constraint:** There is always a one-turn delay between subagent completion and injection. Acceptable because the hot path already provided immediate injection and the deliberation enriches the NEXT interaction.
+
+**Subagent spawn trigger:** The hot-path handler includes a natural-language directive in `additionalContext` that the main session model interprets. This is not a guaranteed trigger -- it relies on the model choosing to spawn the agent. If the model does not spawn it, the deliberation queue persists in state and is re-evaluated on the next prompt.
+
+### 4.3 Cost Tracking Accumulation
+
+Cost tracking wraps every LLM-calling code path as a cross-cutting concern.
+
+```
+Any LLM-calling function (curation, deliberation, summarization)
+  |
+  v
+cost-tracker.isBudgetExhausted()
+  | [reads cost-tracker.json, checks daily/monthly totals]
+  |
+  +-- YES: Return early, degrade to template/hot-path-only
+  |
+  +-- NO: Proceed with LLM call
+         |
+         v
+       LLM response received
+         |
+         v
+       cost-tracker.trackOperation(
+         operation: 'curation' | 'deliberation' | 'synthesis' | ...,
+         model: 'haiku' | 'sonnet',
+         inputTokens: N,
+         outputTokens: M
+       )
+         |
+         v
+       cost-tracker.json updated atomically
+         { "2026-03-20": {
+             "operations": {
+               "curation": { count: 12, input_tokens: 24000,
+                             output_tokens: 6000, cost: 0.15 },
+               "deliberation": { count: 3, input_tokens: 24000,
+                                 output_tokens: 6000, cost: 0.81 }
+             },
+             "total_cost": 0.96
+           }
+         }
+```
+
+**Where cost checks are inserted:**
+
+| Module | Function | What it gates |
+|--------|----------|---------------|
+| `curation.cjs` | `callHaiku()` wrapper | All Haiku LLM calls |
+| `dual-path.cjs` | `executeHotPath()` | Haiku formatting calls on hot path |
+| `dual-path.cjs` | `queueDeliberation()` | Subagent spawning or API calls |
+| `handlers/stop.cjs` | REM Tier 3 | Session synthesis via Sonnet |
+| `handlers/pre-compact.cjs` | REM Tier 1 | Compact summary via Haiku |
+| `backfill.cjs` | `processTranscript()` | Backfill entity extraction |
+
+**Subscription vs API plan:** Subscription users track subagent operations at $0 (included in subscription) but still track Haiku calls. API users track everything. The `billing_model` config determines pricing.
+
+### 4.4 Memory Backfill Batch Processing
+
+Backfill is an on-demand batch job invoked explicitly by the user.
+
+```
+dynamo backfill [--project <name>] [--limit N] [--dry-run]
+  |
+  v
+backfill.cjs.run()
+  |
+  +-- 1. Discover transcripts
+  |      Scan ~/.claude/projects/{project}/*.jsonl
+  |      Filter: sessions not already backfilled (check marker)
+  |
+  +-- 2. Estimate cost (if --dry-run)
+  |      Count tokens across transcripts
+  |      Apply model pricing, report estimate and exit
+  |
+  +-- 3. Process each transcript
+  |      For each .jsonl file:
+  |        a. Parse JSON lines (role, content, tool_calls)
+  |        b. Extract entities, relationships, decisions
+  |           (via Sonnet subagent or direct API)
+  |        c. Write episodes through Ledger's addEpisode()
+  |        d. Track cost through cost-tracker.cjs
+  |        e. Mark transcript as backfilled
+  |
+  +-- 4. Report results
+         { processed: N, episodes_created: M, cost: $X.XX }
+```
+
+---
+
+## 5. Modified Modules (Existing Files That Change)
+
+### 5.1 Files Modified
+
+| File | Change | Reason |
+|------|--------|--------|
+| `cc/hooks/dynamo-hooks.cjs` | Add `reverie.mode` routing, SubagentStart/SubagentStop dispatch | Dual-mode routing (MGMT-05/10) |
+| `cc/settings-hooks.json` | Add SubagentStart/SubagentStop entries | Register new hook events |
+| `dynamo/config.json` | Add `reverie` section | Configuration for all Reverie features |
+| `dynamo.cjs` | Add `voice`, `cost`, `backfill` commands | CLI surface for CORTEX-01/03 |
+| `lib/layout.cjs` | Add `cc/agents/` to sync pair excludes or verify reverie pair | Ensure agent definitions sync |
+| `lib/core.cjs` | Add `reverie` defaults to `loadConfig()` | Config defaults for new section |
+| `subsystems/switchboard/install.cjs` | Deploy `cc/agents/`, new prompts, bare CLI shim | Install pipeline for new files |
+| `subsystems/switchboard/sync.cjs` | Verify sync pairs cover agents directory | Bidirectional sync for agent defs |
+
+### 5.2 Files NOT Modified (Boundary Preserved)
+
+| File | Why Not Modified |
+|------|-----------------|
+| `subsystems/assay/search.cjs` | Reverie uses existing search API as-is |
+| `subsystems/assay/sessions.cjs` | Reverie uses existing session API as-is |
+| `subsystems/ledger/episodes.cjs` | Reverie uses existing addEpisode API as-is |
+| `subsystems/ledger/hooks/capture-change.cjs` | Stays in Ledger (write-side extraction logic) |
+| `subsystems/terminus/mcp-client.cjs` | Reverie accesses graph through Assay/Ledger |
+| `subsystems/terminus/health-check.cjs` | No new stages for M2 |
+| `lib/resolve.cjs` | Already maps `reverie` subsystem path |
+| `lib/scope.cjs` | No new scope types needed |
+
+---
+
+## 6. Build Order and Dependency Analysis
+
+### 6.1 Dependency Graph
+
+```
+                        +------------------+
+                        | Config extension |  (reverie section in config.json)
+                        +--------+---------+
+                                 |
+              +------------------+------------------+
+              |                  |                  |
+    +---------v------+  +-------v--------+  +------v---------+
+    | activation.cjs |  | cost-tracker   |  | inner-voice    |
+    | (CORTEX-01)    |  | (CORTEX-03)    |  | state schema   |
+    +--------+-------+  +-------+--------+  +-------+--------+
+             |                  |                    |
+             +--------+---------+--------------------+
+                      |
+            +---------v----------+
+            | inner-voice.cjs    |  (core orchestrator)
+            | (CORTEX-01)        |
+            +---------+----------+
+                      |
+         +------------+------------+
+         |                         |
+  +------v--------+      +--------v--------+
+  | dual-path.cjs |      | curation.cjs    |
+  | (CORTEX-02)   |      | (migrated)      |
+  +------+--------+      +--------+--------+
+         |                         |
+         +------------+------------+
+                      |
+            +---------v-----------+
+            | handlers/*.cjs      |  (all 7 handlers)
+            | (CORTEX-01/02)      |
+            +---------+-----------+
+                      |
+         +------------+------------+
+         |                         |
+  +------v-----------+    +-------v-----------+
+  | dispatcher mods  |    | cc/agents/        |
+  | (MGMT-05/10)     |    | inner-voice.md    |
+  +---------+--------+    | (CORTEX-01/02)    |
+            |             +-------+-----------+
+            |                     |
+  +---------v-----------+  +------v-----------+
+  | settings-hooks.json |  | prompts/*.md     |
+  | (MGMT-05)           |  | (CORTEX-01)      |
+  +---------------------+  +------------------+
+
+Independent (can be built at any point):
+  +-------------------+    +------------------+
+  | backfill.cjs      |    | bare CLI shim    |
+  +-------------------+    +------------------+
+```
+
+### 6.2 Recommended Phase Order
+
+**Phase A: Foundation (no user-facing changes yet)**
+
+1. **Config extension** -- Add `reverie` section to config.json with defaults. Update `loadConfig()` defaults in core.cjs. All downstream modules depend on config.
+2. **State schema** -- Define `inner-voice-state.json` schema and `loadState()`/`persistState()` in inner-voice.cjs. Foundational for all handlers.
+3. **activation.cjs** -- Activation map management, domain classification, threshold scoring. Core cognitive component. Only external dependency is Assay search.
+4. **cost-tracker.cjs** (CORTEX-03) -- Budget tracking module. Independent of cognitive processing. Every LLM-calling function needs this.
+
+**Rationale:** Config and state are prerequisites for everything. Activation and cost tracking are leaf modules that everything else depends on.
+
+**Phase B: Core Orchestration**
+
+5. **curation.cjs migration** -- Move LLM functions from Ledger to Reverie. Wrap initially (re-export from Ledger), then move. Integrate cost-tracker.
+6. **dual-path.cjs** (CORTEX-02) -- Path selection logic. Depends on activation.cjs for signals, curation.cjs for formatting, cost-tracker for budget gates.
+7. **inner-voice.cjs orchestrator** (CORTEX-01) -- Core pipeline tying together activation, dual-path, curation, cost-tracker. All processing pipelines defined here.
+
+**Rationale:** Curation migration unblocks dual-path. Dual-path depends on activation for signals. Inner-voice orchestrator ties everything together.
+
+**Phase C: Hook Integration (user-facing changes begin)**
+
+8. **Reverie handlers** (all 7) -- Implement handler modules in `handlers/`. Each delegates to inner-voice.cjs. Test individually against existing test patterns.
+9. **Dispatcher modification** (MGMT-05, MGMT-10) -- Add `reverie.mode` routing and SubagentStart/SubagentStop dispatch. Feature flag provides instant rollback.
+10. **settings-hooks.json update** (MGMT-05) -- Register SubagentStart/SubagentStop events. Update install.cjs to deploy new hook entries.
+
+**Rationale:** Handlers must exist before dispatcher can route to them. Dispatcher modification is the "go live" switch.
+
+**Phase D: Subagent and Platform**
+
+11. **cc/agents/inner-voice.md** -- Custom subagent definition. Markdown file, independent of CJS code.
+12. **Prompt templates** (iv-system-prompt.md, session-briefing.md, adversarial-counter.md) -- Prompts for subagent and hot-path formatting. Quality here is critical.
+13. **SubagentStart/SubagentStop handler wiring** -- Connect the state bridge pattern end-to-end.
+
+**Rationale:** Subagent definition needs handlers from Phase C. Prompts are the most tunable component.
+
+**Phase E: Operational**
+
+14. **CLI extensions** (dynamo voice, dynamo cost, dynamo backfill) -- Management surface.
+15. **backfill.cjs** -- Batch transcript processing. Independent of real-time IV processing.
+16. **Bare CLI shim** -- Symlink/wrapper for `dynamo` without `node` prefix.
+17. **Install/sync/update pipeline updates** -- Deploy new files, verify sync pairs, update install steps.
+
+**Rationale:** Operational tooling builds on working intelligence.
+
+### 6.3 Requirement-to-Phase Mapping
+
+| Requirement | Phases | Dependencies |
+|-------------|--------|-------------|
+| CORTEX-01 (Inner Voice basic) | A3 (activation), B7 (orchestrator), C8 (handlers), D11-13 (subagent) | Config, state schema |
+| CORTEX-02 (Dual-path routing) | B6 (dual-path.cjs) | activation.cjs, curation.cjs |
+| CORTEX-03 (Cost monitoring) | A4 (cost-tracker.cjs), integrated into B+C | Config |
+| MGMT-05 (Hooks as primary behavior) | C9-10 (dispatcher mods, settings-hooks) | Handlers exist |
+| MGMT-10 (Modular injection control) | C9 (reverie.mode feature flag) | Config |
+
+---
+
+## 7. Bare CLI Shim Integration
+
+**Goal:** Allow `dynamo` command without `node ~/.claude/dynamo/dynamo.cjs` prefix.
+
+**Approach:** A shell wrapper script installed to a PATH-visible location during `dynamo install`.
+
+```bash
+#!/bin/sh
+# ~/.claude/dynamo/bin/dynamo
+# Bare CLI shim for Dynamo
+exec node "$HOME/.claude/dynamo/dynamo.cjs" "$@"
+```
+
+**Installation:** `dynamo install` creates `~/.claude/dynamo/bin/dynamo`, makes it executable, and symlinks it to `~/.local/bin/dynamo` (or `~/bin/dynamo`). The installer adds `~/.local/bin` to PATH if not already present (by appending to `~/.zshrc`).
+
+**Why not /usr/local/bin:** Requires sudo. User-space bin directories are the correct location for user tools.
+
+**Integration with existing CLI router:** Zero changes to dynamo.cjs. The shim is a transparent wrapper that passes all arguments through.
+
+---
+
+## 8. State Management Architecture
+
+### 8.1 State File Locations and Lifecycles
+
+| File | Location | Size | Lifecycle | Owner |
+|------|----------|------|-----------|-------|
+| `inner-voice-state.json` | `~/.claude/dynamo/` | 10-50KB | Loaded every hook, persisted after every processing cycle | Reverie (inner-voice.cjs) |
+| `inner-voice-deliberation-result.json` | `~/.claude/dynamo/` | 1-5KB | Written by SubagentStop, consumed+deleted by next UserPromptSubmit | Reverie (handlers/) |
+| `cost-tracker.json` | `~/.claude/dynamo/` | 5-50KB | Appended per LLM operation, daily rollover, monthly aggregation | Reverie (cost-tracker.cjs) |
+
+### 8.2 Concurrency and Corruption Prevention
+
+**Atomic writes:** All state file writes use temp-file-then-rename pattern (consistent with existing Dynamo conventions):
+
+```javascript
+function persistState(state, filePath) {
+  const tmpPath = filePath + '.' + crypto.randomUUID().slice(0, 8) + '.tmp';
+  fs.writeFileSync(tmpPath, JSON.stringify(state, null, 2));
+  fs.renameSync(tmpPath, filePath);  // Atomic on same filesystem
+}
+```
+
+**Corruption recovery:** If state file fails to parse, create fresh default state and log warning. System degrades to "no history" mode.
+
+**Deliberation result race condition:** Hooks run as foreground synchronous processes. SubagentStop writes the result file. The next UserPromptSubmit reads and deletes it. No concurrent access is possible within a single session.
+
+**Cross-session state:** `self_model` and `relationship_model` persist across sessions. `activation_map` is preserved but decayed. `injection_history` cleared at session boundaries. `predictions` reset.
+
+### 8.3 State Bridge Pattern (SubagentStop -> UserPromptSubmit)
+
+```
+SubagentStop writes:       inner-voice-deliberation-result.json
+  { status: "complete", injection: "...", agent_id: "...", timestamp: "..." }
+
+Next UserPromptSubmit reads:
+  if (file exists AND status === "complete"):
+    -> consume injection, delete file, inject via additionalContext
+  if (file exists AND status === "processing"):
+    -> skip, check again on next prompt
+  if (file missing):
+    -> no pending results, proceed normally
+```
+
+---
+
+## 9. Subsystem Boundary Compliance Audit
+
+| Rule | Status | Evidence |
+|------|--------|----------|
+| Ledger never reads | COMPLIANT | Reverie calls Assay for reads, Ledger for writes. |
+| Assay never writes | COMPLIANT | Reverie calls Assay's combinedSearch() (read-only). All writes through Ledger. |
+| Reverie delegates both | COMPLIANT | Imports from Assay (reads) and Ledger (writes). Never imports Terminus for graph ops. Owns state files via direct filesystem I/O. |
+| Switchboard dispatches, does not handle | COMPLIANT | Dispatcher gains mode check + routing table. All logic in handlers. |
+| Terminus provides pipes, does not decide | COMPLIANT | No Terminus modifications. Graph access through Assay/Ledger. |
+| Dynamo routes, does not implement | COMPLIANT | CLI gains `voice`, `cost`, `backfill` commands that delegate to Reverie modules. |
+| No cross-subsystem imports (except Reverie) | COMPLIANT | Reverie imports from Assay and Ledger (by design). These are one-directional. Assay/Ledger do not import from Reverie. |
+
+---
+
+## 10. Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Reverie Importing from Terminus Directly
+**What:** Reverie calls MCPClient directly for graph queries.
+**Why bad:** Bypasses the Assay read-side abstraction. Breaks boundary rules.
+**Instead:** Always use `require(resolve('assay', 'search.cjs'))` for graph queries.
+
+### Anti-Pattern 2: Dispatcher Implementing Handler Logic
+**What:** Adding cognitive processing (entity extraction, activation update) to dynamo-hooks.cjs.
+**Why bad:** Dispatcher should route, not process. Violates Switchboard boundary.
+**Instead:** Dispatcher checks mode, resolves handler, calls handler. All logic in handler.
+
+### Anti-Pattern 3: Hot Path Making Synchronous Sonnet Calls
+**What:** Blocking on a Sonnet API call during UserPromptSubmit hot path.
+**Why bad:** Sonnet latency (2-8s) would blow the 500ms budget and block Claude Code.
+**Instead:** Hot path uses templates or Haiku (<200ms). Sonnet goes through deliberation path (async subagent).
+
+### Anti-Pattern 4: Shared Mutable State Between Handler Invocations
+**What:** Assuming in-memory state persists between hook invocations.
+**Why bad:** Each hook invocation is a separate process. No shared memory.
+**Instead:** Load state from file at start, persist at end. File is the coordination mechanism.
+
+### Anti-Pattern 5: Backfill Running Automatically
+**What:** Auto-backfilling transcripts on SessionStart or install.
+**Why bad:** Potentially expensive. User should opt in.
+**Instead:** `dynamo backfill` is explicit with `--dry-run` for cost estimation.
+
+---
+
+## 11. Sources
+
+- [Create custom subagents - Claude Code Docs](https://code.claude.com/docs/en/sub-agents) -- Verified 2026-03-20. Confirms YAML frontmatter, agent storage, SubagentStart/SubagentStop hooks, additionalContext injection.
+- [Intercept and control agent behavior with hooks - Claude Code Docs](https://code.claude.com/docs/en/hooks) -- Verified 2026-03-20. Confirms complete hook event input schemas including SubagentStart/SubagentStop.
+- [SubagentStart Hook Feature Request - GitHub](https://github.com/anthropics/claude-code/issues/14859) -- Context on SubagentStart/SubagentStop capabilities.
+- REVERIE-SPEC.md (1,463 lines) -- Internal specification for module structure, processing pipelines, state schemas, cost model.
+- INNER-VOICE-ABSTRACT.md -- Internal specification for platform-agnostic cognitive architecture and theory mappings.
+- DYNAMO-PRD.md -- Internal specification for subsystem boundaries and interface patterns.
+- Live codebase analysis of all 27 production modules -- Verified against codebase maps (2026-03-20).
+
+---
+*Architecture research for: Dynamo v1.3-M2 Core Intelligence*
+*Date: 2026-03-20*
+*Confidence: HIGH -- verified platform docs, detailed internal specs, complete codebase analysis*

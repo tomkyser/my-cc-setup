@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** Dynamo v1.2 — CJS Architectural Rewrite
-**Domain:** Claude Code enhancement platform (memory system + management layer)
-**Researched:** 2026-03-17
+**Project:** Dynamo v1.3-M2 Core Intelligence
+**Domain:** Cognitive memory architecture — Inner Voice, dual-path routing, cost monitoring, and operational improvements on top of an existing six-subsystem hook-based memory platform
+**Researched:** 2026-03-20
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Dynamo is a Claude Code memory and lifecycle management platform currently implemented in Python (~1,500 LOC) and Bash (~350 LOC). The v1.2 milestone is a full rewrite into CommonJS Node.js — not an enhancement, but a runtime migration that eliminates the Python venv dependency while preserving exact feature parity. The architecture is well-understood because the target runtime (Node.js 24.x) is already installed, the pattern to follow (GSD's CJS framework) is already proven in the same environment, and the codebase being replaced has been fully audited. This is an unusually high-confidence rewrite: 14 production `.cjs` files in GSD demonstrate exactly how to structure the code, and every feature in the Python/Bash system has been inventoried, classified, and mapped to a CJS target module.
+Dynamo v1.3-M2 is a cognitive intelligence upgrade to an existing, working memory system. The goal is to replace mechanical Haiku curation (search-curate-inject on every prompt) with a context-aware Inner Voice that selectively surfaces knowledge when it matters, using a dual-process architecture: a deterministic hot path (<500ms) for the 95% case and a subagent-based deliberation path (2-10s) for the 5% that warrants deeper analysis. All of this must be built under a zero-npm-dependency constraint using only Node.js built-ins and Claude Code platform primitives, on top of a 5,335 LOC CJS codebase with 515 passing tests.
 
-The recommended approach follows three fixed constraints: CJS only (not ESM), zero npm dependencies beyond `js-yaml`, and exact behavioral parity with the Python/Bash system before adding any new capabilities. The two-system architecture — Ledger (what Claude knows) and Switchboard (how Claude behaves) — cleanly separates concerns and maps directly to existing module boundaries. The single hook dispatcher pattern (`dynamo-hooks.cjs`) collapses the current 3-layer chain (Bash script → Python → httpx) to a single Node.js process, eliminating an estimated 300-500ms of startup overhead per hook invocation while also eliminating the Python venv (~500MB) entirely.
+The recommended approach is surgical and reversible. A `reverie.mode` feature flag (classic/cortex) must be the first commit, providing instant rollback to v1.2.1 behavior at any point. The integration seam is a single dispatcher modification (`cc/hooks/dynamo-hooks.cjs`) that routes events to either Ledger's existing handlers or the new Reverie subsystem's handlers. Subsystem boundary rules are strictly preserved: Reverie orchestrates cognitive processing, Ledger writes, Assay reads, Switchboard dispatches, Terminus transports. All eight technical domains (cognitive processing, dual-path routing, cost monitoring, hooks refactor, feature flags, memory backfill, bare CLI, subagent integration) are achievable within the existing constraints — no new npm packages, no new external services.
 
-The primary risk is regression: the v1.1 cycle produced 12 hard-won fixes — scope separator format, GRAPHITI_GROUP_ID override, silent fire-and-forget failures, infinite loop guard, and others — that must be codified as automated regression tests in the CJS version before any hook code is considered complete. Three of these regressions are "invisible": the system appears to work but silently stores data in the wrong scope or drops it entirely. The mitigation is equally clear: build the shared infrastructure modules (config loading, scope constants, HTTP utilities, stdin reader) in Phase 1 before writing any hook code, and attach regression tests to each critical behavior before that phase closes.
+The dominant risk is quality regression: the Inner Voice must equal or exceed the existing Haiku curation's injection frequency before the feature flag switches to `cortex` mode. A graduated rollout (parallel observation, then augmentation, then replacement) prevents the most user-visible failure mode — silent memory context disappearing. Secondary risks are timing (hot path budget must be instrumented from day one) and state bridge fragility (the subagent-to-hook communication pattern has known race conditions that need explicit defensive handling).
 
 ---
 
@@ -19,166 +19,163 @@ The primary risk is regression: the v1.1 cycle produced 12 hard-won fixes — sc
 
 ### Recommended Stack
 
-The stack decision is settled: Node.js 24.x with CJS (`.cjs` files, `require()`, `module.exports`), one external dependency (`js-yaml ^4.1.1`), and built-in Node.js modules for everything else. This follows GSD's proven pattern — the same environment has 14 production CJS files with zero npm dependencies running successfully today. The `~/.claude/package.json` is already set to `"type": "commonjs"`, and three existing JS hooks already use `require()` and `module.exports`.
+All eight M2 technical domains are achievable with zero new npm dependencies. Node.js built-ins (`node:fs`, `node:crypto`, `node:sqlite`, `node:readline`, `node:perf_hooks`) and Claude Code platform features (custom subagents, SubagentStart/SubagentStop hooks, `additionalContext` injection) cover the full M2 capability surface. The cognitive processing engine is pure CJS arithmetic — Jaccard similarity for v1.3, with embedding-based similarity deferred to v1.4 (MENH-08). Cost tracking extends the existing SQLite infrastructure from Phase 21.
 
 **Core technologies:**
-- **Node.js v24.x (LTS, installed):** Built-in `fetch`, `node:test`, `node:assert`, `crypto.randomUUID()` eliminate all HTTP, testing, and UUID dependencies
-- **CJS (`require`/`module.exports`):** Native to GSD framework; synchronous require is critical for hook execution paths with 5-15s timeouts; ~20ms faster cold start than ESM
-- **`js-yaml ^4.1.1`:** The single external dependency — needed to parse `curation/prompts.yaml`; de facto standard (24,681 dependents), pure CJS, no native bindings
-- **`globalThis.fetch` (built-in):** Replaces Python `httpx` for all HTTP to Graphiti MCP and OpenRouter; requires explicit `AbortSignal.timeout()` (no default timeout)
-- **`node:test` + `node:assert` (built-in):** Zero-dependency test runner; stable and production-ready in Node 24; covers all Dynamo test needs
-
-What is NOT being installed: Express, axios, commander, TypeScript, dotenv, chalk, uuid, Jest — all replaced by Node.js built-ins or GSD patterns from the existing codebase.
+- `node:sqlite` DatabaseSync: cost tracking DB — proven in session-store.cjs, extends naturally to per-operation budget tracking
+- `node:crypto` randomUUID: atomic state file writes via tmp+rename — consistent with existing codebase convention
+- `node:readline`: JSONL transcript parsing for memory backfill — streaming, no memory overhead
+- `node:perf_hooks` performance.now(): hot path timing validation — sub-millisecond resolution required to enforce the 500ms budget
+- Claude Code custom subagents (`~/.claude/agents/inner-voice.md`): deliberation path — zero marginal cost on Max subscription, fully verified YAML frontmatter spec as of 2026-03-20
+- SubagentStart/SubagentStop hooks: state bridge pattern — the only viable mechanism given GitHub issue #5812 (additionalParentContext NOT_PLANNED)
+- Graphiti Docker image (`zepai/knowledge-graph-mcp:standalone`): unchanged — no M2 modifications required; Graphiti PR #1156 (small_model support) is unmerged but irrelevant to Dynamo's default setup
 
 ### Expected Features
 
-The feature set is entirely defined by the existing Python/Bash system. Every capability has been inventoried from a full source code audit. Features are classified as Ledger (memory) or Switchboard (management).
+**Must have (P0/P1 — M2 table stakes):**
+- `reverie.mode` feature flag (classic/cortex) with instant rollback — dependency foundation for all other M2 work
+- Dispatcher dual-mode routing to Reverie handlers — the integration seam; must exist before any handler logic
+- State file lifecycle (load/process/persist) with atomic writes and corruption recovery — foundational for all handlers
+- Entity extraction from prompts (deterministic NER/pattern matching, <5ms) — enables activation map population
+- Activation map with decay and 1-hop spreading activation — core data structure; all threshold logic depends on it
+- Sublimation threshold evaluation (composite scoring: activation, surprise, relevance, cognitive load, confidence) — determines what surfaces
+- Hot path execution under 500ms — primary cost control mechanism; tightest constraint in the system
+- Deliberation path via custom subagent (subscription) and direct API fallback (API plan) — core dual-process value
+- State bridge pattern (SubagentStop file write -> next UserPromptSubmit consume) — only viable cross-process communication
+- Injection formatting with Cognitive Load Theory token limits (500/150/50 tokens by context) — prevents context window pollution
 
-**Must have — Ledger (table stakes, these ARE the product):**
-- MCP Client (JSON-RPC + SSE over HTTP to Graphiti) — foundation for all memory operations; handles session init handshake and SSE response parsing
-- 5 hook scripts (capture-change, session-summary, preserve-knowledge, session-start, prompt-augment) — the actual product; hooks not ported = regression, not rewrite
-- Haiku curation pipeline (OpenRouter) — prevents context bloat; raw Graphiti results are noisy without curation
-- Project detection + scope resolution — ensures memories land in the right project scope; uses dash separator (`project-{name}`)
-- Session management (list, view, label, backfill, index) — user-facing session navigation against sessions.json flat file
+**Should have (P2 — quality differentiators):**
+- Semantic shift detection (keyword overlap fallback when embeddings unavailable) — reduces injection noise
+- Domain frame classification (keyword/regex heuristic, <1ms) — weights activation propagation
+- Per-operation cost tracking with daily budget enforcement — rate limit awareness for subscription users
+- Self-model and relationship model persistence across sessions — continuity of cognitive context
+- REM Tier 1 (PreCompact preservation) and Tier 3 basic (Stop synthesis) — memory consolidation
+- Explicit recall bypass (sublimation threshold skipped when user asks "do you remember X?") — prevents most user-visible failure mode
+- Bare CLI symlink shim (`dynamo` without `node` prefix) — convenience, not a correctness requirement
 
-**Must have — Switchboard (table stakes, operations):**
-- Health check (6 stages: Docker, Neo4j, API, MCP session, env vars, canary round-trip)
-- Verify memory (end-to-end pipeline test: write to project scope, read back, confirm group_id is not 'global')
-- Installer rewritten for CJS (eliminates Python venv setup entirely)
-- Settings generator (hook registrations pointing to `.cjs` files)
-- Error logging + rotation (1MB threshold, ISO timestamps, hook-errors.log)
-- Once-per-session health guard (prevents repeated warnings using `process.ppid`)
+**Defer (M3-M4):**
+- Memory backfill from historical chat transcripts — expensive, risky, not a prerequisite for intelligence
+- 2-hop spreading activation with density threshold (CORTEX-04, M4)
+- Embedding-based domain classification (MENH-08, M4)
+- Narrative session briefings with relational framing (CORTEX-04, M4)
+- Full IV memory schema with REM-gated writes (CORTEX-04, M4)
+- Retroactive session evaluation (CORTEX-04, M4)
+- Real-time cost dashboard (UI-02, M6)
 
-**Should have (differentiators enabled by CJS architecture):**
-- Single entry point CLI (`node dynamo.cjs <command>`) replacing 6 separate scripts + 2 Python files
-- Modular injection pattern — hooks as thin wrappers, business logic in `lib/`, shared by CLI and hooks
-- Testability via `node --test` — Bash/Python had zero automated tests
-
-**Defer to v1.2.x patch:**
-- Deep diagnostics (13-stage `diagnose.py` — 588 lines, HIGH complexity; the 6-stage health check covers 90% of diagnostic needs)
-- Sync CJS rewrite (`sync-graphiti.sh` still works; no urgency to replace 177-line Bash script)
-- Stack start/stop CJS wrappers (20-line Bash wrappers around `docker compose`; functional, no urgency)
-
-**Defer to v1.3+:**
-- Decision engine, preload engine, memory quality scoring, UI/dashboard, hook auto-discovery
+**Anti-features (never build in M2):**
+- Nested subagents — not supported by Claude Code
+- Deliberation on every prompt — eliminates the cost advantage; ~$6-8/day API cost for zero quality gain
+- Multi-frame fan-out — exceeds 500ms hot path budget without MENH-08 embeddings
+- Automatic memory backfill on install — expensive, unsupervised, requires explicit user opt-in
 
 ### Architecture Approach
 
-The architecture is a two-system modular CJS tree under `~/.claude/dynamo/`, following the GSD `gsd-tools.cjs` pattern exactly. A single hook dispatcher (`hooks/dynamo-hooks.cjs`) is registered once for all Claude Code hook events and routes internally by `hook_event_name`. The Ledger system (`lib/ledger/`) owns all knowledge graph interaction; the Switchboard system (`lib/switchboard/`) owns all infrastructure management; `lib/core.cjs` provides the shared substrate (config, project detection, health check, output formatting) that both systems need but neither owns. The two systems never import from each other — only from `core.cjs` and their own public `index.cjs`.
+The integration architecture is a single-seam dispatcher modification. The `cc/hooks/dynamo-hooks.cjs` dispatcher gains a `reverie.mode` config check and an extended routing table. All intelligence lives in `subsystems/reverie/` — the dispatcher stays thin. Subsystem boundaries are strictly preserved: Reverie reads through Assay (`combinedSearch()`), writes through Ledger (`addEpisode()`), and owns its own state files directly via filesystem I/O. LLM-calling functions migrate from `subsystems/ledger/curation.cjs` to `subsystems/reverie/curation.cjs`; Ledger retains deterministic formatting functions only. State files (`inner-voice-state.json`, `inner-voice-deliberation-result.json`, `cost-tracker.json`) all use atomic tmp+rename writes.
 
 **Major components:**
-1. **`hooks/dynamo-hooks.cjs`** — Single Claude Code hook entry point; routes all 5 hook events to Ledger handlers via switch/case; wraps all execution in try/catch (never blocks Claude Code)
-2. **`lib/core.cjs`** — Shared substrate: config loading, .env parsing, project detection, health check caching, output/error formatting, safeReadFile
-3. **`lib/ledger/`** — Memory system: MCP client (with SSE parsing), search, episodes, curation, sessions (index + naming + summary); exposes public API via `index.cjs`
-4. **`lib/switchboard/`** — Management system: health check, verify, hooks registration, installer, Docker stack; exposes public API via `index.cjs`
-5. **`bin/dynamo.cjs`** — CLI router: maps `dynamo <command>` to Ledger/Switchboard functions; mirrors `gsd-tools.cjs` pattern exactly
+1. `subsystems/reverie/activation.cjs` — activation map management, spreading activation, domain frame classification, sublimation scoring
+2. `subsystems/reverie/inner-voice.cjs` — core pipeline orchestrator; all hook-specific processing pipelines delegate here
+3. `subsystems/reverie/dual-path.cjs` — deterministic hot/deliberation/skip path selection; no LLM call for the decision itself
+4. `subsystems/reverie/curation.cjs` — intelligent curation (migrated from Ledger); owns all LLM-calling functions
+5. `subsystems/terminus/cost-store.cjs` — SQLite-backed per-operation cost tracking
+6. `subsystems/reverie/handlers/*.cjs` (7 handlers) — thin hook entry points; delegate to inner-voice.cjs
+7. `cc/agents/inner-voice.md` — custom subagent definition (YAML frontmatter); Sonnet model, read-only tools, `permissionMode: dontAsk`
+8. `cc/hooks/dynamo-hooks.cjs` (modified) — mode-based routing table; extended to 7 events including SubagentStart/SubagentStop
 
-The build order is dependency-driven: `core.cjs` first (no dependencies), then `lib/ledger/mcp-client.cjs`, then remaining ledger modules (can be built in parallel), then `lib/ledger/index.cjs` (hook handlers composing individual modules), then `hooks/dynamo-hooks.cjs`, then switchboard modules (depend only on core), then `bin/dynamo.cjs` last.
+**Key patterns to follow:**
+- Mode routing lives in the dispatcher routing table, not inside handler branches — each mode maps to different handler modules
+- SubagentStart returns `{ hookSpecificOutput: { hookEventName: "SubagentStart", additionalContext } }` to inject IV state into the subagent
+- SubagentStop writes `inner-voice-deliberation-result.json`; next UserPromptSubmit reads-renames-deletes it (atomic POSIX rename)
+- Hot path budget: state load (<5ms) + classify (<1ms) + shift detect (<5ms) + activation update (10-50ms) + select (<1ms) + format (50-200ms) + persist (<5ms) = 100-500ms total
+- Deliberation path fires only on: semantic shift >= 0.4, entity confidence < 0.7, explicit recall request, or session start
 
 ### Critical Pitfalls
 
-Research identified 10 pitfalls. Five address regression risks (bugs already fixed in v1.1 that must not be reintroduced); five address new migration risks inherent in moving from Python to Node.js.
+1. **Timing regression (CP-01)** — Reverie handler processing compounds across 8 steps; state file grows to 50KB in long sessions, breaking the 500ms budget. Prevention: instrument every step with `performance.now()` from day one, hard 400ms abort threshold in handlers, cap activation map at 50 entities, split state into hot (<2KB) and cold files, add 100ms timeout to Assay graph queries.
 
-**Top regression risks (invisible failures, already burned once):**
+2. **Quality regression at cold start (CP-02)** — New sessions have empty activation maps; sublimation threshold requires high scores across multiple dimensions; first 5-10 prompts get no injection. Prevention: graduated rollout (classic -> hybrid -> cortex), seed activation map from classic curation results, lower initial sublimation threshold to 0.3, validate via A/B comparison before switching modes.
 
-1. **GRAPHITI_GROUP_ID override (DIAG-02)** — If `GRAPHITI_GROUP_ID=global` appears anywhere in `docker-compose.yml` or `.env`, all project-scoped writes silently land in global scope. The server acknowledges the write with the correct scope name, making the regression invisible at write time. Prevention: assert the variable is absent from all config files in Phase 1; add a regression test that writes to project scope and verifies the stored `group_id` is not `'global'`.
+3. **Cost monitoring tracks wrong metric for subscription users (CP-03)** — Dollar budget is meaningless on Max subscription; the actionable constraint is subagent spawns and rate limit proximity. Prevention: track subagent spawn count (daily cap of 20), token injection budget per session, rate limit detection via spawn failures, dollar tracking only for API plan users.
 
-2. **Colon-in-group-id rejection** — Graphiti MCP v1.21.0 rejects any `group_id` with characters outside `[a-zA-Z0-9_-]`. Scope must use dash: `project-{name}`, never `project:{name}`. Prevention: define scope format as locked constants in `lib/ledger/scope.cjs` with a validation function that rejects colons at the module boundary.
+4. **Feature flag matrix creates untestable code paths (CP-04)** — 3 modes x enabled/disabled x budget-ok x rate-limited = 12+ combinations. Prevention: mode determines the handler MODULE in the dispatcher routing table (not a branch inside handlers); degradation is a dispatcher-level wrapper; parameterized tests cover all valid combinations.
 
-3. **Silent fire-and-forget regression** — JavaScript's async model makes bare `.catch(() => {})` the path of least resistance, recreating the `2>/dev/null &` pattern that caused silent data loss in v1.0. Prevention: every HTTP call to Graphiti must either throw on failure (caught by a logging handler) or return a result the caller checks; bare catch blocks that do not call the error logger are forbidden.
-
-**Top new migration risks:**
-
-4. **Node.js `fetch` has no default timeout** — Python `httpx` defaulted to 5-second timeouts. Native Node.js `fetch` hangs indefinitely without an explicit `AbortSignal.timeout()`. A hook that hangs blocks Claude Code until the configured hook timeout kills the process. Prevention: build a shared `fetchWithTimeout()` utility in Phase 1 that wraps all HTTP calls with explicit per-operation timeouts (health: 3s, MCP: 5s, curation: 10s, summarization: 15s).
-
-5. **SessionEnd/Stop global timeout cap** — Claude Code imposes a 1.5-second global cap on SessionEnd hooks by default. The session summary hook requires 2-5 seconds (Haiku summarization + Graphiti write + session naming). Prevention: set `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS=10000` in the install script; verify empirically with timing probes during Phase 2.
+5. **State bridge race conditions (CP-05)** — Deliberation result file written by SubagentStop can be consumed by wrong turn (stale context), stuck pending if subagent crashes, or double-read by concurrent invocations. Prevention: correlation ID + context hash in result file, 60-second TTL on `deliberation_pending` flag, atomic `fs.renameSync()` for consumption, queue depth of 1.
 
 ---
 
 ## Implications for Roadmap
 
-The dependency graph and pitfall phase-mappings from PITFALLS.md point to a clear 4-phase structure. The ordering is dictated by two constraints: (1) shared infrastructure must exist before any hook can be safely written, and (2) regression tests for the three invisible failure modes must be automated before any Graphiti interaction code is declared complete.
+Based on combined research, the build order is dictated by two constraints: (1) the feature flag must exist before any Reverie code goes live, and (2) cognitive components must be built bottom-up (activation data structures first, orchestrator last, handlers last of all). Operational improvements (bare CLI, update notes) are fully independent and can be parallelized or deferred.
 
-### Phase 1: Foundation and Shared Substrate
+### Phase A: Foundation Infrastructure
 
-**Rationale:** Eight of the 10 pitfalls are best addressed here — not because Phase 1 is a catch-all, but because these pitfalls are infrastructure-level bugs that corrupt data silently if not eliminated at the module boundary. Building these modules first means all subsequent phases build on correct ground. No hook code should be written until the shared substrate has passing regression tests.
+**Rationale:** Every downstream module depends on the config schema, state schema, and the two leaf modules (activation arithmetic, cost tracking). These have no dependencies on each other and can be developed in parallel. The timing harness is prerequisite infrastructure — build it before writing any handler logic.
+**Delivers:** `reverie` section added to config.json with all defaults; `inner-voice-state.json` schema with `loadState()`/`persistState()` and corruption recovery; `activation.cjs` (activation map, decay, domain frame classification, sublimation scoring); `cost-store.cjs` (SQLite per-operation budget tracking); per-step `performance.now()` timing harness
+**Addresses:** CORTEX-01 data structures, CORTEX-03 storage layer
+**Avoids:** CP-01 (timing instrumentation is Phase A output, not an afterthought)
 
-**Delivers:**
-- `lib/core.cjs` — config loading, .env parsing, project detection, output/error formatting, health check caching
-- `lib/ledger/mcp-client.cjs` — MCP JSON-RPC client with SSE parsing, session initialization handshake, mandatory timeouts
-- `lib/ledger/scope.cjs` — scope format constants (dash-separated), validation function rejecting colons
-- `lib/shared/config.cjs` — .env loader with "don't override existing env vars" behavior (port Python's 12-line implementation)
-- `lib/shared/logger.cjs` — error logger with 1MB rotation, ISO timestamps, hook name prefix
-- `lib/shared/health-guard.cjs` — once-per-session flag using `process.ppid` (not `process.pid`)
-- `tests/` — regression tests for DIAG-02 (group_id override), scope format validation, HTTP timeout behavior, stdin reading
+### Phase B: Dispatcher Routing Foundation
 
-**Addresses from FEATURES.md:** Shared infrastructure (config, logger, health-guard), MCP client (L1), project detection (L7), scope resolution (L8) — all P1 features
-**Pitfalls addressed:** P1 (GRAPHITI_GROUP_ID), P2 (colon scope), P4 (cold start / lazy require), P5 (stdin reading), P6 (HTTP timeout), P7 (SSE parsing), P8 (module complexity budget), P9 (.env loading)
+**Rationale:** The dispatcher must establish mode-based routing BEFORE any handler logic is written. Creating stub Reverie handlers that pass through to existing Ledger handlers proves the routing table works and prevents MODULE_NOT_FOUND regressions during development (MP-03). This is the one commit that establishes the two-mode table and the handler existence fallback check.
+**Delivers:** `reverie.mode` feature flag in config (defaults to `classic`); mode-based routing table in dispatcher with handler existence fallback; stub Reverie handlers as pass-through wrappers over existing Ledger handlers; `dynamo config get/set` CLI commands; SubagentStart/SubagentStop added to VALID_EVENTS and settings-hooks.json
+**Addresses:** MGMT-10, MGMT-05
+**Avoids:** CP-04 (routing-by-module not routing-by-branch), MP-03 (pass-through stubs before logic)
 
-### Phase 2: Hook Migration (The Product)
+### Phase C: Core Orchestration
 
-**Rationale:** With the foundation in place, the 5 hooks are the core deliverable. Each hook is a thin wrapper (20-30 lines) calling Phase 1 modules — the actual logic lives in `lib/`. The hooks are the product; without them, nothing flows into Graphiti. Each hook must be individually verified against the v1.1 regression checklist before being declared migrated. The Stop hook's timing must be measured empirically in this phase.
+**Rationale:** With data structures (Phase A) and routing (Phase B) in place, build the cognitive pipeline tier. Curation migration first (it unblocks dual-path), dual-path second (it depends on activation signals), inner-voice orchestrator last (it ties everything together). The state bridge race condition design (CP-05) must be resolved in this phase before any subagent wiring occurs.
+**Delivers:** `reverie/curation.cjs` (LLM functions migrated from Ledger, cost-tracker integrated); `dual-path.cjs` (path selection signals, hot path execution, deliberation queueing, state bridge design with correlation IDs and TTL); `inner-voice.cjs` (per-hook processing pipelines for all 5 hook events)
+**Uses:** activation.cjs, cost-store.cjs, Assay search API, Ledger episodes API
+**Addresses:** CORTEX-01 pipeline, CORTEX-02 routing
+**Avoids:** CP-05 (state bridge safety mechanisms designed here), anti-pattern of Sonnet on hot path
 
-**Delivers:**
-- `hooks/dynamo-hooks.cjs` — single entry point router for all 5 hook events
-- Hook handlers: `handleSessionStart`, `handleUserPrompt`, `handlePostToolUse`, `handlePreCompact`, `handleStop`
-- `lib/ledger/episodes.cjs` — `add_memory` tool calls
-- `lib/ledger/search.cjs` — `search_memory_facts` + `search_nodes`
-- `lib/ledger/curation.cjs` — Haiku curation, summarization, session naming via OpenRouter
-- `lib/ledger/sessions.cjs` — session index CRUD, session naming, summary storage, sessions.json compatibility
-- `lib/ledger/index.cjs` — public Ledger API composing all modules
-- `settings-hooks.json` updated with CJS paths
-- Regression tests: each hook tested with Graphiti server DOWN (verifies exit codes and error log writes)
-- Timing verification: Stop hook measured empirically; `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` set in installer
+### Phase D: Hook Handlers and Subagent Integration
 
-**Addresses from FEATURES.md:** All 5 hooks (L9-L13), curation pipeline (L4-L6), session index (S3), session management (S4-S7 baseline)
-**Pitfalls addressed:** P3 (fire-and-forget), P10 (SessionEnd timeout), infinite loop guard (`stop_hook_active` check), sessions.json format compatibility, once-per-session flag using `process.ppid`
+**Rationale:** Handlers are thin wrappers (10-15 lines each) that load state, delegate to inner-voice.cjs, and return `additionalContext`. The subagent definition and prompt templates are the most tunable components — quality here determines the deliberation path's value. YAML validation must precede deployment to avoid session-wide API 500 failures.
+**Delivers:** All 7 Reverie handler modules (replacing stubs from Phase B); `cc/agents/inner-voice.md` with validated YAML frontmatter; prompt templates (iv-system-prompt.md, session-briefing.md, adversarial-counter.md); SubagentStart/SubagentStop state bridge wired end-to-end with correlation ID and TTL handling
+**Addresses:** CORTEX-01 handlers, CORTEX-02 deliberation path, SubagentStart/Stop integration
+**Avoids:** MP-02 (YAML validation in install.cjs before agent deployment), CP-05 (full state bridge safety implementation)
 
-### Phase 3: Operations and Verification
+### Phase E: Graduated Rollout and Quality Validation
 
-**Rationale:** The hooks need operational support — health checking and memory verification — to confirm the system is actually working before the Python version is retired. The 6-stage health check and verify-memory pipeline test are the "is it working?" answer. Session management CLI commands are also needed for user-facing operations. This phase builds the CLI router that exposes all functionality as `dynamo <command>`.
+**Rationale:** The Inner Voice must prove it equals or exceeds classic curation quality before `reverie.mode` switches to `cortex`. A hybrid mode (both pipelines run, Reverie output logged but not shown) provides A/B comparison data without regression risk. This phase also adds the user-facing management CLI surface.
+**Delivers:** Hybrid mode routing (classic output shown, Reverie output logged); A/B comparison metrics; lowered initial sublimation threshold (0.3 start); activation map seeding from classic results; `dynamo voice status/explain/reset` CLI commands
+**Addresses:** CP-02 graduated rollout, MGMT-10 full lifecycle
+**Research flag:** Hybrid mode output deduplication needs explicit design — two pipelines running on the same UserPromptSubmit requires a merge strategy
 
-**Delivers:**
-- `lib/switchboard/health.cjs` — 6-stage health check (Docker, Neo4j, Graphiti API, MCP session, env vars, canary round-trip including project-scope write-then-read)
-- `lib/ledger/verify.cjs` — verify-memory pipeline test (6 checks; GRAPHITI_GROUP_ID absence confirmed automatically)
-- `lib/switchboard/sessions.cjs` — list, view, label, backfill session commands
-- `bin/dynamo.cjs` — CLI router for all commands (`dynamo health-check`, `dynamo search`, `dynamo list-sessions`, `dynamo verify-memory`, etc.)
-- `lib/switchboard/index.cjs` — public Switchboard API
+### Phase F: Operational Improvements
 
-**Addresses from FEATURES.md:** Health check (S1), verify memory (L14), session management commands (S4-S7), CLI dispatcher
-**Pitfalls addressed:** Ensures the Phase 2 hooks are actually storing data correctly (via scope round-trip test) before cutover from Python
+**Rationale:** Operational improvements are independent of the intelligence layer and can be deferred until core intelligence is proven. They complete the M2 deliverable list.
+**Delivers:** Bare CLI shim at `~/.claude/bin/dynamo` (opt-in PATH integration; hooks continue using full `node` path); `dynamo cost today/month/budget` CLI surface; CHANGELOG.md with update notes workflow integrated into `check-update` and `update` commands; install/sync pipeline updates for new files and agents directory
+**Addresses:** Operational improvements, update notes, MGMT-05 full install integration
+**Avoids:** CP-06 (shim limited to `~/.claude/bin/`; no automatic shell profile modification)
 
-### Phase 4: Installation and Cutover
+### Phase G: Memory Backfill (stretch/M3)
 
-**Rationale:** The CJS system must be deployable and the Python/Bash system must be retired. The installer is the mechanism for both. This phase is last because it can't be written until the system it deploys is complete and verified. The cutover sequence is per-event (one hook at a time) with `verify-memory` run after each switch.
-
-**Delivers:**
-- `lib/switchboard/install.cjs` — copies CJS files to `~/.claude/dynamo/`, registers MCP server in `~/.claude.json`, generates `settings-hooks.json`, sets `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS`, eliminates Python venv setup entirely
-- `lib/switchboard/settings.cjs` — hook registration generator pointing to `.cjs` files, not `.sh` files
-- Per-event migration: switch each hook in `settings.json` from Bash to CJS; run `dynamo verify-memory` after each switch
-- Post-cutover: `graphiti/` directory deprecated; Python hooks removed from `settings.json`
-- `VERSION` file (Dynamo version for self-management)
-
-**Addresses from FEATURES.md:** Installer (S8), settings generator (S12), full feature parity checklist
-**Deferred (v1.2.x):** Deep diagnostics (S2), sync CJS rewrite (S9), stack start/stop CJS wrappers (S10/S11)
+**Rationale:** Backfill is the highest-risk, most-deferrable M2 feature. It should only run after the real-time pipeline proves its value with current graph data. Deferring to M3 is the recommended default. If included in M2, it must be the last phase with explicit `--dry-run` cost estimation and user confirmation.
+**Delivers:** `backfill.cjs` with `--dry-run` cost estimation, selective ingestion (most-recent milestone only), two-pass extract-then-deduplicate approach, `source: "backfill"` confidence tagging
+**Addresses:** MP-01 (stale knowledge poisoning prevented by recency filter, deduplication, and confidence tagging)
 
 ### Phase Ordering Rationale
 
-- Foundation before hooks: 8 of 10 pitfalls live at the infrastructure level; fixing them in Phase 1 means hooks never encounter them
-- Hooks before operations: health check and verify-memory need real hook data to validate against; the pipeline must be flowing before it can be certified
-- Operations before cutover: you need a way to confirm the system works (`dynamo verify-memory`) before retiring the Python version
-- The Python/Bash system stays active alongside CJS during Phases 1-3 (both registered in `settings.json`) — Phase 4 is the only phase that removes Python hooks
+- Foundation before orchestration: activation.cjs and cost-store.cjs are leaf modules with no upstream dependencies; building them first unblocks all later phases
+- Dispatcher routing before handler logic: pass-through stubs prevent MODULE_NOT_FOUND regressions while handler logic is developed incrementally
+- Inner-voice orchestrator before handlers: handlers are thin wrappers that call inner-voice.cjs; the orchestrator must exist first
+- State bridge design in Phase C before wiring in Phase D: the race condition mitigations (correlation ID, TTL, atomic rename) must be designed into the data structures before any subagent code is written
+- Graduated rollout before mode switch: CP-02 is the most user-visible failure mode; hybrid mode comparison data must validate quality before switching to cortex
+- Backfill last or deferred: highest noise-to-signal risk; not a prerequisite for any intelligence feature
 
 ### Research Flags
 
-Phases with well-documented patterns (skip research-phase, build directly):
-- **Phase 1:** CJS module patterns, Node.js built-in APIs, GSD patterns are verified from live source code. No novel integrations. Build directly.
-- **Phase 3:** CLI router, session CRUD, health check patterns all follow established GSD conventions. Build directly.
-- **Phase 4:** Installer pattern follows GSD's existing install mechanism. Build directly.
+Phases likely needing deeper planning research before implementation:
+- **Phase C (Core Orchestration):** The dual-path selection signal thresholds (0.7 confidence, 0.4 semantic shift) are spec-derived estimates, not empirically validated. May need tuning after Phase E comparison data.
+- **Phase D (Subagent Integration):** Custom subagent spawning is triggered by a natural-language directive in `additionalContext` — the model must CHOOSE to spawn the agent. Reliability of this mechanism is uncertain; if the model fails to consistently act on the directive, an alternative triggering approach may be needed.
+- **Phase E (Graduated Rollout):** Hybrid mode requires an output merge strategy when both classic and Reverie pipelines run on the same UserPromptSubmit. This merge logic needs explicit design before implementation.
 
-Phases needing empirical investigation during implementation:
-- **Phase 2 (Stop hook timing):** Whether `Stop` has the same 1.5-second global cap as `SessionEnd` needs empirical confirmation. The documentation references both event names inconsistently. Use timing probes during Stop hook implementation; do not assume the 30-second `settings.json` timeout applies end-to-end.
-- **Phase 2 (MCP `notifications/initialized`):** The requirement to send the `notifications/initialized` message after `initialize` is documented as "may cause undefined behavior" if omitted. Capture a real MCP session handshake to verify before shipping the CJS MCP client.
+Phases with standard patterns (skip research-phase):
+- **Phase A (Foundation):** SQLite DatabaseSync pattern is proven in session-store.cjs (Phase 21); atomic JSON write pattern is established across the codebase
+- **Phase B (Dispatcher):** Config-based routing is a standard pattern; existing dispatcher is well-understood
+- **Phase F (Operational):** Symlink shim, CHANGELOG, install pipeline — all established patterns in this codebase
 
 ---
 
@@ -186,52 +183,44 @@ Phases needing empirical investigation during implementation:
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Verified against installed runtime (Node v24.13.1), GSD source (14 CJS files), `~/.claude/package.json`, and official Node.js 24 LTS documentation. Zero ambiguity in technology choices. |
-| Features | HIGH | Full source code audit of all 17 files in the existing system (every function, every subcommand). Feature inventory is exhaustive and maps directly to CJS target modules. |
-| Architecture | HIGH | Directory structure and patterns derived directly from GSD production code (same environment). Hook registration verified from official Claude Code docs and live `settings.json`. Ledger/Switchboard boundary is clearly defined with an explicit boundary test. |
-| Pitfalls | HIGH | 10 of 12 pitfalls derived from v1.1 diagnostic history (DIAG-01, DIAG-02 with root causes documented). Remaining pitfalls derived from direct code comparison of Python httpx vs. Node.js fetch semantics. All 12 v1.1 fixes have explicit regression test specifications. |
+| Stack | HIGH | All technologies verified on target machine (Node v24.13.1, Claude Code v2.1.80); zero new npm deps confirmed; SubagentStart/Stop hooks verified against official docs fetched 2026-03-20 |
+| Features | HIGH | Detailed REVERIE-SPEC.md (1,463 lines) and INNER-VOICE-ABSTRACT.md serve as internal specifications; M2/M4 boundary clearly defined; all M2 features analyzed for table-stakes vs. defer |
+| Architecture | HIGH | Based on live codebase analysis of all 27 production modules; subsystem boundaries explicitly audited; platform constraints verified (GitHub #5812 confirms file bridge is the only option) |
+| Pitfalls | HIGH | Based on M1 pitfalls precedent, codebase analysis, and verified platform documentation; five critical pitfalls identified with specific prevention strategies and detection criteria |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Stop hook global timeout cap:** Whether `Stop` has the same 1.5-second global cap as `SessionEnd` requires empirical measurement during Phase 2. Set timing probes on the session summary hook and test in a real Claude Code session before declaring the hook complete.
-
-- **MCP `notifications/initialized` requirement:** Whether omitting this notification causes undefined behavior or is silently tolerated is unclear. Capture a real MCP handshake (via network inspection or verbose logging in the Python client) before implementing the CJS version.
-
-- **Sessions.json format compatibility:** The CJS sessions module must read the existing `sessions.json` written by Python. The format appears straightforward, but validate round-trip read/write compatibility before retiring the Python sessions module in Phase 4.
-
-- **Haiku model ID stability:** The curation pipeline uses `anthropic/claude-haiku-4.5` via OpenRouter. If this model ID changes, curation silently degrades to truncated output. Verify the model ID against the OpenRouter models endpoint at Phase 2 implementation time.
+- **Sublimation threshold calibration:** The initial value of 0.3 (graduated rollout) vs. 0.6 (spec target) needs empirical tuning against real session data. Phase E must produce a calibration plan based on A/B comparison metrics.
+- **Subagent spawn reliability:** The deliberation path depends on the main session model choosing to spawn the inner-voice agent based on a natural-language directive in `additionalContext`. This is not a guaranteed trigger. If the model fails to spawn the agent consistently, an alternative mechanism may be needed — requires platform experimentation in Phase D.
+- **Rate limit thresholds:** CORTEX-03 reframed as rate-limit awareness for subscription users. The specific thresholds (20 deliberation subagent spawns per day, 10,000 token injection budget per session) are informed estimates; actual Anthropic Max subscription rate limit parameters are not publicly documented.
+- **Hybrid mode output merge:** When classic and Reverie pipelines both run on a single UserPromptSubmit in hybrid mode, the dispatcher must merge or deduplicate outputs. The merge strategy needs explicit design before Phase E implementation.
 
 ---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-
-- GSD source code `~/.claude/get-shit-done/bin/gsd-tools.cjs` and 14 `lib/*.cjs` modules — CJS patterns, module structure, zero-dependency philosophy (direct code inspection)
-- `~/.claude/package.json` — Confirmed `{"type":"commonjs"}` (direct inspection)
-- `~/.claude/settings.json` — Hook registration structure (direct inspection)
-- `~/.claude/hooks/gsd-context-monitor.js`, `gsd-statusline.js` — CJS hook patterns (direct inspection)
-- Node.js v24.13.1 installed runtime — `node:test`, `node:assert`, `globalThis.fetch` availability confirmed
-- Full source audit: `graphiti/graphiti-helper.py` (944 LOC), `graphiti/health-check.py` (553 LOC), `graphiti/diagnose.py` (588 LOC), 6 Bash hook scripts (~350 LOC total)
-- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks) — official hook event schemas, timeout behavior, stdin format, exit codes
-- [Node.js 24 LTS announcement](https://nodesource.com/blog/nodejs-24-becomes-lts) — LTS status confirmed
-- [js-yaml on npm](https://www.npmjs.com/package/js-yaml) — v4.1.1, 24,681 dependents, CJS-native confirmed
+- [Claude Code Custom Subagents](https://code.claude.com/docs/en/sub-agents) — YAML frontmatter specification, all fields verified 2026-03-20
+- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks) — SubagentStart/Stop input/output schemas, additionalContext behavior, all 22 hook events
+- [Node.js Crypto API](https://nodejs.org/api/crypto.html) — randomUUID() documentation
+- Internal: REVERIE-SPEC.md (1,463 lines) — module structure, processing pipelines, state schemas, cost model
+- Internal: INNER-VOICE-ABSTRACT.md — platform-agnostic cognitive architecture and theory mappings
+- Internal: DYNAMO-PRD.md — subsystem boundaries and interface patterns
+- Live codebase analysis — all 27 production modules verified 2026-03-20
 
 ### Secondary (MEDIUM confidence)
+- [ICLR 2026 Workshop: MemAgents](https://openreview.net/pdf?id=U51WxL382H) — memory architecture patterns for LLM-based agentic systems
+- [Arxiv: Spreading Activation for KG-RAG](https://arxiv.org/abs/2512.15922) — implementation validation for spreading activation approach
+- [Arxiv: Memory for Autonomous LLM Agents](https://arxiv.org/html/2603.07670) — memory mechanism survey, March 2026
+- [Langfuse: Token and Cost Tracking](https://langfuse.com/docs/observability/features/token-and-cost-tracking) — cost attribution patterns for per-operation budget tracking
+- [GitHub Issue #5812](https://github.com/anthropics/claude-code/issues/5812) — SubagentStop context bridge limitation (NOT_PLANNED; confirms file bridge is the only option)
+- [GitHub Issue #22843](https://github.com/anthropics/claude-code/issues/22843) — malformed agent file causes session-wide API 500 errors
 
-- [Claude Code Hooks Guide](https://claude.com/blog/how-to-configure-hooks) — configuration patterns and examples
-- [Claude Code Async Hooks](https://reading.sh/claude-code-async-hooks-what-they-are-and-when-to-use-them-61b21cd71aad) — async vs. foreground hook behavior; SessionEnd timeout cap behavior
-- [Node.js Loader Performance](https://blog.appsignal.com/2025/10/22/ways-to-improve-nodejs-loader-performance.html) — CJS require() cold-start optimization strategies
-- [Claude Code plugin-dev SKILL](https://github.com/anthropics/claude-code/blob/main/plugins/plugin-dev/skills/hook-development/SKILL.md) — hook development patterns (may be version-specific)
-
-### Internal (HIGH confidence)
-
-- `.planning/milestones/v1.1-phases/04-diagnostics/04-DIAGNOSTIC-REPORT.md` — DIAG-01, DIAG-02 root causes and fixes
-- `.planning/milestones/v1.1-phases/05-hook-reliability/05-VERIFICATION.md` — 8/8 truths verified
-- `graphiti/SCOPE_FALLBACK.md` — dash separator constraint documentation (Graphiti MCP v1.21.0 group_id validation)
+### Tertiary (LOW confidence)
+- Anthropic Max subscription weekly rate limit parameters — not publicly documented; daily subagent spawn cap of 20 is an estimate based on community reports and needs empirical validation
 
 ---
-*Research completed: 2026-03-17*
+*Research completed: 2026-03-20*
 *Ready for roadmap: yes*

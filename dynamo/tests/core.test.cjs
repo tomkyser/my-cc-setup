@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const core = require(path.join(__dirname, '..', 'core.cjs'));
+const core = require(path.join(__dirname, '..', '..', 'lib', 'core.cjs'));
 
 describe('DYNAMO_DIR', () => {
   it('ends with .claude/dynamo', () => {
@@ -256,7 +256,7 @@ describe('loadPrompt', () => {
 
 describe('safeReadFile', () => {
   it('returns file content for existing file', () => {
-    const content = core.safeReadFile(path.join(core.DYNAMO_DIR, 'VERSION'));
+    const content = core.safeReadFile(path.join(core.DYNAMO_DIR, 'dynamo', 'VERSION'));
     assert.strictEqual(typeof content, 'string');
     assert.ok(content.includes('0.1.0'));
   });

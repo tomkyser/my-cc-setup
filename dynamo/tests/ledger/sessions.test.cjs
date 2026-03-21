@@ -8,7 +8,7 @@ const fs = require('fs');
 const os = require('os');
 
 // Module under test
-const sessions = require(path.join(__dirname, '..', '..', '..', 'ledger', 'sessions.cjs'));
+const sessions = require(path.join(__dirname, '..', '..', '..', 'subsystems', 'assay', 'sessions.cjs'));
 
 // --- Test isolation: use temp directory for sessions.json ---
 const tmpBase = path.join(os.tmpdir(), 'dynamo-sessions-test-' + process.pid);

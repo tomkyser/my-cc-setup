@@ -7,14 +7,14 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const core = require(path.join(__dirname, '..', 'core.cjs'));
-const { SCOPE, validateGroupId } = require(path.join(__dirname, '..', '..', 'ledger', 'scope.cjs'));
-const { MCPClient, parseSSE } = require(path.join(__dirname, '..', '..', 'ledger', 'mcp-client.cjs'));
+const core = require(path.join(__dirname, '..', '..', 'lib', 'core.cjs'));
+const { SCOPE, validateGroupId } = require(path.join(__dirname, '..', '..', 'lib', 'scope.cjs'));
+const { MCPClient, parseSSE } = require(path.join(__dirname, '..', '..', 'subsystems', 'terminus', 'mcp-client.cjs'));
 
 const DYNAMO_DIR = path.join(os.homedir(), '.claude', 'dynamo');
 const GRAPHITI_DIR = path.join(os.homedir(), '.claude', 'graphiti');
-// Current deployed layout: files at DYNAMO_DIR root + ledger/ + switchboard/ (no lib/)
-const SCAN_DIRS = [DYNAMO_DIR, path.join(DYNAMO_DIR, 'ledger'), path.join(DYNAMO_DIR, 'switchboard')];
+// Current deployed layout: six-subsystem architecture (subsystems/, cc/, lib/)
+const SCAN_DIRS = [DYNAMO_DIR, path.join(DYNAMO_DIR, 'subsystems'), path.join(DYNAMO_DIR, 'cc'), path.join(DYNAMO_DIR, 'lib')];
 
 // --- Helper: recursively collect .cjs files ---
 function collectCjsFiles(dir) {
@@ -42,8 +42,8 @@ function collectAllCjsFiles() {
       }
     }
   }
-  // Production subdirectories (recursive)
-  for (const dir of [path.join(DYNAMO_DIR, 'hooks'), path.join(DYNAMO_DIR, 'ledger'), path.join(DYNAMO_DIR, 'switchboard')]) {
+  // Production subdirectories (recursive) -- six-subsystem layout
+  for (const dir of [path.join(DYNAMO_DIR, 'cc'), path.join(DYNAMO_DIR, 'lib'), path.join(DYNAMO_DIR, 'subsystems')]) {
     if (fs.existsSync(dir)) results.push(...collectCjsFiles(dir));
   }
   return results;
@@ -140,7 +140,7 @@ describe('v1.1 Regression Tests', () => {
 
   // --- Test 6: GRAPHITI_VERBOSE support ---
   it('Regression 6 (GRAPHITI_VERBOSE): core.cjs references process.env.GRAPHITI_VERBOSE', () => {
-    const coreSource = fs.readFileSync(path.join(DYNAMO_DIR, 'core.cjs'), 'utf8');
+    const coreSource = fs.readFileSync(path.join(DYNAMO_DIR, 'lib', 'core.cjs'), 'utf8');
     assert.ok(coreSource.includes('GRAPHITI_VERBOSE'),
       'core.cjs must reference GRAPHITI_VERBOSE for debug output support');
   });
@@ -184,7 +184,7 @@ describe('v1.1 Regression Tests', () => {
 
   // --- Test 9: Once-per-session health warning with ppid ---
   it('Regression 9 (ppid health guard): healthGuard uses process.ppid, not standalone process.pid', () => {
-    const coreSource = fs.readFileSync(path.join(DYNAMO_DIR, 'core.cjs'), 'utf8');
+    const coreSource = fs.readFileSync(path.join(DYNAMO_DIR, 'lib', 'core.cjs'), 'utf8');
 
     assert.ok(coreSource.includes('process.ppid'),
       'healthGuard must use process.ppid');
@@ -284,8 +284,12 @@ describe('Branding (BRD-01)', () => {
 });
 
 describe('Directory Structure (BRD-02)', () => {
-  it('required directories exist: ledger, switchboard, hooks, prompts, tests', () => {
-    const requiredDirs = ['ledger', 'switchboard', 'hooks', 'prompts', 'tests'];
+  it('required directories exist: subsystems/*, cc/hooks, cc/prompts, lib', () => {
+    const requiredDirs = [
+      'subsystems/ledger', 'subsystems/switchboard', 'subsystems/assay',
+      'subsystems/terminus', 'subsystems/reverie',
+      'cc/hooks', 'cc/prompts', 'lib'
+    ];
     for (const dir of requiredDirs) {
       const fullPath = path.join(DYNAMO_DIR, dir);
       assert.ok(fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory(),
@@ -294,7 +298,7 @@ describe('Directory Structure (BRD-02)', () => {
   });
 
   it('VERSION file contains 0.1.0', () => {
-    const version = fs.readFileSync(path.join(DYNAMO_DIR, 'VERSION'), 'utf8').trim();
+    const version = fs.readFileSync(path.join(DYNAMO_DIR, 'dynamo', 'VERSION'), 'utf8').trim();
     assert.strictEqual(version, '0.1.0');
   });
 });

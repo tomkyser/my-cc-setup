@@ -7,7 +7,9 @@ const { spawn } = require('child_process');
 const path = require('path');
 const os = require('os');
 
-const DISPATCHER = path.join(os.homedir(), '.claude', 'dynamo', 'hooks', 'dynamo-hooks.cjs');
+// Use repo path for testing (deployed layout mirrors repo after install)
+const REPO_ROOT = path.join(__dirname, '..', '..');
+const DISPATCHER = path.join(REPO_ROOT, 'cc', 'hooks', 'dynamo-hooks.cjs');
 
 /**
  * Pipe JSON through the dispatcher and capture results.

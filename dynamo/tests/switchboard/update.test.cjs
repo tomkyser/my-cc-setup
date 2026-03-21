@@ -8,7 +8,7 @@ const fs = require('fs');
 const os = require('os');
 const { execSync } = require('child_process');
 
-const MOD_PATH = path.join(__dirname, '..', '..', '..', 'switchboard', 'update.cjs');
+const MOD_PATH = path.join(__dirname, '..', '..', '..', 'subsystems', 'switchboard', 'update.cjs');
 
 // --- Test helpers ---
 
@@ -50,17 +50,17 @@ describe('update.cjs', () => {
     assert.ok(content.includes('Dynamo > Switchboard > update.cjs'), 'should have identity comment');
   });
 
-  it('imports update-check, migrate, install, and health-check', () => {
+  it('imports update-check, install (local), and migrate, health-check (via resolver)', () => {
     const content = fs.readFileSync(MOD_PATH, 'utf8');
     assert.ok(content.includes("require(path.join(__dirname, 'update-check.cjs'))"), 'should import update-check');
-    assert.ok(content.includes("require(path.join(__dirname, 'migrate.cjs'))"), 'should import migrate');
+    assert.ok(content.includes("resolve('terminus', 'migrate.cjs')"), 'should import migrate via resolver');
     assert.ok(content.includes("require(path.join(__dirname, 'install.cjs'))"), 'should import install');
-    assert.ok(content.includes("require(path.join(__dirname, 'health-check.cjs'))"), 'should import health-check');
+    assert.ok(content.includes("resolve('terminus', 'health-check.cjs')"), 'should import health-check via resolver');
   });
 
-  it('uses resolveCore pattern', () => {
+  it('uses centralized resolver pattern', () => {
     const content = fs.readFileSync(MOD_PATH, 'utf8');
-    assert.ok(content.includes('function resolveCore()'), 'should have resolveCore function');
+    assert.ok(content.includes("require('../../lib/resolve.cjs')"), 'should use centralized resolver at depth 2');
   });
 });
 

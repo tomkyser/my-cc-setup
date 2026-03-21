@@ -2,18 +2,46 @@
 
 ## What This Is
 
-A Claude Code power-user platform, Dynamo, comprising two systems: **Ledger** (memory — knowledge storage, retrieval, inference via Graphiti) and **Switchboard** (management — hooks, diagnostics, sync, stack, CLI). Built on a Node/CJS shared substrate at `~/.claude/dynamo/` with 374 passing tests and 9,253 LOC. v1.0 researched and ranked tools. v1.1 diagnosed and fixed the memory system. v1.2 rewrote the entire foundation from Python/Bash to CJS with full feature parity. v1.2.1 stabilized with directory restructure, global toggle, comprehensive documentation, self-updating system, and deploy pipeline hardening.
+A Claude Code power-user platform for persistent memory and self-management. Dynamo comprises six subsystems: **Dynamo** (system wrapper -- CLI router, shared resources, API surface), **Switchboard** (dispatcher -- hook routing, install/sync/update lifecycle), **Ledger** (data construction -- episode creation, write operations), **Assay** (data access -- search, session queries, entity inspection), **Terminus** (data infrastructure -- MCP transport, Docker stack, health/diagnostics, migrations, SQLite session storage), and **Reverie** (Inner Voice -- cognitive processing, dual-path routing, activation management, REM consolidation; stub for M2). Built on a Node/CJS shared substrate at `~/.claude/dynamo/` with 515 passing tests and ~5,335 production LOC across 28 test files and 27 production modules. The `cc/` platform adapter pattern isolates all Claude Code-specific integration, enabling future platform adapters (`/web`, `/api`, `/mcp`) without touching subsystem logic. v1.0 researched and ranked tools. v1.1 diagnosed and fixed the memory system. v1.2 rewrote the entire foundation from Python/Bash to CJS with full feature parity. v1.2.1 stabilized with directory restructure, global toggle, comprehensive documentation, self-updating system, and deploy pipeline hardening. v1.3 architecture specification complete with 9 documents (1 abstract concept, 1 PRD, 5 subsystem specs, 1 refactored roadmap, GSD planning updates). v1.3-M1 shipped: six-subsystem directory restructure, centralized resolver, management hardening (input validation, boundary markers, Node.js version check), and SQLite session storage.
 
 ## Core Value
 
 Every capability must be self-manageable by Claude Code (install, configure, update, troubleshoot) without requiring manual user intervention in config files.
 
+## Last Completed Milestone: v1.3-M2 Core Intelligence
+
+**Status:** Shipped 2026-03-21 (tagged `v1.3-M2` on dev branch)
+**Phases:** 23-25 (3 phases, 11 plans, 28 requirements validated)
+
+**Delivered:**
+- Reverie cognitive pipeline: activation engine, dual-path routing, template-based curation with adversarial counter-prompting
+- Central pipeline orchestrator (`inner-voice.cjs`) with 5 per-hook cognitive pipelines, 400ms abort, atomic state bridge
+- All 7 handlers replaced from classic Ledger stubs to full Reverie cognitive pipeline delegation
+- Classic mode removed entirely: `reverie.mode` eliminated, OpenRouter dependency purged, 12 dead files deleted
+- `dynamo voice status/explain/reset` CLI commands for Inner Voice state visibility
+- Bare CLI shim, CHANGELOG.md integrated into update commands, install pipeline with classic artifact cleanup
+
+**Deferred to M3+:** Intelligent memory backfill (BKFL-01/02/03), Graphiti small_model (TERM-01)
+
+## Next Milestone: v1.3-M3 Management and Visibility
+
+**Goal:** Management hardening and operational visibility. Extend CLI with management commands, improve health and diagnostic tooling, and add initial UI visibility hooks.
+
+**Target features (from MASTER-ROADMAP.md):**
+- MGMT-02/03: Management commands and operational tooling
+- UI-08: Initial UI visibility hooks
+
 ## Current State
 
-**Shipped:** v1.2.1 Stabilization and Polish (2026-03-19)
-**Next milestone:** Not yet scoped — run `/gsd:new-milestone` to begin v1.3
+**Shipped:** v1.3-M2 Core Intelligence (2026-03-21)
+**Current milestone:** Between milestones — v1.3-M2 complete, v1.3-M3 not yet started
+**Active phase:** None
 
-v1.2.1 closed all stabilization gaps: directory restructure, global toggle with complete blackout, comprehensive documentation, self-updating system, legacy removal, and deploy pipeline hardening. The platform is fully documented, self-manageable, and production-hardened. Ready for v1.3 intelligence work (memory enhancement, semantic search, context-aware hooks).
+Dynamo now has a fully operational Inner Voice cognitive pipeline. The Reverie subsystem processes every hook event through entity extraction, activation mapping, dual-path routing (deterministic hot path <500ms + Sonnet deliberation subagent), and adversarial counter-prompted injection formatting. Classic Ledger curation has been completely removed — Reverie is the only processing pipeline.
+
+Key Reverie modules: `activation.cjs` (entity extraction, spreading activation, sublimation scoring), `dual-path.cjs` (path selection, semantic shift, recall detection), `curation.cjs` (template formatting, token limits), `inner-voice.cjs` (pipeline orchestrator, state bridge). Inner Voice subagent defined at `cc/agents/inner-voice.md` with 5 prompt templates. Voice CLI (`dynamo voice status/explain/reset`) provides runtime visibility. Bare `dynamo` CLI works via shell shim. CHANGELOG.md integrated into update workflow.
+
+Prior milestones: v1.3-M1 shipped the six-subsystem architecture, centralized resolver, management hardening, and SQLite session storage. v1.2.1 stabilized with docs, toggles, and deploy hardening. v1.2 rewrote from Python/Bash to CJS. v1.1 fixed the memory system. v1.0 researched and ranked tools.
 
 ## Requirements
 
@@ -46,10 +74,38 @@ v1.2.1 closed all stabilization gaps: directory restructure, global toggle with 
 - ✓ STAB-04: Dynamo CLI integration in CLAUDE.md — Validated in Phase 14: Documentation and Branding
 - ✓ STAB-06: Architecture and design decision capture — Validated in Phase 14: Documentation and Branding
 - ✓ STAB-05: Update/upgrade system — Validated in Phase 15: Update System
+- ✓ ARCH-02: Centralized dual-layout resolver — Validated in Phase 18: Restructure Prerequisites
+- ✓ ARCH-03: Circular dependency detection — Validated in Phase 18: Restructure Prerequisites
+- ✓ ARCH-01: Six-subsystem directory structure — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ ARCH-04: Unified layout mapping module (lib/layout.cjs) — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ ARCH-05: Sync system operates with new layout — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ ARCH-06: Install/deploy pipeline operates with new layout — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ ARCH-07: All existing tests pass after restructure — Validated in Phase 19: Six-Subsystem Directory Restructure
+- ✓ MGMT-01: Install and health-check verify Node.js version and Graphiti status — Validated in Phase 20: Management Hardening
+- ✓ MGMT-08a: Hook dispatcher validates JSON structure and enforces field length limits — Validated in Phase 20: Management Hardening
+- ✓ MGMT-08b: additionalContext injection includes boundary markers against prompt injection — Validated in Phase 20: Management Hardening
+- ✓ DATA-01: Session data stored in SQLite via node:sqlite DatabaseSync API — Validated in Phase 21: SQLite Session Index
+- ✓ DATA-02: Session query functions maintain identical interface — Validated in Phase 21: SQLite Session Index
+- ✓ DATA-03: One-time migration converts sessions.json to SQLite database — Validated in Phase 21: SQLite Session Index
+- ✓ DATA-04: Graceful fallback to JSON file if node:sqlite unavailable — Validated in Phase 21: SQLite Session Index
+- ✓ IV-01 through IV-12: Inner Voice state, entity extraction, activation mapping, sublimation, injection formatting, self-model, curation migration, adversarial framing, semantic shift, domain classification, recall bypass, predictions — v1.3-M2
+- ✓ PATH-01 through PATH-06: Deterministic path selection, hot path <500ms, deliberation subagent, graceful degradation, state bridge, rate limit detection — v1.3-M2
+- ✓ OPS-MON-01/02: Subagent spawn tracking and rate limit detection — v1.3-M2
+- ✓ HOOK-01/02/03: Dispatcher dual-mode routing, subagent event registration, 7 Reverie handler modules — v1.3-M2
+- ✓ FLAG-01/02/03/04: Feature flag system, hybrid mode, config CLI, voice CLI commands — v1.3-M2
+- ✓ OPS-01/02/03: Bare CLI shim, CHANGELOG.md, install pipeline updates — v1.3-M2
 
 ### Active
 
-(none — next milestone not yet scoped)
+v1.3 requirements organized across 7 milestones (1.3-M1 through 1.3-M7). See MASTER-ROADMAP.md for full index. Key milestones:
+
+- **1.3-M1:** Foundation and Infrastructure Refactor (shipped 2026-03-20)
+- **1.3-M2:** Core Intelligence (shipped 2026-03-21)
+- **1.3-M3:** Management and Visibility (MGMT-02/03, UI-08)
+- **1.3-M4:** Advanced Intelligence (CORTEX-04/05/06, MENH-08, MGMT-06/07)
+- **1.3-M5:** Platform Expansion (MENH-03/04/05, CORTEX-07/08/09)
+- **1.3-M6:** Dashboard and UI (UI-01 through UI-06, MGMT-04)
+- **1.3-M7:** Advanced Capabilities (CORTEX-10/11)
 
 ### Out of Scope
 
@@ -66,10 +122,23 @@ Phase 14 complete — README rewritten (537 lines, Mermaid diagram, 25 CLI comma
 Phase 15 complete — Self-updating system: `dynamo check-update` (GitHub Releases API), `dynamo update` (dual-mode: git pull for devs, tarball download for users), version-keyed migration harness, pre-update snapshot with automatic rollback on failure.
 Phase 16 complete — Tech debt cleanup: all 6 v1.2.1 audit gaps closed (CLI reference tables updated, stale MCP permissions removed, CLI router dual-path resolution for deployed layout).
 Phase 17 complete — Deploy pipeline fixes: hook dispatcher dual-layout resolution, MCP deregistration from installer, CLAUDE.md template deployment, stale lib/ cleanup, regression tests updated, Neo4j port corrected. All 374 tests green, deployed and human-verified.
-Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
-Total project: 9,253 LOC CJS, 374 tests passing, across 17 phases and 45 plans.
+Phase 18 complete — Restructure prerequisites: centralized dual-layout resolver (`lib/resolve.cjs`) with logical name API for 8 subsystems, dependency graph cycle detector (`lib/dep-graph.cjs`), all 23 production files migrated from ad-hoc resolution patterns, deploy pipeline updated for `lib/`. Validated in Phase 18: ARCH-02 (centralized resolver), ARCH-03 (circular dep detection). 397 tests passing.
+Phase 19 complete — Six-subsystem directory restructure: 27 production files moved via `git mv` from 3-dir to 6-subsystem layout (`subsystems/`, `cc/`, `lib/`). `lib/layout.cjs` extracted as unified layout source of truth. Resolver simplified (no dual-layout detection). SYNC_PAIRS, install.cjs, settings-hooks.json all updated. 405 tests passing, zero regressions. Validated: ARCH-01, ARCH-04, ARCH-05, ARCH-06, ARCH-07.
+Phase 20 complete — Management hardening: Node.js >= 22 version check in health-check (7th stage) and install (Step 0, WARN-only). Hook dispatcher input validation with field type checks and length limits (MGMT-08a). Stdout boundary markers (`<dynamo-memory-context>`) wrap all hook injection output (MGMT-08b). 35 new dispatcher tests. Validated: MGMT-01, MGMT-08a, MGMT-08b.
+Phase 21 complete — SQLite session index: `subsystems/terminus/session-store.cjs` (232 LOC) provides SQLite-backed session storage via `node:sqlite` DatabaseSync. `sessions.cjs` delegates to SQLite when available, dual-writes JSON for backward compatibility, falls back transparently to JSON when `node:sqlite` unavailable. `dynamo install` migrates `sessions.json` to SQLite (idempotent, transaction-safe). Health-check reports storage backend type (8th stage). 30 new session-store tests. 479 total tests passing. Validated: DATA-01, DATA-02, DATA-03, DATA-04.
+Phase 22 complete -- M1 verification and cleanup: automated verification suite (36 tests in tmpdir sandbox covering all 14 requirements), core.cjs re-export audit (7 re-exports removed, only MCPClient retained), real fresh install verified (10/10 steps, 45 files deployed, 314 sessions migrated to SQLite), documentation refreshed (README, CLAUDE.md template, PROJECT.md, roadmaps, 7 codebase maps). v1.3-M1 tagged on dev branch.
+v1.3-M2 complete -- Core Intelligence: Reverie cognitive pipeline with activation engine, dual-path routing (hot <500ms + Sonnet deliberation subagent), adversarial counter-prompted curation, 7 handler rewrites, classic mode removal, voice CLI, bare CLI shim, CHANGELOG.md, install pipeline updates. 28 requirements validated.
+Tech stack: Node/CJS (subsystems/, cc/, lib/), Docker (Graphiti stack), SQLite (session storage via node:sqlite). No external API dependencies -- all LLM operations via native Claude Code subagents.
+Total project: ~7,081 production LOC CJS, 525+ tests passing, across 25 phases and 69 plans (6 milestones shipped).
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
-v1.2.1 shipped with all 10 STAB requirements complete. Future backlog: 26 items across memory enhancement, management, UI documented in MASTER-ROADMAP.md.
+v1.2.1 shipped with all 10 STAB requirements complete.
+v1.3 architecture specification complete (260319-fzc task, 5 plans across 4 waves):
+- Plan 01: Abstract Inner Voice concept doc (INNER-VOICE-ABSTRACT.md) + Dynamo PRD (DYNAMO-PRD.md)
+- Plan 02: Terminus + Switchboard subsystem specs
+- Plan 03: Ledger + Assay subsystem specs
+- Plan 04: Reverie (Inner Voice) subsystem spec -- most detailed spec (1,463 lines)
+- Plan 05: Master roadmap refactored to 1.3-M1 through 1.3-M7 milestoned delivery + GSD file updates
+Nine specification documents produced. All ~40 active requirements assigned to milestones or deferred. Six-subsystem architecture defined with interface contracts, migration paths, and boundary rules.
 
 ## Key Decisions
 
@@ -96,6 +165,28 @@ v1.2.1 shipped with all 10 STAB requirements complete. Future backlog: 26 items 
 | Dual-layout resolveSibling/resolveHandlers pattern | Code must resolve paths in both repo and deployed (`~/.claude/dynamo/`) layouts | ✓ Good -- applied to CLI router and hook dispatcher |
 | Structural refactors before documentation | Document the final state, not intermediate states | ✓ Good -- no rework needed |
 | Self-updating with snapshot rollback | Pre-update snapshot enables automatic rollback on failure | ✓ Good -- zero-risk update path |
+| Six-subsystem architecture | Split from 3 (Dynamo/Ledger/Switchboard) to 6 (+ Assay, Terminus, Reverie) with strict boundaries | Done -- implemented in Phase 19, validated in Phase 22 |
+| v1.3 milestoned delivery (1.3-M1 through 1.3-M7) | Fold all planned versions into single v1.3 with gated iteration milestones; no planning beyond v1.3 | Active -- roadmap refactored |
+| Hybrid Reverie architecture | CJS command hooks for hot path (<500ms) + custom subagent for deliberation (2-10s) | Active -- specified in REVERIE-SPEC.md |
+| Platform adapter pattern (cc/) | `cc/` directory isolates all Claude Code specifics; enables future `/web`, `/api`, `/mcp` adapters | Active -- specified in SWITCHBOARD-SPEC.md |
+| Abstract Inner Voice separated from platform spec | Platform-agnostic concept doc (INNER-VOICE-ABSTRACT.md) referenced by platform-specific Reverie spec | Active -- both documents written |
+| Claude Code (Max subscription) as platform | Minimize additional API dependence; use native features (agents, subagents, hooks, skills) | Active -- informs all subsystem specs |
+| Centralized path resolver (lib/resolve.cjs) | Single module for all path resolution; eliminated per-module ad-hoc patterns | Done -- Phase 18 |
+| Static circular dependency detection (lib/dep-graph.cjs) | Build-time cycle detection across all production modules with allowlist | Done -- Phase 18 |
+| Unified layout mapping (lib/layout.cjs) | Single source of truth for directory structure, sync pairs (8 pairs), and subsystem paths | Done -- Phase 19 |
+| SQLite session storage via node:sqlite DatabaseSync | WAL-mode SQLite replaces JSON for session data; dual-write pattern preserves JSON backward compat | Done -- Phase 21 |
+| Connection map keyed by dbPath for test isolation | Each test gets its own SQLite DB path; avoids singleton state leaking between tests | Done -- Phase 21 |
+| Input validation + boundary markers in hook dispatcher | Field type checks, length limits, and `<dynamo-memory-context>` wrapper prevent injection | Done -- Phase 20 |
+| Node.js version verification in health-check and install | 8th health-check stage; install Step 0 warns (never blocks) on version mismatch | Done -- Phase 20 |
+| Re-export audit: removed 7 re-exports from core.cjs | Only MCPClient remains re-exported; consumers import directly from subsystem modules | Done -- Phase 22 |
+| End-to-end M1 verification with tmpdir sandbox and real fresh install | 14/14 requirements validated; 515 tests; scripted backup/restore for real install test | Done -- Phase 22 |
+| Deterministic dual-path routing (no LLM for path selection) | Path decision itself must be cheap (<1ms); LLM reserved for deliberation content only | Done -- Phase 24 |
+| Adversarial counter-prompting in injection templates | "From your experience" framing prevents Claude from treating injected memories as canonical definitions | Done -- Phase 24 |
+| Jaccard overlap (0.3 threshold) for semantic shift detection | Deterministic, sub-millisecond, no embeddings needed; embedding-based deferred to M4 | Done -- Phase 24 |
+| Deep-copy state at pipeline entry | Prevents mutation between steps or on error paths; clean rollback semantics | Done -- Phase 24 |
+| Copy shim (not symlink) for bare CLI | Survives repo moves; `.repo-path` dotfile enables DYNAMO_DEV=1 to find repo | Done -- Phase 25 |
+| Classic mode removed entirely (no hybrid fallback) | Clean break preferred over maintaining dead code; aligns with user's clean break preference | Done -- Phase 25 |
+| Voice commands output to stderr only (no --format flag) | Developer tool use case; human-readable only, no programmatic consumption needed | Done -- Phase 25 |
 
 ## Decision Detail
 
@@ -437,7 +528,8 @@ v1.2.1 shipped with all 10 STAB requirements complete. Future backlog: 26 items 
 - **Platform**: macOS (Darwin), zsh, Homebrew available
 - **Architecture**: Node/CJS, zero npm dependencies beyond js-yaml
 - **Testing**: node:test built-in, 100% test isolation via tmpdir
-- **Component scope**: Dynamo (orchestration/CLI), Ledger (memory/knowledge), Switchboard (management/ops) — boundaries must be honored in design, code, and naming
+- **Six-subsystem scope**: Dynamo (system wrapper/CLI), Switchboard (dispatcher/ops), Ledger (data construction), Assay (data access), Terminus (data infrastructure), Reverie (Inner Voice/cognition) -- boundaries must be honored in design, code, and naming. Ledger does not read. Assay does not write. Reverie delegates both.
+- **Platform**: Claude Code (Max subscription) -- minimize additional API dependence; use native features (agents, subagents, hooks, skills) as the platform
 - **Branch workflow**: Development on `dev` branch. Push to origin after commits. Merge dev → master and push on milestone completion only.
 - **Disruption awareness**: Notify the user when testing or development will interrupt current usage of any part of Dynamo in the active thread or any other active Claude threads.
 
@@ -447,9 +539,9 @@ These items must be assessed during every phase's planning and execution. Not al
 
 - [ ] **User-facing docs and README**: Deep pass to assess what needs to be modified or added. Update as changes are made within the phase, not deferred.
 - [ ] **Sync, install, and update scripts**: Deep pass to assess if affected by this phase's changes. Update if so.
-- [ ] **Component scope adherence**: Verify that Dynamo/Ledger/Switchboard scope boundaries are honored in both design and naming. Flag violations and address in phase discussion.
+- [ ] **Subsystem scope adherence**: Verify that six-subsystem boundaries (Dynamo/Switchboard/Ledger/Assay/Terminus/Reverie) are honored in both design and naming. Flag violations and address in phase discussion.
 - [ ] **CLAUDE.md and injectable templates**: Update to reflect current usage and rules of Dynamo and its systems (both passive and active). Include self-management instructions to keep Dynamo up to date.
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-19 after v1.2.1 milestone (Stabilization and Polish — all 10 STAB requirements shipped)*
+*Last updated: 2026-03-21 after v1.3-M2 milestone*
