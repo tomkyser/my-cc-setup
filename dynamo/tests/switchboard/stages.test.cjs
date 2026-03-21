@@ -76,39 +76,25 @@ describe('stages module', () => {
   });
 
   describe('stageEnvVars', () => {
-    let origOpenRouter;
     let origNeo4j;
 
     beforeEach(() => {
-      origOpenRouter = process.env.OPENROUTER_API_KEY;
       origNeo4j = process.env.NEO4J_PASSWORD;
     });
 
     afterEach(() => {
-      if (origOpenRouter !== undefined) process.env.OPENROUTER_API_KEY = origOpenRouter;
-      else delete process.env.OPENROUTER_API_KEY;
       if (origNeo4j !== undefined) process.env.NEO4J_PASSWORD = origNeo4j;
       else delete process.env.NEO4J_PASSWORD;
     });
 
-    it('returns WARN when OPENROUTER_API_KEY is missing but NEO4J_PASSWORD is set', async () => {
-      delete process.env.OPENROUTER_API_KEY;
-      process.env.NEO4J_PASSWORD = 'test-password';
-      const result = await stages.stageEnvVars();
-      assert.strictEqual(result.status, 'WARN');
-      assert.ok(result.detail.includes('OPENROUTER_API_KEY'));
-    });
-
     it('returns FAIL when NEO4J_PASSWORD is missing', async () => {
-      process.env.OPENROUTER_API_KEY = 'test-key';
       delete process.env.NEO4J_PASSWORD;
       const result = await stages.stageEnvVars();
       assert.strictEqual(result.status, 'FAIL');
       assert.ok(result.detail.includes('NEO4J_PASSWORD'));
     });
 
-    it('returns OK when both vars are set', async () => {
-      process.env.OPENROUTER_API_KEY = 'test-key';
+    it('returns OK when NEO4J_PASSWORD is set', async () => {
       process.env.NEO4J_PASSWORD = 'test-password';
       const result = await stages.stageEnvVars();
       assert.strictEqual(result.status, 'OK');
@@ -141,7 +127,7 @@ describe('stages module', () => {
 
     it('returns OK when .env has all required keys', async () => {
       fs.writeFileSync(envFilePath,
-        'OPENROUTER_API_KEY=test-key\nNEO4J_PASSWORD=test-pass\nGRAPHITI_MCP_URL=http://localhost:8100/mcp\n',
+        'NEO4J_PASSWORD=test-pass\nGRAPHITI_MCP_URL=http://localhost:8100/mcp\n',
         'utf8'
       );
       const result = await stages.stageEnvFile({ graphitiDir: tmpDir });

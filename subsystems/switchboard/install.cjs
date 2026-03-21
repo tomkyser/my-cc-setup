@@ -73,11 +73,7 @@ function generateConfig(envPath, outDir) {
       mcp_url: process.env.GRAPHITI_MCP_URL || 'http://localhost:8100/mcp',
       health_url: process.env.GRAPHITI_HEALTH_URL || 'http://localhost:8100/health'
     },
-    curation: {
-      model: 'anthropic/claude-haiku-4.5',
-      api_url: process.env.OPENROUTER_API_URL || 'https://openrouter.ai/api/v1/chat/completions'
-    },
-    timeouts: { health: 3000, mcp: 5000, curation: 10000, summarization: 15000 },
+    timeouts: { health: 3000, mcp: 5000 },
     logging: { max_size_bytes: 1048576, file: 'hook-errors.log' }
   };
 

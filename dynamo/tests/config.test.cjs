@@ -33,11 +33,6 @@ describe('Config Module', () => {
   });
 
   describe('get()', () => {
-    it('returns undefined when no reverie key exists in config', () => {
-      const result = config.get('reverie.mode', { configPath });
-      assert.strictEqual(result, undefined);
-    });
-
     it('returns value for existing top-level key', () => {
       const result = config.get('version', { configPath });
       assert.strictEqual(result, '0.1.0');
@@ -48,35 +43,17 @@ describe('Config Module', () => {
       assert.strictEqual(result, 'http://localhost:8100/mcp');
     });
 
-    it('returns cortex after set', () => {
-      config.set('reverie.mode', 'cortex', { configPath });
-      const result = config.get('reverie.mode', { configPath });
-      assert.strictEqual(result, 'cortex');
+    it('returns undefined for nonexistent key', () => {
+      const result = config.get('nonexistent.key', { configPath });
+      assert.strictEqual(result, undefined);
     });
   });
 
   describe('set()', () => {
     it('creates intermediate objects and writes value', () => {
-      config.set('reverie.mode', 'cortex', { configPath });
+      config.set('reverie.activation.sublimation_threshold', 0.7, { configPath });
       const raw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      assert.strictEqual(raw.reverie.mode, 'cortex');
-    });
-
-    it('throws on invalid reverie.mode value', () => {
-      assert.throws(
-        () => config.set('reverie.mode', 'invalid', { configPath }),
-        (err) => err.message.includes('Invalid value for reverie.mode')
-      );
-    });
-
-    it('accepts classic mode', () => {
-      const result = config.set('reverie.mode', 'classic', { configPath });
-      assert.strictEqual(result, 'classic');
-    });
-
-    it('accepts hybrid mode', () => {
-      const result = config.set('reverie.mode', 'hybrid', { configPath });
-      assert.strictEqual(result, 'hybrid');
+      assert.strictEqual(raw.reverie.activation.sublimation_threshold, 0.7);
     });
 
     it('coerces numeric string to number', () => {
@@ -113,27 +90,28 @@ describe('Config Module', () => {
     });
 
     it('uses atomic write -- tmp file does not persist after set()', () => {
-      config.set('reverie.mode', 'cortex', { configPath });
+      config.set('reverie.activation.sublimation_threshold', 0.5, { configPath });
       const tmpFile = configPath + '.tmp';
       assert.strictEqual(fs.existsSync(tmpFile), false);
     });
   });
 
   describe('validate()', () => {
-    it('returns null for valid reverie.mode', () => {
-      const result = config.validate('reverie.mode', 'cortex');
+    it('reverie.mode is not a validated key', () => {
+      const result = config.validate('reverie.mode', 'anything');
       assert.strictEqual(result, null);
-    });
-
-    it('returns error string for invalid reverie.mode', () => {
-      const result = config.validate('reverie.mode', 'bogus');
-      assert.strictEqual(typeof result, 'string');
-      assert.ok(result.includes('Invalid'));
     });
 
     it('returns null for unknown key (no validator)', () => {
       const result = config.validate('unknown.key', 'any');
       assert.strictEqual(result, null);
+    });
+
+    it('validates sublimation_threshold range', () => {
+      const valid = config.validate('reverie.activation.sublimation_threshold', 0.5);
+      assert.strictEqual(valid, null);
+      const invalid = config.validate('reverie.activation.sublimation_threshold', 2.0);
+      assert.ok(typeof invalid === 'string');
     });
   });
 
@@ -149,24 +127,23 @@ describe('Config Module', () => {
   describe('options.configPath', () => {
     it('overrides default CONFIG_PATH for test isolation', () => {
       // The fact that all tests above pass with configPath option proves this works
-      config.set('reverie.mode', 'cortex', { configPath });
-      const result = config.get('reverie.mode', { configPath });
-      assert.strictEqual(result, 'cortex');
+      config.set('reverie.activation.sublimation_threshold', 0.8, { configPath });
+      const result = config.get('reverie.activation.sublimation_threshold', { configPath });
+      assert.strictEqual(result, 0.8);
     });
   });
 
   describe('VALIDATORS', () => {
-    it('has reverie.mode validator', () => {
-      assert.ok(config.VALIDATORS['reverie.mode']);
+    it('does not have reverie.mode validator', () => {
+      assert.strictEqual(config.VALIDATORS['reverie.mode'], undefined);
     });
 
-    it('reverie.mode validator accepts only classic/hybrid/cortex', () => {
-      const v = config.VALIDATORS['reverie.mode'];
-      assert.strictEqual(v('classic'), true);
-      assert.strictEqual(v('hybrid'), true);
-      assert.strictEqual(v('cortex'), true);
-      assert.strictEqual(v('invalid'), false);
-      assert.strictEqual(v(''), false);
+    it('has subagent_daily_cap validator', () => {
+      assert.ok(config.VALIDATORS['reverie.operational.subagent_daily_cap']);
+    });
+
+    it('has sublimation_threshold validator', () => {
+      assert.ok(config.VALIDATORS['reverie.activation.sublimation_threshold']);
     });
   });
 

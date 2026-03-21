@@ -11,9 +11,6 @@ const os = require('os');
 const REPO_ROOT = path.join(__dirname, '..', '..', '..');
 const DISPATCHER = path.join(REPO_ROOT, 'cc', 'hooks', 'dynamo-hooks.cjs');
 
-// Handlers: repo layout (subsystems/ledger/hooks/)
-const HANDLERS_DIR = path.join(REPO_ROOT, 'subsystems', 'ledger', 'hooks');
-
 // Load dispatcher exports for unit testing validateInput
 const dispatcher = require(DISPATCHER);
 
@@ -29,10 +26,11 @@ describe('Dispatcher structure', () => {
 
   it('dispatcher contains handler routing for all 7 events', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
+    // Cognitive events are routed via REVERIE_ROUTE mapping
     for (const evt of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'PreCompact', 'Stop']) {
-      assert.ok(src.includes(`case '${evt}'`), `Missing case for ${evt}`);
+      assert.ok(src.includes(`'${evt}'`), `Missing routing for ${evt}`);
     }
-    // SubagentStart/SubagentStop are routed via SUBAGENT_ROUTE, not switch/case
+    // SubagentStart/SubagentStop are routed via SUBAGENT_ROUTE
     assert.ok(src.includes("'SubagentStart'"), 'Missing routing for SubagentStart');
     assert.ok(src.includes("'SubagentStop'"), 'Missing routing for SubagentStop');
   });
@@ -40,10 +38,10 @@ describe('Dispatcher structure', () => {
   it('dispatcher calls loadEnv before routing', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
     const loadEnvIdx = src.indexOf('loadEnv()');
-    const switchIdx = src.indexOf('switch');
+    const routeIdx = src.indexOf('JSON_OUTPUT_EVENTS.has(event)');
     assert.ok(loadEnvIdx !== -1, 'Must call loadEnv()');
-    assert.ok(switchIdx !== -1, 'Must have switch statement');
-    assert.ok(loadEnvIdx < switchIdx, 'loadEnv must be called before switch routing');
+    assert.ok(routeIdx !== -1, 'Must have routing logic');
+    assert.ok(loadEnvIdx < routeIdx, 'loadEnv must be called before routing');
   });
 
   it('dispatcher has stdin timeout guard at 5000ms', () => {
@@ -57,10 +55,10 @@ describe('Dispatcher structure', () => {
     assert.ok(src.includes('process.exit(0)'), 'Must exit 0');
   });
 
-  it('dispatcher uses centralized resolver for dual-layout path resolution', () => {
+  it('dispatcher uses centralized resolver for path resolution', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
     assert.ok(src.includes("lib/resolve.cjs"), 'Must use centralized resolver bootstrap');
-    assert.ok(src.includes("resolve('ledger'"), 'Must resolve ledger via centralized resolver');
+    assert.ok(src.includes("resolve('reverie'"), 'Must resolve reverie via centralized resolver');
   });
 
   it('dispatcher uses resolver or __dirname-based paths (no ad-hoc relative requires)', () => {
@@ -75,35 +73,24 @@ describe('Dispatcher structure', () => {
   });
 });
 
-describe('Handler exports', () => {
-  const handlers = ['session-start', 'prompt-augment', 'capture-change', 'preserve-knowledge', 'session-summary'];
+describe('Reverie handler routing', () => {
+  const REVERIE_HANDLERS_DIR = path.join(REPO_ROOT, 'subsystems', 'reverie', 'handlers');
+  const handlers = ['session-start', 'user-prompt', 'post-tool-use', 'pre-compact', 'stop'];
 
   for (const name of handlers) {
-    it(`${name}.cjs exists and exports an async function`, () => {
-      const handlerPath = path.join(HANDLERS_DIR, name + '.cjs');
-      assert.ok(fs.existsSync(handlerPath), `${name}.cjs must exist at ${HANDLERS_DIR}`);
+    it(`reverie ${name}.cjs exists and exports a function`, () => {
+      const handlerPath = path.join(REVERIE_HANDLERS_DIR, name + '.cjs');
+      assert.ok(fs.existsSync(handlerPath), `${name}.cjs must exist at ${REVERIE_HANDLERS_DIR}`);
       const handler = require(handlerPath);
       assert.strictEqual(typeof handler, 'function', `${name}.cjs must export a function`);
     });
   }
 
-  for (const name of handlers) {
-    it(`${name}.cjs starts with "// Dynamo >" branding`, () => {
-      const src = fs.readFileSync(path.join(HANDLERS_DIR, name + '.cjs'), 'utf8');
-      assert.ok(src.startsWith('// Dynamo >'), `${name}.cjs must start with "// Dynamo >" identity block`);
-    });
-  }
-
-  it('no handler has bare .catch(() => {})', () => {
-    const violations = [];
-    for (const name of handlers) {
-      const src = fs.readFileSync(path.join(HANDLERS_DIR, name + '.cjs'), 'utf8');
-      if (/\.catch\(\s*\(\s*\)\s*=>\s*\{\s*\}\s*\)/.test(src)) {
-        violations.push(name + '.cjs');
-      }
-    }
-    assert.strictEqual(violations.length, 0,
-      'Bare .catch(() => {}) found in: ' + violations.join(', '));
+  it('dispatcher always routes cognitive events to Reverie', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(!src.includes("|| 'classic'"), 'no classic fallback');
+    assert.ok(!src.includes("resolve('ledger', 'hooks')"), 'no Ledger hook routing');
+    assert.ok(src.includes("REVERIE_ROUTE"), 'routes to Reverie handlers');
   });
 });
 
@@ -275,10 +262,10 @@ describe('Dispatcher validation integration', () => {
   it('dispatcher source calls validateInput before handler routing', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
     const validateIdx = src.indexOf('validateInput(');
-    const switchIdx = src.indexOf('switch (event)');
+    const routeIdx = src.indexOf('JSON_OUTPUT_EVENTS.has(event)');
     assert.ok(validateIdx !== -1, 'should call validateInput');
-    assert.ok(switchIdx !== -1, 'should have switch routing');
-    assert.ok(validateIdx < switchIdx, 'validateInput must be called before switch routing');
+    assert.ok(routeIdx !== -1, 'should have routing logic');
+    assert.ok(validateIdx < routeIdx, 'validateInput must be called before routing');
   });
 
   it('dispatcher logs validation failures via logError', () => {
@@ -353,15 +340,11 @@ describe('JSON_OUTPUT_EVENTS (HOOK-02)', () => {
   });
 });
 
-describe('Mode-based routing (HOOK-01)', () => {
-  it('dispatcher source reads reverie.mode from config', () => {
+describe('Always-Reverie routing (HOOK-01)', () => {
+  it('dispatcher has no classic mode references', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
-    assert.ok(src.includes('config.reverie') && src.includes('mode'), 'should read reverie.mode from config');
-  });
-
-  it('dispatcher source defaults mode to classic', () => {
-    const src = fs.readFileSync(DISPATCHER, 'utf8');
-    assert.ok(src.includes("|| 'classic'"), 'should default to classic mode');
+    assert.ok(!src.includes("|| 'classic'"), 'should not default to classic mode');
+    assert.ok(!src.includes('config.reverie') || !src.includes("config.reverie.mode"), 'should not read reverie.mode from config');
   });
 
   it('dispatcher source contains REVERIE_ROUTE mapping', () => {
@@ -383,14 +366,19 @@ describe('Mode-based routing (HOOK-01)', () => {
     assert.ok(src.includes("resolve('reverie', 'handlers')"), 'should resolve reverie handlers path');
   });
 
-  it('dispatcher preserves classic switch/case in else block', () => {
+  it('dispatcher has no classic Ledger handler references', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
-    // Classic handler paths must still be present for classic mode
-    assert.ok(src.includes("'session-start.cjs'"), 'should have session-start handler reference');
-    assert.ok(src.includes("'prompt-augment.cjs'"), 'should have prompt-augment handler reference');
-    assert.ok(src.includes("'capture-change.cjs'"), 'should have capture-change handler reference');
-    assert.ok(src.includes("'preserve-knowledge.cjs'"), 'should have preserve-knowledge handler reference');
-    assert.ok(src.includes("'session-summary.cjs'"), 'should have session-summary handler reference');
+    assert.ok(!src.includes("'prompt-augment.cjs'"), 'should not reference prompt-augment.cjs');
+    assert.ok(!src.includes("'capture-change.cjs'"), 'should not reference capture-change.cjs');
+    assert.ok(!src.includes("'preserve-knowledge.cjs'"), 'should not reference preserve-knowledge.cjs');
+    assert.ok(!src.includes("'session-summary.cjs'"), 'should not reference session-summary.cjs');
+  });
+
+  it('dispatcher has exactly two routing branches', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes('if (JSON_OUTPUT_EVENTS.has(event))'), 'should have subagent branch');
+    // The else branch handles all cognitive events via Reverie
+    assert.ok(src.includes('} else {'), 'should have else branch for Reverie routing');
   });
 });
 

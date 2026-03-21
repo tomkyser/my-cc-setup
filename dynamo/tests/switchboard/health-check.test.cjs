@@ -124,7 +124,7 @@ describe('health-check module', () => {
     it('WARN stages still count as passed', async () => {
       const saved = saveStages(stagesModule);
       mockAllOk(stagesModule, {
-        stageEnvVars: async () => warnResult('OPENROUTER_API_KEY missing')
+        stageEnvVars: async () => warnResult('optional env var missing')
       });
 
       try {

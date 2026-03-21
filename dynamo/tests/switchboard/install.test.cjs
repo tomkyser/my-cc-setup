@@ -189,8 +189,7 @@ describe('generateConfig helper', () => {
     const envPath = path.join(tmpDir, '.env');
     fs.writeFileSync(envPath, [
       'GRAPHITI_MCP_URL=http://test:8100/mcp',
-      'GRAPHITI_HEALTH_URL=http://test:8100/health',
-      'OPENROUTER_API_KEY=sk-test-123'
+      'GRAPHITI_HEALTH_URL=http://test:8100/health'
     ].join('\n'), 'utf8');
 
     // Create output dir for config
@@ -207,7 +206,7 @@ describe('generateConfig helper', () => {
     assert.ok(config.version, 'should have version');
     assert.ok(config.graphiti, 'should have graphiti section');
     assert.ok(config.graphiti.mcp_url, 'should have mcp_url');
-    assert.ok(config.curation, 'should have curation section');
+    assert.strictEqual(config.curation, undefined, 'should NOT have curation section');
     assert.ok(config.timeouts, 'should have timeouts section');
     assert.ok(config.logging, 'should have logging section');
   });
