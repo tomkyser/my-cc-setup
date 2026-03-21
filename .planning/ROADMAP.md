@@ -158,4 +158,4 @@ Phases execute in numeric order: 23 -> 24 -> 25
 | 22. M1 Verification and Cleanup | v1.3-M1 | 4/4 | Complete | 2026-03-20 |
 | 23. Foundation and Routing | v1.3-M2 | 3/3 | Complete    | 2026-03-20 |
 | 24. Cognitive Pipeline | v1.3-M2 | 4/4 | Complete    | 2026-03-20 |
-| 25. Cutover & Completion | v1.3-M2 | 4/4 | Complete   | 2026-03-21 |
+| 25. Cutover & Completion | v1.3-M2 | 4/4 | Complete    | 2026-03-21 |
