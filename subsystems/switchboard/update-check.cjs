@@ -11,23 +11,73 @@ const GITHUB_API = 'https://api.github.com/repos/tomkyser/dynamo/releases/latest
 const VERSION_PATH = path.join(__dirname, '..', '..', 'dynamo', 'VERSION');
 
 /**
- * Compare two semver version strings (X.Y.Z format).
+ * Normalize a version string to X.Y.Z[-M{N}] format.
+ * Strips leading 'v', inserts .0 patch if only major.minor given.
+ *
+ * Examples:
+ *   'v1.3-M2'   -> '1.3.0-M2'
+ *   'v1.3.0-M2' -> '1.3.0-M2'
+ *   'v1.3.0'    -> '1.3.0'
+ *   '1.3-M2'    -> '1.3.0-M2'
+ *   '1.3.0'     -> '1.3.0'
+ *
+ * @param {string} tag - Version string, possibly with v prefix and/or milestone suffix
+ * @returns {string} Normalized version string
+ */
+function normalizeVersion(tag) {
+  if (!tag) return '';
+  const m = tag.match(/^v?(\d+)\.(\d+)(?:\.(\d+))?(-M\d+)?$/);
+  if (!m) return tag;
+  const major = m[1];
+  const minor = m[2];
+  const patch = m[3] !== undefined ? m[3] : '0';
+  const suffix = m[4] || '';
+  return `${major}.${minor}.${patch}${suffix}`;
+}
+
+/**
+ * Parse a version string into its base segments and optional milestone number.
+ * @param {string} v - Version string (e.g. '1.3.0-M2')
+ * @returns {{ base: number[], milestone: number|null }}
+ */
+function parseVersion(v) {
+  const parts = v.split('-M');
+  const base = parts[0].split('.').map(Number);
+  const milestone = parts.length > 1 ? parseInt(parts[1], 10) : null;
+  return { base, milestone };
+}
+
+/**
+ * Compare two semver version strings with optional -M{N} milestone suffixes.
  * Returns 1 if a > b, -1 if a < b, 0 if equal.
- * Compares numerically, not lexicographically.
+ * Compares base version numerically first, then applies milestone logic:
+ *   - Release (no suffix) > milestone of same base version
+ *   - M1 < M2 < M3 ... for same base version
  *
  * @param {string} a - First version string
  * @param {string} b - Second version string
  * @returns {number} 1, -1, or 0
  */
 function compareVersions(a, b) {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
+  const pa = parseVersion(a);
+  const pb = parseVersion(b);
+
+  // Compare base version segments (X.Y.Z)
   for (let i = 0; i < 3; i++) {
-    const va = pa[i] || 0;
-    const vb = pb[i] || 0;
+    const va = pa.base[i] || 0;
+    const vb = pb.base[i] || 0;
     if (va > vb) return 1;
     if (va < vb) return -1;
   }
+
+  // Base versions are equal -- apply milestone logic
+  if (pa.milestone === null && pb.milestone === null) return 0;
+  if (pa.milestone === null && pb.milestone !== null) return 1;  // release > milestone
+  if (pa.milestone !== null && pb.milestone === null) return -1;  // milestone < release
+
+  // Both have milestones -- compare numerically
+  if (pa.milestone > pb.milestone) return 1;
+  if (pa.milestone < pb.milestone) return -1;
   return 0;
 }
 
@@ -111,7 +161,7 @@ async function checkUpdate(options = {}) {
     };
   }
 
-  const latestVersion = (release.tag_name || '').replace(/^v/, '');
+  const latestVersion = normalizeVersion(release.tag_name || '');
   const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
 
   const result = {
@@ -129,4 +179,4 @@ async function checkUpdate(options = {}) {
   return result;
 }
 
-module.exports = { checkUpdate, compareVersions, readChangelog };
+module.exports = { checkUpdate, compareVersions, readChangelog, normalizeVersion };
